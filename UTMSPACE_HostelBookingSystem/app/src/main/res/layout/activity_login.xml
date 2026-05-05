@@ -58,7 +58,8 @@
                         android:hint="Email Address"
                         android:inputType="textEmailAddress"
                         android:background="@drawable/input_field_rounded"
-                        android:paddingLeft="20dp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="45dp"
                         android:layout_marginBottom="16dp"/>
 
                     <EditText
@@ -68,7 +69,8 @@
                         android:hint="Password"
                         android:inputType="textPassword"
                         android:background="@drawable/input_field_rounded"
-                        android:paddingLeft="20dp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="45dp"
                         android:layout_marginBottom="8dp"/>
 
                     <!-- Forgot Password Link -->
