@@ -14,7 +14,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
         <activity
-            android:name=".profileActivity"
+            android:name=".ReceiptActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProfileActivity"
             android:exported="false" />
         <activity
             android:name=".PaymentActivity"

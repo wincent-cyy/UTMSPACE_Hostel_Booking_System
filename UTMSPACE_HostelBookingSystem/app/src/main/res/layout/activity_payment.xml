@@ -144,53 +144,61 @@
                 app:layout_constraintTop_toBottomOf="@id/tvMethodLabel">
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/MethodCard"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
                     <LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8FAFC">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_agenda" app:tint="#6366F1"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/card_icon" app:tint="#6366F1"/>
                         <TextView android:text="Card" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/MethodBank"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
                     <LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_view" app:tint="#6366F1"/>
+                        <ImageView android:layout_width="32dp" android:layout_height="24dp" android:src="@drawable/online_banking_icon" app:tint="#6366F1"/>
                         <TextView android:text="Online Banking" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/MethodWallet"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
                     <LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_send" app:tint="#6366F1"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/e_wallet_icon" app:tint="#6366F1"/>
                         <TextView android:text="E-Wallet" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/MethodQR"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
                     android:layout_columnWeight="1"
                     android:layout_margin="8dp"
                     app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
                     <LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent">
-                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_camera" app:tint="#6366F1"/>
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/qr_icon" app:tint="#6366F1"/>
                         <TextView android:text="QR Pay" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
