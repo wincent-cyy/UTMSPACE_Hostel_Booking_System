@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "406625212003",
+    "project_id": "utmspace-hostel-booking-system",
+    "storage_bucket": "utmspace-hostel-booking-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:406625212003:android:49a95ea044536b1c5b0a56",
+        "android_client_info": {
+          "package_name": "com.example.utmspace_hostelbookingsystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADgV-9e1sZKSL6NM0g_2lpZtIiBbtvNw8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

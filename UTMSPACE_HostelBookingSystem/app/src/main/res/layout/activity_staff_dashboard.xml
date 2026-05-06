@@ -6,9 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F1F5F9"
-    tools:context=".StudentDashboardActivity">
+    tools:context=".StaffDashboardActivity">
 
-    <!-- 1. Header Background Layer -->
+    <!-- 1. Header Background Layer (Same as Student) -->
     <View
         android:id="@+id/topHeaderBg"
         android:layout_width="match_parent"
@@ -31,7 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Profile and Search Section -->
+            <!-- Profile and Search Room Section -->
             <LinearLayout
                 android:id="@+id/headerTextLayer"
                 android:layout_width="match_parent"
@@ -52,14 +52,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Good Morning,"
+                            android:text="Welcome Staff,"
                             android:textColor="#C7D2FE"
                             android:textSize="14sp" />
                         <TextView
-                            android:id="@+id/tvStudentName"
+                            android:id="@+id/tvStaffName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Alex Johnson"
+                            android:text="Manager Mode"
                             android:textColor="#FFFFFF"
                             android:textSize="26sp"
                             android:textStyle="bold" />
@@ -76,6 +76,7 @@
                         app:strokeWidth="2dp" />
                 </RelativeLayout>
 
+                <!-- Requirement: Search Room -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
                     android:layout_height="54dp"
@@ -93,9 +94,10 @@
                             android:src="@android:drawable/ic_menu_search"
                             app:tint="#6366F1" />
                         <EditText
+                            android:id="@+id/etSearchRoom"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Find a room ..."
+                            android:hint="Search room by ID (e.g. A-101)..."
                             android:background="@android:color/transparent"
                             android:paddingStart="12dp"
                             android:textSize="15sp"
@@ -106,60 +108,147 @@
                 </androidx.cardview.widget.CardView>
             </LinearLayout>
 
-            <!-- News Banner -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/fixedNewsBanner"
+            <!-- Requirement: Statistics (Bookings & Issues) -->
+            <LinearLayout
+                android:id="@+id/statsContainer"
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:layout_marginHorizontal="20dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp"
                 android:layout_marginTop="8dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
                 app:layout_constraintTop_toBottomOf="@id/headerTextLayer">
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="#EEF2FF">
+
+                <!-- Total Bookings -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp">
                     <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
                         android:orientation="vertical"
-                        android:layout_centerVertical="true"
-                        android:layout_marginStart="20dp">
+                        android:gravity="center"
+                        android:background="#F8FAFC">
+                        <TextView
+                            android:id="@+id/tvTotalBookings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="128"
+                            android:textColor="#4F46E5"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Hostel News"
-                            android:textColor="#4F46E5"
+                            android:text="Total Bookings"
+                            android:textColor="#64748B"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Room Issues -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="#FFF1F2">
+                        <TextView
+                            android:id="@+id/tvRoomIssues"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="12"
+                            android:textColor="#E11D48"
+                            android:textSize="24sp"
                             android:textStyle="bold" />
                         <TextView
-                            android:layout_width="200dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Room renewal starts next week. Book early!"
-                            android:textColor="#3730A3"
-                            android:textSize="13sp" />
+                            android:text="Room Issues"
+                            android:textColor="#991B1B"
+                            android:textSize="12sp" />
                     </LinearLayout>
-                </RelativeLayout>
+                </androidx.cardview.widget.CardView>
+            </LinearLayout>
+
+            <!-- Requirement: Repair Lists Button (Action Card) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnRepairList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:layout_constraintTop_toBottomOf="@id/statsContainer">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical"
+                    android:background="#4F46E5">
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@android:drawable/ic_menu_manage"
+                        app:tint="#FFFFFF" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="16dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Repair Requests"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Manage rooms repairment"
+                            android:textColor="#C7D2FE"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_media_play"
+                        app:tint="#FFFFFF" />
+                </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Room Categories -->
+            <!-- Section: Recent Room Status (Like Categories Section) -->
             <LinearLayout
-                android:id="@+id/categoriesContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="20dp"
-                app:layout_constraintTop_toBottomOf="@id/fixedNewsBanner">
+                app:layout_constraintTop_toBottomOf="@id/btnRepairList">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Room Categories"
+                    android:text="Quick Room Overview"
                     android:textColor="#1E293B"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp"/>
 
+                <!-- Example Horizontal List for Room Status -->
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -168,109 +257,68 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingEnd="20dp">
+                        android:orientation="horizontal">
 
-                        <!-- Single Room -->
+                        <!-- Status Item: Occupied -->
                         <androidx.cardview.widget.CardView
-                            android:layout_width="160dp"
-                            android:layout_height="220dp"
+                            android:layout_width="140dp"
+                            android:layout_height="100dp"
                             android:layout_margin="8dp"
-                            app:cardCornerRadius="20dp">
+                            app:cardCornerRadius="16dp">
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:orientation="vertical">
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="130dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/single_room" />
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:background="#EFF6FF">
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Single Room"
-                                    android:textColor="#1E293B"
+                                    android:text="Occupied"
+                                    android:textColor="#2563EB"
                                     android:textStyle="bold" />
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 1500/sem"
-                                    android:textColor="#6366F1" />
+                                    android:text="240 Rooms"
+                                    android:textColor="#1E40AF" />
                             </LinearLayout>
                         </androidx.cardview.widget.CardView>
 
-                        <!-- Double Room -->
+                        <!-- Status Item: Vacant -->
                         <androidx.cardview.widget.CardView
-                            android:layout_width="160dp"
-                            android:layout_height="220dp"
+                            android:layout_width="140dp"
+                            android:layout_height="100dp"
                             android:layout_margin="8dp"
-                            app:cardCornerRadius="20dp">
+                            app:cardCornerRadius="16dp">
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:orientation="vertical">
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="130dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/double_room" />
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:background="#F0FDF4">
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Double Room"
-                                    android:textColor="#1E293B"
+                                    android:text="Vacant"
+                                    android:textColor="#16A34A"
                                     android:textStyle="bold" />
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 1200/sem"
-                                    android:textColor="#6366F1" />
-                            </LinearLayout>
-                        </androidx.cardview.widget.CardView>
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="160dp"
-                            android:layout_height="220dp"
-                            android:layout_margin="8dp"
-                            app:cardCornerRadius="20dp"
-                            app:cardElevation="4dp">
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:orientation="vertical">
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="130dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/quad_room" />
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Quad Room"
-                                    android:textColor="#1E293B"
-                                    android:textStyle="bold" />
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 800/sem"
-                                    android:textColor="#6366F1" />
+                                    android:text="15 Rooms"
+                                    android:textColor="#166534" />
                             </LinearLayout>
                         </androidx.cardview.widget.CardView>
 
                     </LinearLayout>
                 </HorizontalScrollView>
             </LinearLayout>
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- 3. Bottom Navigation - Label Fixes -->
+    <!-- 3. Bottom Navigation (Home, Bookings, Rooms, Profile) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
@@ -281,11 +329,9 @@
         app:itemIconTint="#6366F1"
         app:itemTextColor="#64748B"
         app:labelVisibilityMode="labeled"
-        app:itemPaddingTop="10dp"
-        app:itemPaddingBottom="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:menu="@menu/student_nav_menu" />
+        app:menu="@menu/staff_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
