@@ -26,7 +26,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // 2. Setup Bottom Navigation logic
         setupBottomNavigation();
 
-        // 3. Handle Back Press (Exits app from Dashboard instead of going back to Login)
+        // 3. Handle Back Press
         setupBackPress();
     }
 
@@ -50,14 +50,18 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 // Already on Home
                 return true;
             }
-            else if (itemId == R.id.nav_profile) {
-                // Navigate to Profile page when the bar icon is clicked
-                Intent intent = new Intent(StudentDashboardActivity.this, ProfileActivity.class);
+            else if (itemId == R.id.nav_history) {
+                // Navigate to History/Booking page
+                Intent intent = new Intent(StudentDashboardActivity.this, HistoryActivity.class);
                 startActivity(intent);
+                overridePendingTransition(0, 0); // Smooth transition
                 return true;
             }
-            else if (itemId == R.id.nav_booking) {
-                Toast.makeText(this, "Booking feature coming soon!", Toast.LENGTH_SHORT).show();
+            else if (itemId == R.id.nav_profile) {
+                // Navigate to Profile page
+                Intent intent = new Intent(StudentDashboardActivity.this, ProfileActivity.class);
+                startActivity(intent);
+                overridePendingTransition(0, 0); // Smooth transition
                 return true;
             }
 
@@ -66,11 +70,10 @@ public class StudentDashboardActivity extends AppCompatActivity {
     }
 
     private void setupBackPress() {
-        // This ensures that if the user presses 'Back' on the Dashboard,
-        // the app closes entirely rather than returning to the Login screen.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                // Exits the app completely from the dashboard
                 finishAffinity();
             }
         });

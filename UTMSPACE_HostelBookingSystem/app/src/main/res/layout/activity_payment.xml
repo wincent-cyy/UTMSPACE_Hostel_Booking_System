@@ -143,7 +143,7 @@
                 android:columnCount="2"
                 app:layout_constraintTop_toBottomOf="@id/tvMethodLabel">
 
-                <androidx.cardview.widget.CardView
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/MethodCard"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
@@ -156,9 +156,9 @@
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/card_icon" app:tint="#6366F1"/>
                         <TextView android:text="Card" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                </com.google.android.material.card.MaterialCardView>
 
-                <androidx.cardview.widget.CardView
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/MethodBank"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
@@ -171,9 +171,9 @@
                         <ImageView android:layout_width="32dp" android:layout_height="24dp" android:src="@drawable/online_banking_icon" app:tint="#6366F1"/>
                         <TextView android:text="Online Banking" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                </com.google.android.material.card.MaterialCardView>
 
-                <androidx.cardview.widget.CardView
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/MethodWallet"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
@@ -186,9 +186,9 @@
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/e_wallet_icon" app:tint="#6366F1"/>
                         <TextView android:text="E-Wallet" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                </com.google.android.material.card.MaterialCardView>
 
-                <androidx.cardview.widget.CardView
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/MethodQR"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
@@ -201,7 +201,7 @@
                         <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/qr_icon" app:tint="#6366F1"/>
                         <TextView android:text="QR Pay" android:textSize="12sp" android:textColor="#1E293B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                </com.google.android.material.card.MaterialCardView>
 
             </GridLayout>
 

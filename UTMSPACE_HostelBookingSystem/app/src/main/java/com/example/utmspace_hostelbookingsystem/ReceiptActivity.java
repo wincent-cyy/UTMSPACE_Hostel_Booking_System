@@ -1,24 +1,43 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import com.google.android.material.button.MaterialButton;
 
 public class ReceiptActivity extends AppCompatActivity {
+
+    private MaterialButton btnDownload, btnBackHome;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_receipt);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+
+        initViews();
+        setupListeners();
+    }
+
+    private void initViews() {
+        btnDownload = findViewById(R.id.btnDownload);
+        btnBackHome = findViewById(R.id.btnBackHome);
+    }
+
+    private void setupListeners() {
+        // Handle Download PDF button
+        btnDownload.setOnClickListener(v -> {
+            Toast.makeText(this, "Generating PDF...", Toast.LENGTH_SHORT).show();
+            // PDF generation logic would go here
+        });
+
+        // Handle Home button
+        btnBackHome.setOnClickListener(v -> {
+            Intent intent = new Intent(ReceiptActivity.this, StudentDashboardActivity.class);
+            // Clear activity stack so user can't "back" into the receipt
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
         });
     }
 }

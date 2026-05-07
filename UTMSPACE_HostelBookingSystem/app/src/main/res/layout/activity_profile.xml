@@ -180,6 +180,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- LOGOUT BUTTON -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
@@ -187,7 +188,7 @@
                 android:layout_marginHorizontal="24dp"
                 android:layout_marginTop="32dp"
                 android:backgroundTint="#FEF2F2"
-                android:text="Logout Account"
+                android:text="Logout"
                 android:textAllCaps="false"
                 android:textColor="#EF4444"
                 android:textSize="16sp"
@@ -200,20 +201,41 @@
                 app:strokeColor="#FEE2E2"
                 app:strokeWidth="1.5dp" />
 
+            <!-- DELETE ACCOUNT BUTTON -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeleteAccount"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@android:color/transparent"
+                android:text="Delete My Account"
+                android:textAllCaps="false"
+                android:textColor="#94A3B8"
+                android:textSize="14sp"
+                app:cornerRadius="18dp"
+                app:layout_constraintTop_toBottomOf="@id/btnLogout"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:background="#FFFFFF"
-        app:elevation="24dp"
-        app:itemIconSize="24dp"
+        android:layout_height="wrap_content"
+        android:minHeight="64dp"
+        android:background="@android:color/white"
+        app:elevation="16dp"
         app:itemIconTint="#6366F1"
         app:itemTextColor="#64748B"
         app:labelVisibilityMode="labeled"
+        app:itemPaddingTop="10dp"
+        app:itemPaddingBottom="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/technician_nav_menu" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:menu="@menu/student_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
