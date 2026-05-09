@@ -25,12 +25,12 @@ public class StaffDashboardActivity extends AppCompatActivity {
 
     private void setupNavigation() {
         // Set Home as default selected
-        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_home) {
+            if (id == R.id.nav_staff_home) {
                 // Already here, do nothing
                 return true;
             }
@@ -41,7 +41,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
                 return true;
             }
 
-            else if (id == R.id.nav_bookings || id == R.id.nav_rooms) {
+            else if (id == R.id.nav_staff_bookings || id == R.id.nav_rooms) {
                 // These are not ready yet
                 Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show();
                 return false; // Return false so the icon doesn't look "selected"

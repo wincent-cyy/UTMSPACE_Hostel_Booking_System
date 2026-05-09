@@ -25,12 +25,12 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
 
     private void setupNavigation() {
         // Set Home as default selected
-        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        bottomNavigationView.setSelectedItemId(R.id.nav_tech_home);
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_home) {
+            if (id == R.id.nav_tech_home) {
                 // Already here, do nothing
                 return true;
             }
@@ -41,7 +41,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                 return true;
             }
 
-            else if (id == R.id.nav_bookings || id == R.id.nav_tech_history) {
+            else if (id == R.id.nav_request || id == R.id.nav_tech_history) {
                 // These are not ready yet
                 Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show();
                 return false; // Return false so the icon doesn't look "selected"

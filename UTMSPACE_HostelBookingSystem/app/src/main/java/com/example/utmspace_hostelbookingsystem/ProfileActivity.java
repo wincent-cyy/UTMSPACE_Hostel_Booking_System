@@ -13,6 +13,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -22,6 +23,7 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private BottomNavigationView bottomNavigation;
+    private String userRole = "student"; // Default role
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +34,7 @@ public class ProfileActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         initViews();
+        fetchUserRole(); // Identify if the user is Staff or Student
         setupListeners();
     }
 
@@ -45,27 +48,54 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
+    private void fetchUserRole() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            db.collection("Users").document(user.getUid())
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            // Assuming your Firestore field is named "role" (e.g., "staff" or "student")
+                            String role = documentSnapshot.getString("role");
+                            if (role != null) {
+                                userRole = role.toLowerCase();
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> Log.e(TAG, "Error fetching role", e));
+        }
+    }
+
     private void setupListeners() {
         if (bottomNavigation != null) {
             bottomNavigation.setOnItemSelectedListener(item -> {
                 int itemId = item.getItemId();
+
+                if (itemId == R.id.nav_profile) return true;
+
+                Intent intent = null;
                 if (itemId == R.id.nav_home) {
-                    startActivity(new Intent(this, StudentDashboardActivity.class));
-                    overridePendingTransition(0, 0);
-                    finish();
-                    return true;
+                    // Smart Redirection based on role
+                    if (userRole.equals("staff")) {
+                        intent = new Intent(this, StaffDashboardActivity.class);
+                    } else if (userRole.equals("technician")){
+                        intent = new Intent(this, TechnicianDashboardActivity.class);
+                    } else {
+                        intent = new Intent(this, StudentDashboardActivity.class);
+                    }
                 } else if (itemId == R.id.nav_booking) {
-                    startActivity(new Intent(this, BookingsActivity.class));
-                    overridePendingTransition(0, 0);
-                    finish();
-                    return true;
+                    intent = new Intent(this, BookingsActivity.class);
                 } else if (itemId == R.id.nav_history) {
-                    startActivity(new Intent(this, HistoryActivity.class));
+                    intent = new Intent(this, HistoryActivity.class);
+                }
+
+                if (intent != null) {
+                    startActivity(intent);
                     overridePendingTransition(0, 0);
                     finish();
                     return true;
                 }
-                return itemId == R.id.nav_profile;
+                return false;
             });
         }
 
@@ -97,15 +127,12 @@ public class ProfileActivity extends AppCompatActivity {
 
         String userId = user.getUid();
 
-        // 1. Delete Document from Firestore (Capital 'Users')
         db.collection("Users").document(userId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
-                    // 2. Document deleted, now delete Auth Account
                     user.delete()
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
-                                    // REAMINDER: Delete Success
                                     Toast.makeText(ProfileActivity.this, "Account and data deleted successfully.", Toast.LENGTH_LONG).show();
                                     navigateToLogin();
                                 } else {
@@ -126,7 +153,6 @@ public class ProfileActivity extends AppCompatActivity {
     private void performLogout() {
         try {
             mAuth.signOut();
-            // REAMINDER: Logout Success
             Toast.makeText(this, "Logout successfully", Toast.LENGTH_SHORT).show();
             navigateToLogin();
         } catch (Exception e) {
@@ -137,7 +163,6 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void navigateToLogin() {
         Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
-        // This clears the activity stack so the user cannot press "Back" to return to the profile
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
