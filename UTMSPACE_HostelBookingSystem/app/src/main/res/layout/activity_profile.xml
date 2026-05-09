@@ -8,87 +8,89 @@
     android:background="#F8FAFC"
     tools:context=".ProfileActivity">
 
+    <!-- 1. FIXED HEADER SECTION (Does not scroll) -->
     <View
         android:id="@+id/profileHeaderBg"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="240dp"
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivProfileLarge"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="44dp"
+        android:padding="4dp"
+        android:src="@android:drawable/ic_menu_gallery"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/CircleImage"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="4dp" />
+
+    <TextView
+        android:id="@+id/tvUserName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Alex Thompson"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ivProfileLarge" />
+
+    <TextView
+        android:id="@+id/tvUserEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="alex.t@serviceapp.com"
+        android:textColor="#E2E8F0"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvUserName" />
+
+    <!-- 2. SCROLLABLE CONTENT SECTION -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:fillViewport="true"
+        android:clipToPadding="false"
         android:overScrollMode="never"
+        android:paddingTop="24dp"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/profileHeaderBg">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="30dp">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivProfileLarge"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_marginTop="100dp"
-                android:padding="4dp"
-                android:src="@android:drawable/ic_menu_gallery"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:shapeAppearanceOverlay="@style/CircleImage"
-                app:strokeColor="#FFFFFF"
-                app:strokeWidth="4dp" />
-
-            <TextView
-                android:id="@+id/tvUserName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Alex Thompson"
-                android:textColor="#1E293B"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/ivProfileLarge" />
-
-            <TextView
-                android:id="@+id/tvUserEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="alex.t@serviceapp.com"
-                android:textColor="#64748B"
-                android:textSize="14sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvUserName" />
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
 
             <TextView
                 android:id="@+id/labelInfo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
-                android:layout_marginTop="32dp"
+                android:letterSpacing="0.1"
                 android:text="Account Details"
+                android:textAllCaps="true"
                 android:textColor="#6366F1"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvUserEmail" />
+                android:textStyle="bold" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
-                app:layout_constraintTop_toBottomOf="@id/labelInfo">
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -97,25 +99,118 @@
                     android:padding="6dp">
 
                     <RelativeLayout
+                        android:id="@+id/setting_change_username"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:paddingHorizontal="16dp">
-                        <ImageView android:id="@+id/ic1" android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_menu_myplaces" android:layout_centerVertical="true" app:tint="#6366F1"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Personal Information" android:layout_toEndOf="@id/ic1" android:layout_marginStart="16dp" android:layout_centerVertical="true" android:textColor="#334155" android:textSize="15sp" android:textStyle="bold"/>
-                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:src="@android:drawable/ic_media_next" app:tint="#CBD5E1"/>
+                        android:layout_height="wrap_content"
+                        android:padding="15dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <FrameLayout
+                            android:id="@+id/user_icon_frame"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="14dp"
+                            android:layout_centerVertical="true">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="✏️"
+                                android:textSize="16sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toEndOf="@id/user_icon_frame"
+                            android:layout_centerVertical="true"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Personal Information"
+                                android:textColor="@color/black"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                            <TextView
+                                android:id="@+id/tv_sub_username"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Update your personal details"
+                                android:textColor="#d3d3d3"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:text="›"
+                            android:textSize="20sp"
+                            android:textColor="#d3d3d3" />
                     </RelativeLayout>
 
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F1F5F9" android:layout_marginHorizontal="16dp"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="#F1F5F9" />
 
                     <RelativeLayout
+                        android:id="@+id/setting_notifications"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:paddingHorizontal="16dp">
-                        <ImageView android:id="@+id/ic2" android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_popup_reminder" android:layout_centerVertical="true" app:tint="#6366F1"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Notifications" android:layout_toEndOf="@id/ic2" android:layout_marginStart="16dp" android:layout_centerVertical="true" android:textColor="#334155" android:textSize="15sp" android:textStyle="bold"/>
-                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:src="@android:drawable/ic_media_next" app:tint="#CBD5E1"/>
+                        android:layout_height="wrap_content"
+                        android:padding="15dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <FrameLayout
+                            android:id="@+id/notif_icon_frame"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="14dp"
+                            android:layout_centerVertical="true">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="🔔"
+                                android:textSize="16sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toEndOf="@id/notif_icon_frame"
+                            android:layout_toStartOf="@+id/switch_notifications"
+                            android:layout_centerVertical="true"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Notifications"
+                                android:textColor="@color/black"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Booking reminders on"
+                                android:textColor="#d3d3d3"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switch_notifications"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true" />
                     </RelativeLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -126,23 +221,21 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="24dp"
+                android:letterSpacing="0.1"
                 android:text="Security &amp; Privacy"
+                android:textAllCaps="true"
                 android:textColor="#6366F1"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/cardInfo" />
+                android:textStyle="bold" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardSecurity"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
-                app:layout_constraintTop_toBottomOf="@id/labelSecurity">
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -151,36 +244,120 @@
                     android:padding="6dp">
 
                     <RelativeLayout
+                        android:id="@+id/setting_biometric"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:paddingHorizontal="16dp">
-                        <ImageView android:id="@+id/ic3" android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_lock_idle_lock" android:layout_centerVertical="true" app:tint="#6366F1"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fingerprint Verification" android:layout_toEndOf="@id/ic3" android:layout_marginStart="16dp" android:layout_centerVertical="true" android:textColor="#334155" android:textSize="15sp" android:textStyle="bold"/>
+                        android:layout_height="wrap_content"
+                        android:padding="15dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <FrameLayout
+                            android:id="@+id/bio_icon_frame"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="14dp"
+                            android:layout_centerVertical="true">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="🧬"
+                                android:textSize="16sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toEndOf="@id/bio_icon_frame"
+                            android:layout_centerVertical="true"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Biometric Lock"
+                                android:textColor="@color/black"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Usefingerprint login"
+                                android:textColor="#d3d3d3"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
                         <androidx.appcompat.widget.SwitchCompat
-                            android:id="@+id/switchFingerprint"
+                            android:id="@+id/switch_biometric"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            app:thumbTint="#6366F1"
-                            app:trackTint="#C7D2FE" />
+                            android:contentDescription="Biometric Authentication Switch"/>
                     </RelativeLayout>
 
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F1F5F9" android:layout_marginHorizontal="16dp"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:background="#F1F5F9" />
 
                     <RelativeLayout
+                        android:id="@+id/setting_change_password"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:paddingHorizontal="16dp">
-                        <ImageView android:id="@+id/ic4" android:layout_width="22dp" android:layout_height="22dp" android:src="@android:drawable/ic_lock_lock" android:layout_centerVertical="true" app:tint="#6366F1"/>
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Reset Password" android:layout_toEndOf="@id/ic4" android:layout_marginStart="16dp" android:layout_centerVertical="true" android:textColor="#334155" android:textSize="15sp" android:textStyle="bold"/>
-                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:src="@android:drawable/ic_media_next" app:tint="#CBD5E1"/>
+                        android:layout_height="wrap_content"
+                        android:padding="15dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <FrameLayout
+                            android:id="@+id/pass_icon_frame"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layout_marginEnd="14dp"
+                            android:layout_centerVertical="true">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:text="🔒"
+                                android:textSize="16sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_toEndOf="@id/pass_icon_frame"
+                            android:layout_centerVertical="true"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Change Password"
+                                android:textColor="@color/black"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Last changed 30 days ago"
+                                android:textColor="#d3d3d3"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:text="›"
+                            android:textSize="20sp"
+                            android:textColor="#d3d3d3" />
                     </RelativeLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- LOGOUT BUTTON -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
@@ -197,11 +374,9 @@
                 app:icon="@android:drawable/ic_lock_power_off"
                 app:iconGravity="textStart"
                 app:iconTint="#EF4444"
-                app:layout_constraintTop_toBottomOf="@id/cardSecurity"
                 app:strokeColor="#FEE2E2"
-                app:strokeWidth="1.5dp" />
+                app:strokeWidth="1dp" />
 
-            <!-- DELETE ACCOUNT BUTTON -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDeleteAccount"
                 android:layout_width="match_parent"
@@ -214,28 +389,21 @@
                 android:textColor="#94A3B8"
                 android:textSize="14sp"
                 app:cornerRadius="18dp"
-                app:layout_constraintTop_toBottomOf="@id/btnLogout"
                 app:strokeColor="#E2E8F0"
                 app:strokeWidth="1dp" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- 3. BOTTOM NAVIGATION (Fixed at bottom) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
+        style="@style/BottomNavStyle"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="64dp"
-        android:background="@android:color/white"
-        app:elevation="16dp"
-        app:itemIconTint="#6366F1"
-        app:itemTextColor="#64748B"
-        app:labelVisibilityMode="labeled"
-        app:itemPaddingTop="10dp"
-        app:itemPaddingBottom="10dp"
+        android:layout_height="80dp"
+        app:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:menu="@menu/student_nav_menu" />
+        app:menu="@menu/student_nav_menu"
+        tools:ignore="VisualLintBottomNav" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

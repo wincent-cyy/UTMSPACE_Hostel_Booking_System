@@ -8,79 +8,93 @@
     android:background="#F8FAFC"
     tools:context=".TermsActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="24dp">
+    <!-- Top Bar Row: Arrow + Centered Title -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Back"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#1E293B" />
 
-        <!-- Centered Header -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Terms &amp; Conditions"
-            android:textColor="#1E293B"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:layout_gravity="center"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="8dp"/>
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Terms &amp; Conditions"
+        android:textColor="#1E293B"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Centered Subtitle -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Please read carefully before proceeding"
-            android:textColor="#64748B"
-            android:textSize="14sp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="24dp"/>
+    <TextView
+        android:id="@+id/tvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Please read carefully before proceeding"
+        android:textColor="#64748B"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
-        <!-- Main Content Card (Blending with background) -->
-        <androidx.cardview.widget.CardView
+    <!-- Main Content Container -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/contentCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginHorizontal="24dp"
+        app:cardBackgroundColor="#F8FAFC"
+        app:cardCornerRadius="0dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnAccept"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
+
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            app:cardCornerRadius="0dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#F8FAFC"> <!-- Matches layout background -->
+            android:layout_height="match_parent"
+            android:fadeScrollbars="false"
+            android:padding="8dp"
+            android:scrollbarThumbVertical="@android:color/darker_gray">
 
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="8dp"
+                android:text="Last Updated: May 2026\n\n1. Acceptance of Terms\nBy accessing and using the Hostel Management System, you agree to be bound by these terms. This system is intended for use by authorized students, staff, technicians, and administrators only.\n\n2. User Responsibilities\nUsers are responsible for maintaining the confidentiality of their account credentials. Any activities performed under your account are your sole responsibility.\n\n3. Booking and Payments\nStudents must provide accurate information during room selection. Payments must be confirmed within 1 week (7 days) of application approval. Failure to do so may result in automatic cancellation.\n\n4. Maintenance and Repairs\nStaff and Technicians must use the system to report and track repairs accurately. Providing false evidence of completion is strictly prohibited.\n\n5. Data Privacy\nYour personal data is managed in accordance with our Privacy Policy. Admin users have access to specific data points required for the operation of the hostel.\n\n6. System Misuse\nAny attempt to bypass security measures or manipulate records will result in immediate termination of access and potential disciplinary action.\n\n7. Amendments\nManagement reserves the right to modify these terms at any time. Continued use of the application constitutes acceptance of the new terms."
+                android:textColor="#334155"
+                android:textSize="15sp" />
+        </ScrollView>
+    </androidx.cardview.widget.CardView>
 
-                <ScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:fadeScrollbars="false"
-                    android:scrollbarThumbVertical="@android:color/darker_gray">
+    <!-- Action Button -->
+    <Button
+        android:id="@+id/btnAccept"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#4F46E5"
+        android:text="I Agree to Terms"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#334155"
-                        android:textSize="15sp"
-                        android:lineSpacingExtra="8dp"
-                        android:text="Last Updated: May 2026\n\n1. Acceptance of Terms\nBy accessing and using the Hostel Management System, you agree to be bound by these terms. This system is intended for use by authorized students, staff, technicians, and administrators only.\n\n2. User Responsibilities\nUsers are responsible for maintaining the confidentiality of their account credentials. Any activities performed under your account are your sole responsibility.\n\n3. Booking and Payments\nStudents must provide accurate information during room selection. Payments must be confirmed within 1 week (7 days) of application approval. Failure to do so may result in automatic cancellation.\n\n4. Maintenance and Repairs\nStaff and Technicians must use the system to report and track repairs accurately. Providing false evidence of completion is strictly prohibited.\n\n5. Data Privacy\nYour personal data is managed in accordance with our Privacy Policy. Admin users have access to specific data points required for the operation of the hostel.\n\n6. System Misuse\nAny attempt to bypass security measures or manipulate records will result in immediate termination of access and potential disciplinary action.\n\n7. Amendments\nManagement reserves the right to modify these terms at any time. Continued use of the application constitutes acceptance of the new terms." />
-                </ScrollView>
-
-                <!-- Action Button -->
-                <Button
-                    android:id="@+id/btnAccept"
-                    android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="24dp"
-                    android:text="I Agree to Terms"
-                    android:textColor="#FFFFFF"
-                    android:backgroundTint="#4F46E5"
-                    android:textStyle="bold"
-                    android:textAllCaps="false"
-                    app:cornerRadius="16dp"/>
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

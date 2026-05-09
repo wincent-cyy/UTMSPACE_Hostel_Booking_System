@@ -10,7 +10,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 import java.util.ArrayList;
-import java.util.Iterator; // Better for compatibility
+import java.util.Iterator;
 import java.util.List;
 
 public class HistoryActivity extends AppCompatActivity {
@@ -32,17 +32,17 @@ public class HistoryActivity extends AppCompatActivity {
         initViews();
         setupRecyclerView();
         setupTabs();
+        setupNavigation(); // New Navigation Logic
         setupListeners();
-        setupNavigation();
     }
 
     private void initViews() {
         rvBookingHistory = findViewById(R.id.rvBookingHistory);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         tabLayout = findViewById(R.id.tabLayout);
+
         btnClearHistory = findViewById(R.id.btnClearHistory);
 
-        // Safety: Hide clear button by default
         if (btnClearHistory != null) btnClearHistory.setVisibility(View.GONE);
     }
 
@@ -54,11 +54,9 @@ public class HistoryActivity extends AppCompatActivity {
         allBookings.add(new Booking("Basic Single Room", "01 May 2026", "Approved", "RM 400.00"));
 
         filteredList = new ArrayList<>();
-        // Important: Load initial tab data
         filterBookings("Approved");
 
         rvBookingHistory.setLayoutManager(new LinearLayoutManager(this));
-        // Pass 'this' as context for the Intent in the adapter
         adapter = new HistoryAdapter(filteredList, this);
         rvBookingHistory.setAdapter(adapter);
     }
@@ -82,6 +80,36 @@ public class HistoryActivity extends AppCompatActivity {
         });
     }
 
+    private void setupNavigation() {
+        if (bottomNavigation == null) return;
+
+        // Set History as the selected item
+        bottomNavigation.setSelectedItemId(R.id.nav_history);
+
+        bottomNavigation.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+
+            // Prevent restarting if already on History
+            if (id == R.id.nav_history) return true;
+
+            Intent intent = null;
+            if (id == R.id.nav_home) {
+                intent = new Intent(this, StudentDashboardActivity.class);
+            } else if (id == R.id.nav_booking) {
+                intent = new Intent(this, BookingsActivity.class);
+            } else if (id == R.id.nav_profile) {
+                intent = new Intent(this, ProfileActivity.class);
+            }
+
+            if (intent != null) {
+                startActivity(intent);
+                // Optional: finish() if you don't want the user to go back to history via back button
+                return true;
+            }
+            return false;
+        });
+    }
+
     private void filterBookings(String status) {
         if (filteredList == null) filteredList = new ArrayList<>();
         filteredList.clear();
@@ -101,7 +129,6 @@ public class HistoryActivity extends AppCompatActivity {
         if (btnClearHistory == null) return;
 
         btnClearHistory.setOnClickListener(v -> {
-            // Safer way to remove items than removeIf for older Android versions
             Iterator<Booking> iterator = allBookings.iterator();
             while (iterator.hasNext()) {
                 Booking b = iterator.next();
@@ -110,27 +137,6 @@ public class HistoryActivity extends AppCompatActivity {
                 }
             }
             filterBookings("Rejected");
-        });
-    }
-
-    private void setupNavigation() {
-        if (bottomNavigation == null) return;
-
-        bottomNavigation.setSelectedItemId(R.id.nav_history);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.nav_home) {
-                startActivity(new Intent(this, StudentDashboardActivity.class));
-                overridePendingTransition(0, 0);
-                finish(); // Helps with memory
-                return true;
-            } else if (itemId == R.id.nav_profile) {
-                startActivity(new Intent(this, ProfileActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                return true;
-            }
-            return itemId == R.id.nav_history;
         });
     }
 }

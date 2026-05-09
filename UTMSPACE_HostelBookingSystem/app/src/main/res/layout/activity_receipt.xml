@@ -4,121 +4,145 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
+    android:background="#F1F5F9"
     tools:context=".ReceiptActivity">
 
-    <!-- Header Background -->
-    <View
-        android:id="@+id/headerBg"
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/tvReceiptTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:text="Payment Receipt"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Main Receipt Card -->
-    <com.google.android.material.card.MaterialCardView
+    <!-- Top Navigation Bar -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="20dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tvReceiptTitle">
+        android:padding="20dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:layout_centerInParent="true"
+            android:text="Payment Receipt"
+            android:textColor="#1E293B"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
 
-            <!-- Success Icon -->
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_marginBottom="16dp"
-                android:src="@android:drawable/checkbox_on_background"
-                app:tint="#10B981" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Payment Successful!"
-                android:textColor="#10B981"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvTransactionId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="ID: UTM-8829301"
-                android:textColor="#64748B"
-                android:textSize="12sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="20dp"
-                android:background="#F1F5F9" />
-
-            <!-- Details Section -->
-            <include layout="@layout/row_receipt_detail" /> <!-- Custom row for details -->
-
-            <!-- Total Amount Section -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="#F1F5F9" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Total Paid"
-                    android:textColor="#1E293B"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvTotalAmount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="RM 475.00"
-                    android:textColor="#6366F1"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-            </RelativeLayout>
-
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Bottom Buttons -->
+    <!-- Content Container (Replaced ScrollView) -->
     <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:padding="24dp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonContainer"
+        app:layout_constraintTop_toBottomOf="@id/topBar">
+
+        <!-- Main White Receipt Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/receiptCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:strokeColor="#E2E8F0"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Success Area -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/tick_icon"
+                        app:tint="#10B981" />
+
+                    <TextView
+                        android:id="@+id/tvTotalAmount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="RM 475.00"
+                        android:textColor="#1E293B"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Payment Successful"
+                        android:textColor="#10B981"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="24dp"
+                    android:background="#F1F5F9" />
+
+                <!-- Data Rows -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="TRANSACTION DETAILS"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold" />
+
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Method" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvReceiptMethod" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="E-Wallet" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hostel" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvReceiptRoom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Hostel Blok A1" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvReceiptDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="09 May 2026, 08:30 PM" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ref Number" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvTransactionId" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="UTM-9912388" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="Thank you for staying with UTMSpace!"
+            android:textColor="#94A3B8"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- Bottom Buttons Container -->
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
         android:orientation="vertical"
         android:paddingHorizontal="24dp"
+        android:paddingBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.button.MaterialButton
@@ -129,7 +153,8 @@
             android:textAllCaps="false"
             android:textSize="16sp"
             app:cornerRadius="12dp"
-            app:icon="@android:drawable/stat_sys_download" />
+            app:icon="@android:drawable/stat_sys_download"
+            android:backgroundTint="#6366F1"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBackHome"
@@ -143,7 +168,6 @@
             android:textSize="16sp"
             app:cornerRadius="12dp"
             app:strokeColor="#6366F1" />
-
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

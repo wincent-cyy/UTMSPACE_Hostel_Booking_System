@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
-import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -26,12 +25,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+// Using Firestore instead of Realtime Database
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class SignUpActivity extends AppCompatActivity {
@@ -45,7 +45,7 @@ public class SignUpActivity extends AppCompatActivity {
     private TextView tvGoToLogin, tvTermsLink;
 
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabase;
+    private FirebaseFirestore db; // Firestore instance
 
     private ProgressDialog progressDialog;
     private ActivityResultLauncher<Intent> termsLauncher;
@@ -61,8 +61,8 @@ public class SignUpActivity extends AppCompatActivity {
 
         try {
             mAuth = FirebaseAuth.getInstance();
-            String databaseUrl = "https://utmspace-hostel-booking-system-default-rtdb.asia-southeast1.firebasedatabase.app/";
-            mDatabase = FirebaseDatabase.getInstance(databaseUrl).getReference("Users");
+            // Initialize Firestore
+            db = FirebaseFirestore.getInstance();
         } catch (Exception e) {
             Log.e(TAG, "Firebase Initialization Error: " + e.getMessage());
         }
@@ -100,18 +100,15 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
     private void setupFilters() {
-        InputFilter nameFilter = new InputFilter() {
-            @Override
-            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-                StringBuilder filtered = new StringBuilder();
-                for (int i = start; i < end; i++) {
-                    char character = source.charAt(i);
-                    if (Character.isLetter(character) || Character.isSpaceChar(character)) {
-                        filtered.append(Character.toUpperCase(character));
-                    }
+        InputFilter nameFilter = (source, start, end, dest, dstart, dend) -> {
+            StringBuilder filtered = new StringBuilder();
+            for (int i = start; i < end; i++) {
+                char character = source.charAt(i);
+                if (Character.isLetter(character) || Character.isSpaceChar(character)) {
+                    filtered.append(Character.toUpperCase(character));
                 }
-                return filtered.toString();
             }
+            return filtered.toString();
         };
         signupName.setFilters(new InputFilter[]{nameFilter, new InputFilter.LengthFilter(50)});
         signupEmail.setFilters(new InputFilter[]{(source, start, end, dest, dstart, dend) -> source.toString().toLowerCase()});
@@ -144,11 +141,8 @@ public class SignUpActivity extends AppCompatActivity {
         btnSignup.setOnClickListener(v -> registerUser());
     }
 
-    /**
-     * 設置錯誤提示：顏色改回白色，感嘆號位置由 XML 的 paddingEnd 控制
-     */
     private void setFieldError(EditText textField, String errorMsg) {
-        ForegroundColorSpan fcs = new ForegroundColorSpan(Color.WHITE); // 換回白色
+        ForegroundColorSpan fcs = new ForegroundColorSpan(Color.WHITE);
         SpannableStringBuilder ssb = new SpannableStringBuilder(errorMsg);
         ssb.setSpan(fcs, 0, errorMsg.length(), 0);
 
@@ -208,9 +202,11 @@ public class SignUpActivity extends AppCompatActivity {
                         if (user != null) {
                             user.sendEmailVerification().addOnCompleteListener(verifyTask -> {
                                 if (verifyTask.isSuccessful()) {
-                                    saveUserToDatabase(user.getUid(), name, phone, email, role);
+                                    // Successfully created Auth account, now save details to Firestore
+                                    saveUserToFirestore(user.getUid(), name, phone, email, role);
                                 } else {
                                     stopTimeoutAndResetUI();
+                                    Toast.makeText(this, "Failed to send verification email.", Toast.LENGTH_SHORT).show();
                                 }
                             });
                         }
@@ -221,23 +217,31 @@ public class SignUpActivity extends AppCompatActivity {
                 });
     }
 
-    private void saveUserToDatabase(String uid, String name, String phone, String email, String role) {
-        HashMap<String, Object> userMap = new HashMap<>();
+    private void saveUserToFirestore(String uid, String name, String phone, String email, String role) {
+        // Prepare the data map
+        Map<String, Object> userMap = new HashMap<>();
         userMap.put("name", name);
         userMap.put("phone", phone);
         userMap.put("email", email);
         userMap.put("role", role);
-        userMap.put("uid", uid);
+        userMap.put("uid", uid); // Keeping the UID for reference in Firestore
+        userMap.put("timestamp", com.google.firebase.Timestamp.now());
 
-        mDatabase.child(uid).setValue(userMap).addOnCompleteListener(task -> {
-            stopTimeoutAndResetUI();
-            if (task.isSuccessful()) {
-                Toast.makeText(this, "Success! Check email to verify.", Toast.LENGTH_LONG).show();
-                mAuth.signOut();
-                startActivity(new Intent(this, LoginActivity.class));
-                finish();
-            }
-        });
+        // Save to collection "Users" with Document ID as the user's UID
+        db.collection("Users").document(uid)
+                .set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    stopTimeoutAndResetUI();
+                    Toast.makeText(this, "Success! Please check your email to verify.", Toast.LENGTH_LONG).show();
+                    mAuth.signOut(); // Sign out until they verify email
+                    startActivity(new Intent(this, LoginActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    stopTimeoutAndResetUI();
+                    Log.e(TAG, "Firestore Error: " + e.getMessage());
+                    Toast.makeText(this, "Error saving data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void stopTimeoutAndResetUI() {

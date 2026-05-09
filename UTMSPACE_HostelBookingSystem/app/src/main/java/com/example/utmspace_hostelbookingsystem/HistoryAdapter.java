@@ -33,35 +33,48 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     public void onBindViewHolder(@NonNull HistoryViewHolder holder, int position) {
         Booking booking = bookingList.get(position);
 
+        // Fill basic data
         holder.tvRoomType.setText(booking.getRoomName());
         holder.tvDate.setText(booking.getDate());
         holder.tvStatus.setText(booking.getStatus());
         holder.tvPrice.setText(booking.getPrice());
 
-        // 1. Reset Click Listener first to avoid "Ghost Clicks" when scrolling
-        holder.itemView.setOnClickListener(null);
+        // Default: Hide payment link and clear listeners
+        holder.tvClickPayment.setVisibility(View.GONE);
+        holder.tvClickPayment.setOnClickListener(null);
+        holder.itemView.setOnClickListener(null); // Ensure the whole card is NOT clickable
 
-        if (booking.getStatus().equalsIgnoreCase("Approved")) {
+        // Logic based on Status
+        String status = booking.getStatus() != null ? booking.getStatus() : "";
+
+        if (status.equalsIgnoreCase("Approved")) {
             holder.tvStatus.setTextColor(Color.parseColor("#10B981")); // Green
 
-            // 2. Click Logic with Safety Checks
-            holder.itemView.setOnClickListener(v -> {
+            // Show the payment link ONLY if status is Approved
+            holder.tvClickPayment.setVisibility(View.VISIBLE);
+
+            // Set listener ONLY on the "Click to Payment" TextView
+            holder.tvClickPayment.setOnClickListener(v -> {
                 try {
                     Intent intent = new Intent(context, PaymentActivity.class);
-                    // Use hardcoded strings for a moment to test if the variables are the problem
                     intent.putExtra("ROOM_NAME", booking.getRoomName() != null ? booking.getRoomName() : "N/A");
                     intent.putExtra("PRICE", booking.getPrice() != null ? booking.getPrice() : "0.00");
 
+                    // Recommended: add flags if context is not an Activity
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
                     context.startActivity(intent);
                 } catch (Exception e) {
-                    Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    e.printStackTrace(); // This prints the error to your Logcat
+                    Toast.makeText(context, "Navigation Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
 
+        } else if (status.equalsIgnoreCase("Paid")) {
+            holder.tvStatus.setTextColor(Color.parseColor("#6366F1")); // Indigo/Blue
+            holder.tvClickPayment.setVisibility(View.GONE); // No need to pay again
         } else {
             holder.tvStatus.setTextColor(Color.parseColor("#EF4444")); // Red
-            holder.itemView.setOnClickListener(null);
+            holder.tvClickPayment.setVisibility(View.GONE);
         }
     }
 
@@ -71,7 +84,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     }
 
     public static class HistoryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomType, tvDate, tvStatus, tvPrice;
+        TextView tvRoomType, tvDate, tvStatus, tvPrice, tvClickPayment;
 
         public HistoryViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -79,6 +92,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             tvDate = itemView.findViewById(R.id.tvBookingDate);
             tvStatus = itemView.findViewById(R.id.tvStatus);
             tvPrice = itemView.findViewById(R.id.tvTotalPrice);
+            // Link the payment text view
+            tvClickPayment = itemView.findViewById(R.id.tvClickPayment);
         }
     }
 }

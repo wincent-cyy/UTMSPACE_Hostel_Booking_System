@@ -2,6 +2,7 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -10,12 +11,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileActivity extends AppCompatActivity {
 
+    private static final String TAG = "ProfileActivity";
     private MaterialButton btnLogout, btnDeleteAccount;
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private BottomNavigationView bottomNavigation;
 
     @Override
@@ -23,15 +28,11 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // 1. Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
-        // 2. Initialize UI Components
         initViews();
-
-        // 3. Set up Listeners
         setupListeners();
-        setupBottomNavigation();
     }
 
     private void initViews() {
@@ -39,13 +40,35 @@ public class ProfileActivity extends AppCompatActivity {
         btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
 
-        // Pre-select the "Profile" icon since we are on the Profile page
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_profile);
         }
     }
 
     private void setupListeners() {
+        if (bottomNavigation != null) {
+            bottomNavigation.setOnItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                if (itemId == R.id.nav_home) {
+                    startActivity(new Intent(this, StudentDashboardActivity.class));
+                    overridePendingTransition(0, 0);
+                    finish();
+                    return true;
+                } else if (itemId == R.id.nav_booking) {
+                    startActivity(new Intent(this, BookingsActivity.class));
+                    overridePendingTransition(0, 0);
+                    finish();
+                    return true;
+                } else if (itemId == R.id.nav_history) {
+                    startActivity(new Intent(this, HistoryActivity.class));
+                    overridePendingTransition(0, 0);
+                    finish();
+                    return true;
+                }
+                return itemId == R.id.nav_profile;
+            });
+        }
+
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> performLogout());
         }
@@ -55,80 +78,66 @@ public class ProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void setupBottomNavigation() {
-        if (bottomNavigation == null) return;
-
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_home) {
-                Intent intent = new Intent(ProfileActivity.this, StudentDashboardActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                overridePendingTransition(0, 0);
-                return true;
-            }
-            else if (itemId == R.id.nav_profile) {
-                // Already on Profile
-                return true;
-            }
-            else if (itemId == R.id.nav_history) {
-                // Navigate to History page
-                Intent intent = new Intent(ProfileActivity.this, HistoryActivity.class);
-                startActivity(intent);
-                overridePendingTransition(0, 0);
-                return true;
-            }
-
-            return false;
-        });
-    }
-
-    /**
-     * Shows a confirmation dialog before deleting the account.
-     */
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Account")
-                .setMessage("Are you sure you want to permanently delete your account? This action cannot be undone.")
-                .setPositiveButton("Delete", (dialog, which) -> deleteUserAccount())
+                .setMessage("Are you sure? This will delete your profile and all data permanently. You must have logged in recently to perform this action.")
+                .setPositiveButton("Delete Forever", (dialog, which) -> deleteUserAccountWithData())
                 .setNegativeButton("Cancel", null)
-                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setIcon(android.R.drawable.ic_delete)
                 .show();
     }
 
-    /**
-     * Deletes the current user from Firebase Authentication.
-     */
-    private void deleteUserAccount() {
+    private void deleteUserAccountWithData() {
         FirebaseUser user = mAuth.getCurrentUser();
-
-        if (user != null) {
-            user.delete()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(ProfileActivity.this, "Account deleted successfully", Toast.LENGTH_SHORT).show();
-                            navigateToLogin();
-                        } else {
-                            // Often fails if the user hasn't logged in recently (Security requirement)
-                            Toast.makeText(ProfileActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
+        if (user == null) {
+            Toast.makeText(this, "No user logged in.", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        String userId = user.getUid();
+
+        // 1. Delete Document from Firestore (Capital 'Users')
+        db.collection("Users").document(userId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // 2. Document deleted, now delete Auth Account
+                    user.delete()
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    // REAMINDER: Delete Success
+                                    Toast.makeText(ProfileActivity.this, "Account and data deleted successfully.", Toast.LENGTH_LONG).show();
+                                    navigateToLogin();
+                                } else {
+                                    if (task.getException() instanceof FirebaseAuthRecentLoginRequiredException) {
+                                        Toast.makeText(this, "Sensitive action! Please log out and login again to verify your identity.", Toast.LENGTH_LONG).show();
+                                    } else {
+                                        Toast.makeText(this, "Auth Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Firestore Delete Error: ", e);
+                    Toast.makeText(this, "Failed to delete data. Please check your connection.", Toast.LENGTH_LONG).show();
+                });
     }
 
     private void performLogout() {
         try {
             mAuth.signOut();
-            Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+            // REAMINDER: Logout Success
+            Toast.makeText(this, "Logout successfully", Toast.LENGTH_SHORT).show();
             navigateToLogin();
         } catch (Exception e) {
-            Toast.makeText(this, "Error logging out: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Logout Error", e);
+            Toast.makeText(this, "Error during logout: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void navigateToLogin() {
         Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
+        // This clears the activity stack so the user cannot press "Back" to return to the profile
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

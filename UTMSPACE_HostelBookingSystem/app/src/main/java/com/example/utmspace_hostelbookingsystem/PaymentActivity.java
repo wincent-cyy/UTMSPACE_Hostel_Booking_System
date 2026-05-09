@@ -1,10 +1,11 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,78 +16,96 @@ public class PaymentActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
     private Button btnPayNow;
-    private MaterialCardView cardCard, bankCard, walletCard, qrCard;
-    private TextView tvDisplayPrice;
+    private TextView tvTotalMain;
 
-    private String selectedMethod = "";
-    private MaterialCardView selectedView = null;
+    // References for the Cards and RadioButtons
+    private MaterialCardView cardDebit, cardBank, cardWallet;
+    private RadioButton rbDebit, rbBank, rbWallet;
 
-    // Variables to hold data passed from History
     private String roomName;
     private String price;
+    private String selectedMethod = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_payment); // 1. Set layout first
+        setContentView(R.layout.activity_payment);
 
-        initViews();           // 2. Initialize (find the IDs)
-        setupClickListeners(); // 3. Set listeners (this was crashing because initViews failed)
+        // Retrieve data passed from History
+        roomName = getIntent().getStringExtra("ROOM_NAME");
+        price = getIntent().getStringExtra("PRICE");
+
+        initViews();
+        setupListeners();
+
+        if (price != null) {
+            tvTotalMain.setText(price);
+        }
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         btnPayNow = findViewById(R.id.btnPayNow);
+        tvTotalMain = findViewById(R.id.tvTotalMain);
 
-        // CRITICAL: Double-check these IDs match your XML exactly!
-        cardCard = findViewById(R.id.MethodCard);
-        bankCard = findViewById(R.id.MethodBank);
-        walletCard = findViewById(R.id.MethodWallet);
-        qrCard = findViewById(R.id.MethodQR);
+        // Find RadioButtons
+        rbDebit = findViewById(R.id.rbCard);
+        rbBank = findViewById(R.id.rbBank);
+        rbWallet = findViewById(R.id.rbWallet);
+
+        // Find the CardViews (Parent of the Parent of the RadioButton)
+        cardDebit = (MaterialCardView) rbDebit.getParent().getParent();
+        cardBank = (MaterialCardView) rbBank.getParent().getParent();
+        cardWallet = (MaterialCardView) rbWallet.getParent().getParent();
     }
 
-    private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
+    private void setupListeners() {
+        // 1. Back Arrow navigation
+        btnBack.setOnClickListener(v -> {
+            Intent intent = new Intent(PaymentActivity.this, HistoryActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        });
 
-        cardCard.setOnClickListener(v -> selectMethod(cardCard, "Credit/Debit Card"));
-        bankCard.setOnClickListener(v -> selectMethod(bankCard, "Online Banking"));
-        walletCard.setOnClickListener(v -> selectMethod(walletCard, "E-Wallet"));
-        qrCard.setOnClickListener(v -> selectMethod(qrCard, "QR Pay"));
+        // 2. Custom Radio Logic: Handle Card Clicks
+        cardDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
+        cardBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
+        cardWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
 
+        // 3. Custom Radio Logic: Handle RadioButton Direct Clicks
+        rbDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
+        rbBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
+        rbWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
+
+        // 4. Pay Now Button
         btnPayNow.setOnClickListener(v -> {
             if (selectedMethod.isEmpty()) {
                 Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
             } else {
-                // Navigate to Receipt
                 Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
-
-                // Pass all details to the receipt
                 intent.putExtra("PAYMENT_METHOD", selectedMethod);
-                intent.putExtra("ROOM_NAME", roomName);
-                intent.putExtra("PRICE", price);
+                intent.putExtra("ROOM_NAME", roomName != null ? roomName : "N/A");
+                intent.putExtra("PRICE", price != null ? price : "0.00");
 
                 startActivity(intent);
-
-                // Finish this activity so the user can't "Go Back" to pay again
                 finish();
             }
         });
     }
 
-    private void selectMethod(MaterialCardView view, String method) {
-        // Reset previous selection
-        if (selectedView != null) {
-            selectedView.setStrokeWidth(0);
-            selectedView.setCardBackgroundColor(Color.parseColor("#FFFFFF"));
-        }
+    /**
+     * This method ensures only ONE radio button is checked at a time
+     * and handles the visual selection.
+     */
+    private void updateRadioSelection(RadioButton targetRadio, String method) {
+        // Uncheck all first
+        rbDebit.setChecked(false);
+        rbBank.setChecked(false);
+        rbWallet.setChecked(false);
 
-        // Set new selection
+        // Check the target
+        targetRadio.setChecked(true);
         selectedMethod = method;
-        selectedView = view;
-
-        // Update UI
-        view.setStrokeColor(Color.parseColor("#6366F1"));
-        view.setStrokeWidth(6);
-        view.setCardBackgroundColor(Color.parseColor("#F1F5F9"));
     }
 }

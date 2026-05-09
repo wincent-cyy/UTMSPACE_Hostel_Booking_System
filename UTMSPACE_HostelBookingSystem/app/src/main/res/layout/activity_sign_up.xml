@@ -42,15 +42,13 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <!-- 感嘆號位置：paddingEnd="28dp" 稍微往外移 -->
                     <EditText
                         android:id="@+id/signupName"
                         android:layout_width="match_parent"
                         android:layout_height="54dp"
-                        android:hint="Full Name"
+                        android:hint="Username"
                         android:background="@drawable/edittext_rounded"
-                        android:paddingStart="20dp"
-                        android:paddingEnd="45dp"
+                        android:padding="12dp"
                         android:layout_marginBottom="12dp"
                         android:inputType="textPersonName"/>
 
@@ -60,8 +58,7 @@
                         android:layout_height="54dp"
                         android:hint="Phone Number"
                         android:background="@drawable/edittext_rounded"
-                        android:paddingStart="20dp"
-                        android:paddingEnd="45dp"
+                        android:padding="12dp"
                         android:layout_marginBottom="12dp"
                         android:inputType="phone"/>
 
@@ -71,8 +68,7 @@
                         android:layout_height="54dp"
                         android:hint="Email"
                         android:background="@drawable/edittext_rounded"
-                        android:paddingStart="20dp"
-                        android:paddingEnd="45dp"
+                        android:padding="12dp"
                         android:layout_marginBottom="12dp"
                         android:inputType="textEmailAddress"/>
 
@@ -83,8 +79,7 @@
                         android:hint="Password"
                         android:inputType="textPassword"
                         android:background="@drawable/edittext_rounded"
-                        android:paddingStart="20dp"
-                        android:paddingEnd="45dp"
+                        android:padding="12dp"
                         android:layout_marginBottom="12dp"/>
 
                     <EditText
@@ -94,8 +89,7 @@
                         android:hint="Confirm Password"
                         android:inputType="textPassword"
                         android:background="@drawable/edittext_rounded"
-                        android:paddingStart="20dp"
-                        android:paddingEnd="45dp"
+                        android:padding="12dp"
                         android:layout_marginBottom="12dp"/>
 
                     <Spinner
@@ -104,8 +98,7 @@
                         android:layout_height="54dp"
                         android:background="@drawable/spinner_with_arrow"
                         android:layout_marginBottom="20dp"
-                        android:paddingStart="15dp"
-                        android:paddingEnd="28dp"
+                        android:padding="12dp"
                         android:spinnerMode="dropdown"/>
 
                     <LinearLayout
@@ -116,19 +109,11 @@
                         android:layout_gravity="center"
                         android:layout_marginBottom="20dp">
 
-                        <!-- 修正：強制使用自定義樣式並移除預設 Tint -->
                         <CheckBox
                             android:id="@+id/termsCheckbox"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:button="@drawable/custom_checkbox"
-                            android:background="@android:color/transparent"
-                            app:buttonTint="@null"
-                            android:buttonTint="@null"
-                            android:minWidth="0dp"
-                            android:minHeight="0dp"
-                            android:padding="0dp"
-                            android:checked="false"/>
+                            android:layout_gravity="center_vertical"/>
 
                         <TextView
                             android:id="@+id/tvTermsLink"
@@ -180,4 +165,3 @@
         </LinearLayout>
     </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
-<!--test-->

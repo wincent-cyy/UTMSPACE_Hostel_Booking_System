@@ -5,23 +5,21 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Locale;
 
@@ -34,10 +32,10 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvForgotPassword, tvGoToSignUp;
 
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabase;
+    private FirebaseFirestore db;
     private ProgressDialog progressDialog;
 
-    private Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
 
     @Override
@@ -45,20 +43,11 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // 1. Initialize Firebase Auth
+        // 1. Initialize Firebase Auth and Firestore
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
-        // 2. Initialize Realtime Database with specific region URL
-        String databaseUrl = "https://utmspace-hostel-booking-system-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
-        try {
-            mDatabase = FirebaseDatabase.getInstance(databaseUrl).getReference();
-        } catch (Exception e) {
-            Log.e(TAG, "Database URL Error: " + e.getMessage());
-            mDatabase = FirebaseDatabase.getInstance().getReference();
-        }
-
-        // 3. Initialize UI Components
+        // 2. Initialize UI Components
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Logging in...");
         progressDialog.setCancelable(false);
@@ -69,12 +58,14 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvGoToSignUp = findViewById(R.id.tvGoToSignUp);
 
-        // 4. Click Listeners
+        // --- NEW: Real-time Lowercase Email Implementation ---
+        setupEmailAutoLowercase();
+
+        // 3. Click Listeners
         tvGoToSignUp.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
         });
 
-        // IMPROVED: Navigation to Forgot Password Page
         tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
@@ -83,8 +74,33 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> loginUser());
     }
 
+    /**
+     * Adds a TextWatcher to automatically convert input to lowercase.
+     */
+    private void setupEmailAutoLowercase() {
+        etEmail.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String input = s.toString();
+                // Check if the input contains any uppercase letters
+                if (!input.equals(input.toLowerCase(Locale.ROOT))) {
+                    String lowercased = input.toLowerCase(Locale.ROOT);
+                    etEmail.setText(lowercased);
+                    // Set selection to end so cursor doesn't jump to the start
+                    etEmail.setSelection(lowercased.length());
+                }
+            }
+        });
+    }
+
     private void loginUser() {
-        // Enforce lowercase for email processing to ensure consistency with DB
+        // We still keep the .toLowerCase() here as a safety measure
         String email = etEmail.getText().toString().trim().toLowerCase(Locale.ROOT);
         String password = etPassword.getText().toString().trim();
 
@@ -99,7 +115,6 @@ public class LoginActivity extends AppCompatActivity {
 
         progressDialog.show();
 
-        // Setup Timeout logic
         timeoutRunnable = () -> {
             if (progressDialog.isShowing()) {
                 progressDialog.dismiss();
@@ -112,18 +127,14 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
-
-                        // Check if Email is Verified
                         if (user != null && user.isEmailVerified()) {
                             Log.d(TAG, "Auth successful & Email verified. Checking role...");
-                            checkUserRole();
+                            checkUserRole(user.getUid());
                         } else {
-                            // User is authenticated but NOT verified
                             timeoutHandler.removeCallbacks(timeoutRunnable);
                             progressDialog.dismiss();
-
-                            mAuth.signOut(); // Force sign out
-                            Toast.makeText(LoginActivity.this, "Please verify your email before logging in. Check your inbox.", Toast.LENGTH_LONG).show();
+                            mAuth.signOut();
+                            Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_LONG).show();
                         }
                     } else {
                         timeoutHandler.removeCallbacks(timeoutRunnable);
@@ -134,41 +145,33 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-    private void checkUserRole() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) return;
-        String uid = currentUser.getUid();
+    private void checkUserRole(String uid) {
+        db.collection("Users").document(uid).get()
+                .addOnCompleteListener(task -> {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
 
-        mDatabase.child("Users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                timeoutHandler.removeCallbacks(timeoutRunnable);
+                    if (isFinishing() || isDestroyed()) return;
+                    progressDialog.dismiss();
 
-                if (isFinishing() || isDestroyed()) return;
-                progressDialog.dismiss();
-
-                if (snapshot.exists()) {
-                    String role = snapshot.child("role").getValue(String.class);
-                    Log.d(TAG, "Role found: " + role);
-                    if (role != null) {
-                        navigateToDashboard(role);
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document != null && document.exists()) {
+                            String role = document.getString("role");
+                            Log.d(TAG, "Role found: " + role);
+                            if (role != null) {
+                                navigateToDashboard(role);
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Role not assigned", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Log.e(TAG, "User profile document not found for UID: " + uid);
+                            Toast.makeText(LoginActivity.this, "User data not found in Firestore", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Toast.makeText(LoginActivity.this, "Role not assigned", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Firestore Read Error: ", task.getException());
+                        Toast.makeText(LoginActivity.this, "Database Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Log.e(TAG, "UID not found in DB: " + uid);
-                    Toast.makeText(LoginActivity.this, "User data not found in DB", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                timeoutHandler.removeCallbacks(timeoutRunnable);
-                progressDialog.dismiss();
-                Log.e(TAG, "DB Read Cancelled: " + error.getMessage());
-                Toast.makeText(LoginActivity.this, "Database Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                });
     }
 
     private void navigateToDashboard(String role) {
@@ -193,7 +196,6 @@ public class LoginActivity extends AppCompatActivity {
                 return;
         }
 
-        // Clear activity stack so user cannot go back to login with 'back' button
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
@@ -202,7 +204,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clean up handler to prevent memory leaks
         if (timeoutHandler != null && timeoutRunnable != null) {
             timeoutHandler.removeCallbacks(timeoutRunnable);
         }
