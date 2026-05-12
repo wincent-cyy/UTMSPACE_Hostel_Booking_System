@@ -55,7 +55,7 @@
                 android:layout_height="50dp"
                 android:layout_alignParentEnd="true"
                 android:padding="2dp"
-                android:src="@android:drawable/ic_menu_gallery"
+                android:src="@drawable/profile_pic"
                 app:shapeAppearanceOverlay="@style/CircleImage"
                 app:strokeColor="#FFFFFF"
                 app:strokeWidth="2dp" />

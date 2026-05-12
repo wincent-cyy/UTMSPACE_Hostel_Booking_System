@@ -49,7 +49,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_alignParentEnd="true"
-            android:src="@android:drawable/ic_menu_gallery"
+            android:src="@drawable/profile_pic"
             android:padding="2dp"
             app:shapeAppearanceOverlay="@style/CircleImage"
             app:strokeColor="#FFFFFF"
