@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.tabs.TabLayout;
@@ -27,6 +28,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private TabLayout bannerIndicator;
     private BottomNavigationView bottomNavigationView;
 
+    // Category Cards
+    private CardView cardSingle, cardDouble, cardQuad;
+
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
@@ -42,16 +46,40 @@ public class StudentDashboardActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Initialize Views
+        // Initialize UI Views
         tvStudentName = findViewById(R.id.tvStudentName);
         newsViewPager = findViewById(R.id.newsViewPager);
         bannerIndicator = findViewById(R.id.bannerIndicator);
         bottomNavigationView = findViewById(R.id.bottomNavigation);
 
+        // Initialize Category Cards
+        cardSingle = findViewById(R.id.cardSingle);
+        cardDouble = findViewById(R.id.cardDouble);
+        cardQuad = findViewById(R.id.cardQuad);
+
         // Setup Functions
         fetchUserName();
         setupNavigation();
         setupNewsBanner();
+        setupCategoryClicks();
+    }
+
+    /**
+     * Handles clicks on Room Category Cards
+     */
+    private void setupCategoryClicks() {
+        cardSingle.setOnClickListener(v -> openRoomList("Single Room"));
+        cardDouble.setOnClickListener(v -> openRoomList("Double Room"));
+        cardQuad.setOnClickListener(v -> openRoomList("Quad Room"));
+    }
+
+    /**
+     * Helper method to navigate to RoomListActivity with data
+     */
+    private void openRoomList(String roomType) {
+        Intent intent = new Intent(StudentDashboardActivity.this, RoomListActivity.class);
+        intent.putExtra("ROOM_TYPE", roomType);
+        startActivity(intent);
     }
 
     private void setupNewsBanner() {
@@ -63,35 +91,34 @@ public class StudentDashboardActivity extends AppCompatActivity {
         NewsAdapter adapter = new NewsAdapter(images);
         newsViewPager.setAdapter(adapter);
 
-        // Attach dots
+        // Attach dots indicator
         new TabLayoutMediator(bannerIndicator, newsViewPager, (tab, position) -> {}).attach();
 
-        // --- FIX FOR OVAL BUBBLES ---
+        // Fix for Circle Bubbles (UI adjustment)
         bannerIndicator.post(() -> {
             ViewGroup tabStrip = (ViewGroup) bannerIndicator.getChildAt(0);
             for (int i = 0; i < tabStrip.getChildCount(); i++) {
                 View tabView = tabStrip.getChildAt(i);
-                // Force the width to match the height (8dp) to ensure a perfect circle
                 int size = (int) (8 * getResources().getDisplayMetrics().density);
                 LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) tabView.getLayoutParams();
                 lp.width = size;
                 lp.height = size;
-                lp.setMargins(10, 0, 10, 0); // Spacing between circles
+                lp.setMargins(10, 0, 10, 0);
                 tabView.setLayoutParams(lp);
             }
         });
-        // ----------------------------
 
         // Auto-slide logic
         sliderRunnable = new Runnable() {
             @Override
             public void run() {
-                int nextItem = (newsViewPager.getCurrentItem() + 1) % images.size();
-                newsViewPager.setCurrentItem(nextItem, true);
-                sliderHandler.postDelayed(this, 3000);
+                if (newsViewPager != null && adapter.getItemCount() > 0) {
+                    int nextItem = (newsViewPager.getCurrentItem() + 1) % images.size();
+                    newsViewPager.setCurrentItem(nextItem, true);
+                    sliderHandler.postDelayed(this, 3000);
+                }
             }
         };
-        sliderHandler.postDelayed(sliderRunnable, 3000);
     }
 
     private void fetchUserName() {
@@ -99,7 +126,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
         if (user != null) {
             db.collection("Users").document(user.getUid()).get()
                     .addOnSuccessListener(doc -> {
-                        if (doc.exists() && doc.contains("name")) {
+                        if (doc.exists() && doc.get("name") != null) {
                             tvStudentName.setText(doc.getString("name"));
                         }
                     })
@@ -112,7 +139,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            // Prevent re-opening the same activity if already on Home
             if (id == R.id.nav_home) return true;
 
             Intent intent = null;
@@ -126,6 +152,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
             if (intent != null) {
                 startActivity(intent);
+                // Optional: finish() if you don't want to keep home in stack
                 return true;
             }
             return false;
@@ -135,7 +162,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Start auto-slide when user returns to app
+        // Start auto-slide
         if (sliderRunnable != null) {
             sliderHandler.postDelayed(sliderRunnable, 3000);
         }
@@ -144,13 +171,14 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop auto-slide when activity is not visible to save battery/memory
+        // Stop auto-slide to save resources
         sliderHandler.removeCallbacks(sliderRunnable);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Prevent memory leaks
         sliderHandler.removeCallbacksAndMessages(null);
     }
 }
