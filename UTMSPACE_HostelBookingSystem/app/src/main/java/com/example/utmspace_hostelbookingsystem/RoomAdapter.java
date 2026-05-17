@@ -12,15 +12,22 @@ import java.util.List;
 public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder> {
 
     private List<RoomModel> roomList;
+    private OnRoomClickListener clickListener; // Added click listener variable
 
-    public RoomAdapter(List<RoomModel> roomList) {
+    // 1. Define the click callback interface
+    public interface OnRoomClickListener {
+        void onRoomClick(RoomModel room);
+    }
+
+    // 2. Updated constructor to accept the click listener interface
+    public RoomAdapter(List<RoomModel> roomList, OnRoomClickListener clickListener) {
         this.roomList = roomList;
+        this.clickListener = clickListener;
     }
 
     @NonNull
     @Override
     public RoomViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Ensure you have updated item_room.xml with the new IDs listed in the ViewHolder below
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_room, parent, false);
         return new RoomViewHolder(view);
     }
@@ -29,6 +36,7 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder
     public void onBindViewHolder(@NonNull RoomViewHolder holder, int position) {
         RoomModel room = roomList.get(position);
 
+        // --- Keep your original UI logic completely intact ---
         // 1. Basic Info
         holder.tvRoomNumber.setText("Room " + room.getRoomNumber());
         holder.tvLocation.setText(room.getLocation());
@@ -55,6 +63,13 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder
             holder.tvStatus.setTextColor(Color.parseColor("#F59E0B")); // Orange/Amber
             holder.tvCapacity.setTextColor(Color.parseColor("#64748B"));
         }
+
+        // --- New: Added click tracking handler ---
+        holder.itemView.setOnClickListener(v -> {
+            if (clickListener != null) {
+                clickListener.onRoomClick(room);
+            }
+        });
     }
 
     @Override

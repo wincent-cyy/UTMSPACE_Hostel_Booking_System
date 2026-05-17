@@ -2,91 +2,145 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
-import androidx.annotation.NonNull;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BookingsActivity extends AppCompatActivity {
 
+    // View Component Declarations
+    private RecyclerView rvPendingBookings;
+    private LinearLayout emptyState;
+    private BottomNavigationView bottomNavigation;
+
+    // List & Adapter Components
+    private BookingAdapter adapter;
+    private List<Booking> bookingList;
+
+    // Firebase Setup
+    private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // NO EdgeToEdge.enable(this)
-        // NO setSystemUiVisibility
-        // This keeps the Top and Bottom "Safe" automatically
-
         setContentView(R.layout.activity_bookings);
 
-        setupNavigation();
-        setupList();
+        // 1. Initialize Views matching layout XML IDs
+        rvPendingBookings = findViewById(R.id.rvPendingBookings);
+        emptyState = findViewById(R.id.emptyState);
+        bottomNavigation = findViewById(R.id.bottomNavigation);
+
+        // 2. Setup RecyclerView Layout Configuration
+        rvPendingBookings.setLayoutManager(new LinearLayoutManager(this));
+        bookingList = new ArrayList<>();
+        adapter = new BookingAdapter(bookingList);
+        rvPendingBookings.setAdapter(adapter);
+
+        // 3. Initialize Firebase Infrastructure
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        // 4. Configure operational navigation interactions
+        setupBottomNavigation();
+
+        // 5. Query and load Firestore metrics data
+        fetchUserBookings();
     }
 
-    private void setupNavigation() {
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNavigation);
-        bottomNav.setSelectedItemId(R.id.nav_booking);
+    private void fetchUserBookings() {
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "User not logged in.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        bottomNav.setOnItemSelectedListener(item -> {
+        String currentUserId = mAuth.getCurrentUser().getUid();
+
+        db.collection("Bookings")
+                .whereEqualTo("userId", currentUserId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    bookingList.clear();
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Booking booking = document.toObject(Booking.class);
+                        bookingList.add(booking);
+                    }
+
+                    // Refresh UI items
+                    adapter.notifyDataSetChanged();
+
+                    // Dynamic Empty State Conditional Check
+                    if (bookingList.isEmpty()) {
+                        rvPendingBookings.setVisibility(View.GONE);
+                        emptyState.setVisibility(View.VISIBLE);
+                    } else {
+                        rvPendingBookings.setVisibility(View.VISIBLE);
+                        emptyState.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error loading application data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void setupBottomNavigation() {
+        // Enforce active item highlight placement context matching this tab
+        bottomNavigation.setSelectedItemId(R.id.nav_booking);
+
+        bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-            if (id == R.id.nav_home) {
-                startActivity(new Intent(this, StudentDashboardActivity.class));
-                return true;
-            } else if (id == R.id.nav_booking) {
-                return true;
-            } else if (id == R.id.nav_history) {
-                startActivity(new Intent(this, HistoryActivity.class));
-                return true;
-            } else if (id == R.id.nav_profile) {
-                startActivity(new Intent(this, ProfileActivity.class));
+
+            if (id == R.id.nav_booking) {
+                return true; // Already on this tab, do nothing
+            }
+
+            else if (id == R.id.nav_home) {
+                // Route seamlessly back to the Home Dashboard
+                Intent intent = new Intent(BookingsActivity.this, StudentDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             }
+
+            else if (id == R.id.nav_history) {
+                // Route seamlessly to the Profile Management Screen
+                Intent intent = new Intent(BookingsActivity.this, HistoryActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
+            }
+
+            else if (id == R.id.nav_profile) {
+                // Route seamlessly to the Profile Management Screen
+                Intent intent = new Intent(BookingsActivity.this, ProfileActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
+            }
+
             return false;
         });
     }
 
-    private void setupList() {
-        RecyclerView rv = findViewById(R.id.rvPendingBookings);
-        rv.setLayoutManager(new LinearLayoutManager(this));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Sync items automatically when navigating back to this view scope
+        fetchUserBookings();
 
-        List<String> dummyRooms = Arrays.asList("A-101", "B-205", "C-302");
-        rv.setAdapter(new RecyclerView.Adapter<QuickViewHolder>() {
-            @NonNull
-            @Override
-            public QuickViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_card, parent, false);
-                return new QuickViewHolder(v);
-            }
-
-            @Override
-            public void onBindViewHolder(@NonNull QuickViewHolder holder, int position) {
-                holder.roomNum.setText("Room " + dummyRooms.get(position));
-                holder.status.setText("PENDING");
-                holder.date.setText("Applied on: 12 May 2026");
-            }
-
-            @Override
-            public int getItemCount() { return dummyRooms.size(); }
-        });
-    }
-
-    static class QuickViewHolder extends RecyclerView.ViewHolder {
-        TextView roomNum, status, date;
-        public QuickViewHolder(@NonNull View itemView) {
-            super(itemView);
-            roomNum = itemView.findViewById(R.id.tvBookingRoomNumber);
-            status = itemView.findViewById(R.id.tvBookingStatus);
-            date = itemView.findViewById(R.id.tvBookingDate);
-        }
+        // Ensure navigation sync match during cross-activity execution pops
+        bottomNavigation.setSelectedItemId(R.id.nav_booking);
     }
 }

@@ -63,6 +63,7 @@
                     </LinearLayout>
 
                     <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivProfilePicture"
                         android:layout_width="50dp"
                         android:layout_height="50dp"
                         android:layout_alignParentEnd="true"

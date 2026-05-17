@@ -25,6 +25,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     @NonNull
     @Override
     public HistoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Inflates your original custom history item layout design row
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_history, parent, false);
         return new HistoryViewHolder(view);
     }
@@ -33,36 +34,36 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     public void onBindViewHolder(@NonNull HistoryViewHolder holder, int position) {
         Booking booking = bookingList.get(position);
 
-        // Fill basic data
-        holder.tvRoomType.setText(booking.getRoomName());
-        holder.tvDate.setText(booking.getDate());
+        // CORRECTED: Safely map parameters to match our updated Booking object properties
+        holder.tvRoomType.setText(booking.getRoomType());
+        holder.tvDate.setText(booking.getCheckInDate());
         holder.tvStatus.setText(booking.getStatus());
-        holder.tvPrice.setText(booking.getPrice());
+        holder.tvPrice.setText(booking.getRoomPrice());
 
-        // Default: Hide payment link and clear listeners
+        // Default Setup State: Clear visibility metrics to prevent recycling glitches
         holder.tvClickPayment.setVisibility(View.GONE);
         holder.tvClickPayment.setOnClickListener(null);
-        holder.itemView.setOnClickListener(null); // Ensure the whole card is NOT clickable
+        holder.itemView.setOnClickListener(null);
 
-        // Logic based on Status
         String status = booking.getStatus() != null ? booking.getStatus() : "";
 
+        // Status Logic evaluations
         if (status.equalsIgnoreCase("Approved")) {
-            holder.tvStatus.setTextColor(Color.parseColor("#10B981")); // Green
+            holder.tvStatus.setTextColor(Color.parseColor("#10B981")); // Emerald Green
 
-            // Show the payment link ONLY if status is Approved
+            // Show the payment context link ONLY for approved items
             holder.tvClickPayment.setVisibility(View.VISIBLE);
 
-            // Set listener ONLY on the "Click to Payment" TextView
+            // Bind click engine listener framework to navigate towards checkouts
             holder.tvClickPayment.setOnClickListener(v -> {
                 try {
                     Intent intent = new Intent(context, PaymentActivity.class);
-                    intent.putExtra("ROOM_NAME", booking.getRoomName() != null ? booking.getRoomName() : "N/A");
-                    intent.putExtra("PRICE", booking.getPrice() != null ? booking.getPrice() : "0.00");
+                    // Pass matching variables to the checkout activity pipeline
+                    intent.putExtra("ROOM_NAME", booking.getRoomType());
+                    intent.putExtra("PRICE", booking.getRoomPrice());
+                    intent.putExtra("ROOM_ID", booking.getRoomId());
 
-                    // Recommended: add flags if context is not an Activity
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
                     context.startActivity(intent);
                 } catch (Exception e) {
                     Toast.makeText(context, "Navigation Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -70,10 +71,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             });
 
         } else if (status.equalsIgnoreCase("Paid")) {
-            holder.tvStatus.setTextColor(Color.parseColor("#6366F1")); // Indigo/Blue
-            holder.tvClickPayment.setVisibility(View.GONE); // No need to pay again
+            holder.tvStatus.setTextColor(Color.parseColor("#6366F1")); // Indigo Blue
+            holder.tvClickPayment.setVisibility(View.GONE);
         } else {
-            holder.tvStatus.setTextColor(Color.parseColor("#EF4444")); // Red
+            holder.tvStatus.setTextColor(Color.parseColor("#EF4444")); // Crimson Red
             holder.tvClickPayment.setVisibility(View.GONE);
         }
     }
@@ -92,7 +93,6 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             tvDate = itemView.findViewById(R.id.tvBookingDate);
             tvStatus = itemView.findViewById(R.id.tvStatus);
             tvPrice = itemView.findViewById(R.id.tvTotalPrice);
-            // Link the payment text view
             tvClickPayment = itemView.findViewById(R.id.tvClickPayment);
         }
     }

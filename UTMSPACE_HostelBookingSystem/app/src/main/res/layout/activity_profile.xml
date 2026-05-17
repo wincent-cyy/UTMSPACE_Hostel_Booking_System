@@ -16,6 +16,7 @@
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Main Profile Image View -->
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivProfileLarge"
         android:layout_width="100dp"
@@ -30,6 +31,24 @@
         app:shapeAppearanceOverlay="@style/CircleImage"
         app:strokeColor="#FFFFFF"
         app:strokeWidth="4dp" />
+
+    <!-- ADDED: Floating Edit Picture Button Overlay -->
+    <!-- Anchored perfectly to the bottom-right of the profile image -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/btnEditPicture"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="#6366F1"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="7dp"
+        android:src="@android:drawable/ic_menu_camera"
+        app:layout_constraintBottom_toBottomOf="@id/ivProfileLarge"
+        app:layout_constraintEnd_toEndOf="@id/ivProfileLarge"
+        app:shapeAppearanceOverlay="@style/CircleImage"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="2dp"
+        android:elevation="4dp"/>
 
     <TextView
         android:id="@+id/tvUserName"
@@ -282,18 +301,17 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="Usefingerprint login"
+                                android:text="Use fingerprint login"
                                 android:textColor="#d3d3d3"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
                         <androidx.appcompat.widget.SwitchCompat
-                            android:id="@+id/switch_biometric"
+                            android:id="@+id/switchBiometric"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:contentDescription="Biometric Authentication Switch"/>
+                            android:layout_centerInParent="true"/>
                     </RelativeLayout>
 
                     <View

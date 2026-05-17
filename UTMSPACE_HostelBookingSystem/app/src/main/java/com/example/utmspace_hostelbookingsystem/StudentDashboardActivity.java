@@ -1,29 +1,43 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.viewpager2.widget.ViewPager2;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import java.util.ArrayList;
 import java.util.List;
 
 public class StudentDashboardActivity extends AppCompatActivity {
 
     private TextView tvStudentName;
+    private ShapeableImageView ivProfilePicture;
     private ViewPager2 newsViewPager;
     private TabLayout bannerIndicator;
     private BottomNavigationView bottomNavigationView;
@@ -33,6 +47,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private ListenerRegistration userDataListener;
 
     private final Handler sliderHandler = new Handler(Looper.getMainLooper());
     private Runnable sliderRunnable;
@@ -48,6 +63,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         // Initialize UI Views
         tvStudentName = findViewById(R.id.tvStudentName);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
         newsViewPager = findViewById(R.id.newsViewPager);
         bannerIndicator = findViewById(R.id.bannerIndicator);
         bottomNavigationView = findViewById(R.id.bottomNavigation);
@@ -58,24 +74,20 @@ public class StudentDashboardActivity extends AppCompatActivity {
         cardQuad = findViewById(R.id.cardQuad);
 
         // Setup Functions
-        fetchUserName();
         setupNavigation();
         setupNewsBanner();
         setupCategoryClicks();
+
+        // Listen to live profile data updates
+        startRealtimeUserListener();
     }
 
-    /**
-     * Handles clicks on Room Category Cards
-     */
     private void setupCategoryClicks() {
         cardSingle.setOnClickListener(v -> openRoomList("Single Room"));
         cardDouble.setOnClickListener(v -> openRoomList("Double Room"));
         cardQuad.setOnClickListener(v -> openRoomList("Quad Room"));
     }
 
-    /**
-     * Helper method to navigate to RoomListActivity with data
-     */
     private void openRoomList(String roomType) {
         Intent intent = new Intent(StudentDashboardActivity.this, RoomListActivity.class);
         intent.putExtra("ROOM_TYPE", roomType);
@@ -91,11 +103,10 @@ public class StudentDashboardActivity extends AppCompatActivity {
         NewsAdapter adapter = new NewsAdapter(images);
         newsViewPager.setAdapter(adapter);
 
-        // Attach dots indicator
         new TabLayoutMediator(bannerIndicator, newsViewPager, (tab, position) -> {}).attach();
 
-        // Fix for Circle Bubbles (UI adjustment)
         bannerIndicator.post(() -> {
+            if (isFinishing() || isDestroyed()) return;
             ViewGroup tabStrip = (ViewGroup) bannerIndicator.getChildAt(0);
             for (int i = 0; i < tabStrip.getChildCount(); i++) {
                 View tabView = tabStrip.getChildAt(i);
@@ -108,7 +119,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
         });
 
-        // Auto-slide logic
         sliderRunnable = new Runnable() {
             @Override
             public void run() {
@@ -121,16 +131,68 @@ public class StudentDashboardActivity extends AppCompatActivity {
         };
     }
 
-    private void fetchUserName() {
+    /**
+     * Listens to Firestore changes in real-time and decodes Base64 data automatically.
+     */
+    private void startRealtimeUserListener() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            db.collection("Users").document(user.getUid()).get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc.exists() && doc.get("name") != null) {
-                            tvStudentName.setText(doc.getString("name"));
+            userDataListener = db.collection("Users").document(user.getUid())
+                    .addSnapshotListener((snapshot, error) -> {
+                        if (error != null) {
+                            Log.e("DashboardDebug", "❌ Firestore snapshot connection error", error);
+                            return;
                         }
-                    })
-                    .addOnFailureListener(e -> Log.e("Dashboard", "Error fetching name", e));
+
+                        if (isFinishing() || isDestroyed()) return;
+
+                        if (snapshot != null && snapshot.exists()) {
+                            // Update user profile name text
+                            String name = snapshot.getString("name");
+                            if (name != null) {
+                                tvStudentName.setText(name);
+                            }
+
+                            // CHANGED HERE: Extracting the explicit profilePictureBase64 field key
+                            String base64String = snapshot.getString("profilePictureBase64");
+                            Log.d("DashboardDebug", "🔥 Base64 string segment detected.");
+
+                            if (base64String != null && !base64String.trim().isEmpty()) {
+                                try {
+                                    // 1. Convert the Base64 text string into bytes
+                                    byte[] decodedString = Base64.decode(base64String, Base64.DEFAULT);
+
+                                    // 2. Decode the bytes into an Android image Bitmap
+                                    Bitmap decodedByteMap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+
+                                    if (decodedByteMap != null) {
+                                        // 3. Load the clean system bitmap into Glide
+                                        Glide.with(getApplicationContext())
+                                                .load(decodedByteMap)
+                                                .override(200, 200) // Forces layout resolution constraints inside scroll view layers
+                                                .placeholder(R.drawable.profile_pic)
+                                                .error(R.drawable.profile_pic)
+                                                .centerCrop()
+                                                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                                .skipMemoryCache(true) // Erases internal device memory maps so updates show immediately
+                                                .into(ivProfilePicture);
+
+                                        Log.d("DashboardDebug", "✅ SUCCESS: Decoded Base64 Bitmap applied to dashboard picture view.");
+                                    } else {
+                                        Log.e("DashboardDebug", "❌ Error decoding Base64 image byte arrays.");
+                                        ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                                    }
+
+                                } catch (IllegalArgumentException e) {
+                                    Log.e("DashboardDebug", "❌ Base64 string structural decoding pattern error.", e);
+                                    ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                                }
+                            } else {
+                                Log.w("DashboardDebug", "⚠️ profilePictureBase64 field is empty or missing. Loading default image resource placeholder.");
+                                Glide.with(getApplicationContext()).load(R.drawable.profile_pic).centerCrop().into(ivProfilePicture);
+                            }
+                        }
+                    });
         }
     }
 
@@ -152,7 +214,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
             if (intent != null) {
                 startActivity(intent);
-                // Optional: finish() if you don't want to keep home in stack
                 return true;
             }
             return false;
@@ -162,7 +223,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Start auto-slide
         if (sliderRunnable != null) {
             sliderHandler.postDelayed(sliderRunnable, 3000);
         }
@@ -171,14 +231,15 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop auto-slide to save resources
         sliderHandler.removeCallbacks(sliderRunnable);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Prevent memory leaks
         sliderHandler.removeCallbacksAndMessages(null);
+        if (userDataListener != null) {
+            userDataListener.remove();
+        }
     }
 }

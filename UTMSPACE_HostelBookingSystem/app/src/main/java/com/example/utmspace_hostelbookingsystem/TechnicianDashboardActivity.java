@@ -41,7 +41,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                 return true;
             }
 
-            else if (id == R.id.nav_request || id == R.id.nav_tech_history) {
+            else if (id == R.id.nav_request || id == R.id.nav_tech_historys) {
                 // These are not ready yet
                 Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show();
                 return false; // Return false so the icon doesn't look "selected"

@@ -1,7 +1,9 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,7 +16,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -22,10 +28,14 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Locale;
+import java.util.concurrent.Executor;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity_Debug";
+    private static final String SHARED_PREFS_NAME = "BioAuthPrefs";
+    private static final String KEY_BIOMETRIC_ENABLED = "FingerprintEnabled";
+    private static final String KEY_SAVED_UID = "SavedUserUid";
 
     private EditText etEmail, etPassword;
     private Button btnLogin;
@@ -34,6 +44,7 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private ProgressDialog progressDialog;
+    private SharedPreferences sharedPreferences;
 
     private final Handler timeoutHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
@@ -43,11 +54,10 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // 1. Initialize Firebase Auth and Firestore
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
-        // 2. Initialize UI Components
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Logging in...");
         progressDialog.setCancelable(false);
@@ -58,10 +68,8 @@ public class LoginActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         tvGoToSignUp = findViewById(R.id.tvGoToSignUp);
 
-        // --- NEW: Real-time Lowercase Email Implementation ---
         setupEmailAutoLowercase();
 
-        // 3. Click Listeners
         tvGoToSignUp.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
         });
@@ -71,12 +79,82 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnLogin.setOnClickListener(v -> loginUser());
+        btnLogin.setOnClickListener(v -> {
+            // Force a clean sign out if the user decides to type a different account manually
+            if (mAuth.getCurrentUser() != null) {
+                mAuth.signOut();
+            }
+            loginUser();
+        });
+
+        // Run checking matrix tracking variables
+        checkAndTriggerBiometricAuth();
     }
 
-    /**
-     * Adds a TextWatcher to automatically convert input to lowercase.
-     */
+    private void checkAndTriggerBiometricAuth() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        String targetUid = null;
+
+        if (currentUser != null) {
+            targetUid = currentUser.getUid();
+        } else {
+            targetUid = sharedPreferences.getString(KEY_SAVED_UID, null);
+        }
+
+        if (targetUid != null) {
+            boolean isBioEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + targetUid, false);
+            if (isBioEnabled) {
+                BiometricManager biometricManager = BiometricManager.from(this);
+                if (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS) {
+                    showBiometricPrompt(targetUid);
+                }
+            }
+        }
+    }
+
+    private void showBiometricPrompt(String uid) {
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(LoginActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                Log.d(TAG, "Biometric prompt skipped or closed: " + errString);
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+
+                if (isFinishing() || isDestroyed()) return;
+                progressDialog.show();
+
+                // If user is validated locally but active network state drops, it signs in token natively
+                FirebaseUser currentUser = mAuth.getCurrentUser();
+                if (currentUser != null && currentUser.getUid().equals(uid)) {
+                    checkUserRole(currentUser.getUid());
+                } else {
+                    // Fallback to manual checking using verified hardware profile reference
+                    checkUserRole(uid);
+                }
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+                Toast.makeText(LoginActivity.this, "Fingerprint verification failed.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Hostel System Login")
+                .setSubtitle("Scan fingerprint to securely continue to your dashboard")
+                .setNegativeButtonText("Use Password Instead")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
+    }
+
     private void setupEmailAutoLowercase() {
         etEmail.addTextChangedListener(new TextWatcher() {
             @Override
@@ -88,11 +166,9 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 String input = s.toString();
-                // Check if the input contains any uppercase letters
                 if (!input.equals(input.toLowerCase(Locale.ROOT))) {
                     String lowercased = input.toLowerCase(Locale.ROOT);
                     etEmail.setText(lowercased);
-                    // Set selection to end so cursor doesn't jump to the start
                     etEmail.setSelection(lowercased.length());
                 }
             }
@@ -100,7 +176,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
-        // We still keep the .toLowerCase() here as a safety measure
         String email = etEmail.getText().toString().trim().toLowerCase(Locale.ROOT);
         String password = etPassword.getText().toString().trim();
 
@@ -128,7 +203,10 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null && user.isEmailVerified()) {
-                            Log.d(TAG, "Auth successful & Email verified. Checking role...");
+                            sharedPreferences.edit()
+                                    .putString(KEY_SAVED_UID, user.getUid())
+                                    .apply();
+
                             checkUserRole(user.getUid());
                         } else {
                             timeoutHandler.removeCallbacks(timeoutRunnable);
@@ -148,7 +226,9 @@ public class LoginActivity extends AppCompatActivity {
     private void checkUserRole(String uid) {
         db.collection("Users").document(uid).get()
                 .addOnCompleteListener(task -> {
-                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                    if (timeoutRunnable != null) {
+                        timeoutHandler.removeCallbacks(timeoutRunnable);
+                    }
 
                     if (isFinishing() || isDestroyed()) return;
                     progressDialog.dismiss();
@@ -157,15 +237,15 @@ public class LoginActivity extends AppCompatActivity {
                         DocumentSnapshot document = task.getResult();
                         if (document != null && document.exists()) {
                             String role = document.getString("role");
-                            Log.d(TAG, "Role found: " + role);
+                            Log.d(TAG, "Role verified from Firestore: " + role);
                             if (role != null) {
                                 navigateToDashboard(role);
                             } else {
-                                Toast.makeText(LoginActivity.this, "Role not assigned", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(LoginActivity.this, "Role not assigned to profile", Toast.LENGTH_SHORT).show();
                             }
                         } else {
-                            Log.e(TAG, "User profile document not found for UID: " + uid);
-                            Toast.makeText(LoginActivity.this, "User data not found in Firestore", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "User document missing for UID: " + uid);
+                            Toast.makeText(LoginActivity.this, "User details not found in database.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
                         Log.e(TAG, "Firestore Read Error: ", task.getException());
@@ -176,23 +256,23 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToDashboard(String role) {
         Intent intent;
-        Log.d(TAG, "Navigating to: " + role);
+        String structuralRole = role != null ? role.trim().toLowerCase(Locale.ROOT) : "";
 
-        switch (role) {
-            case "Student":
+        switch (structuralRole) {
+            case "student":
                 intent = new Intent(LoginActivity.this, StudentDashboardActivity.class);
                 break;
-            case "Staff":
+            case "staff":
                 intent = new Intent(LoginActivity.this, StaffDashboardActivity.class);
                 break;
-            case "Technician":
+            case "technician":
                 intent = new Intent(LoginActivity.this, TechnicianDashboardActivity.class);
                 break;
-            case "Admin":
+            case "admin":
                 intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
                 break;
             default:
-                Toast.makeText(this, "Unknown role: " + role, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Unknown role assigned: " + role, Toast.LENGTH_SHORT).show();
                 return;
         }
 
