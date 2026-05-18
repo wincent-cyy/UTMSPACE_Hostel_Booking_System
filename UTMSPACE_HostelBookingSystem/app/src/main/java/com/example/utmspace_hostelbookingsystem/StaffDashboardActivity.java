@@ -36,12 +36,22 @@ public class StaffDashboardActivity extends AppCompatActivity {
             }
 
             else if (id == R.id.nav_profile) {
-                // Profile is ready, go there
-                startActivity(new Intent(this, ProfileActivity.class));
+                Intent intent = new Intent(this, ProfileActivity.class);
+                // Brings the existing activity state forward safely instead of destroying/recreating it
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             }
 
-            else if (id == R.id.nav_staff_bookings || id == R.id.nav_rooms) {
+            else if (id == R.id.nav_staff_bookings) {
+                Intent intent = new Intent(this, BookingManagementActivity.class);
+                // Brings the existing activity state forward safely instead of destroying/recreating it
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
+            }
+
+            else if (id == R.id.nav_rooms) {
                 // These are not ready yet
                 Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show();
                 return false; // Return false so the icon doesn't look "selected"
@@ -49,5 +59,14 @@ public class StaffDashboardActivity extends AppCompatActivity {
 
             return false;
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Synchronization safeguard: Re-forces the highlight ring state whenever returning back to home focal points
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
+        }
     }
 }

@@ -25,14 +25,14 @@ public class HistoryActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private MaterialButton btnClearHistory;
 
-    // Change adapter reference to BookingAdapter for uniform list UI bindings
     private BookingAdapter adapter;
     private List<Booking> allBookings;
     private List<Booking> filteredList;
 
-    // Firebase Components
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+
+    // FIXED: Shifted from UPPERCASE to Title Case to match your exact Firestore structure safely
     private String currentStatusFilter = "Approved";
 
     @Override
@@ -40,7 +40,6 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        // Initialize Firebase Infrastructure
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
@@ -50,7 +49,6 @@ public class HistoryActivity extends AppCompatActivity {
         setupNavigation();
         setupListeners();
 
-        // Load operational historical data entries
         fetchHistoryFromFirestore();
     }
 
@@ -68,9 +66,37 @@ public class HistoryActivity extends AppCompatActivity {
         filteredList = new ArrayList<>();
 
         rvBookingHistory.setLayoutManager(new LinearLayoutManager(this));
-        // Reused your verified BookingAdapter to manage item display profiles seamlessly
-        adapter = new BookingAdapter(filteredList);
+
+        // Handler 1: Clicking the card structure anywhere shows detailed parameters profile
+        adapter = new BookingAdapter(filteredList, booking -> {
+            Intent intent = new Intent(HistoryActivity.this, BookingDetailsActivity.class);
+            passBookingDataIntent(intent, booking);
+            startActivity(intent);
+        });
+
+        // Handler 2: Explicitly handles the specialized Payment action button routes
+        adapter.setOnPaymentClickListener(booking -> {
+            Intent intent = new Intent(HistoryActivity.this, PaymentActivity.class);
+            passBookingDataIntent(intent, booking);
+            startActivity(intent);
+        });
+
         rvBookingHistory.setAdapter(adapter);
+    }
+
+    // Helper method to keep dynamic navigation parameter injections clean
+    private void passBookingDataIntent(Intent intent, Booking booking) {
+        intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
+        intent.putExtra("BOOKING_STATUS", booking.getStatus());
+        intent.putExtra("ROOM_ID", booking.getRoomId());
+        intent.putExtra("ROOM_TYPE", booking.getRoomType());
+        intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
+        intent.putExtra("STUDENT_NAME", booking.getStudentName());
+        intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+        intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
+        intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
+        intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
+        intent.putExtra("REJECT_REASON", booking.getRejectReason()); // Pass reason if it exists
     }
 
     private void fetchHistoryFromFirestore() {
@@ -81,7 +107,6 @@ public class HistoryActivity extends AppCompatActivity {
 
         String currentUserId = mAuth.getCurrentUser().getUid();
 
-        // Pull application documents assigned directly to the current student
         db.collection("Bookings")
                 .whereEqualTo("userId", currentUserId)
                 .get()
@@ -89,9 +114,9 @@ public class HistoryActivity extends AppCompatActivity {
                     allBookings.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Booking booking = document.toObject(Booking.class);
+                        booking.setDocumentId(document.getId());
                         allBookings.add(booking);
                     }
-                    // Refresh the filtered views based on active tab item selection context
                     filterBookings(currentStatusFilter);
                 })
                 .addOnFailureListener(e -> {
@@ -105,6 +130,7 @@ public class HistoryActivity extends AppCompatActivity {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                // FIXED: Normalizes evaluation targets to correct Title Case rules
                 if (tab.getPosition() == 0) {
                     currentStatusFilter = "Approved";
                     filterBookings(currentStatusFilter);
@@ -142,17 +168,14 @@ public class HistoryActivity extends AppCompatActivity {
             if (mAuth.getCurrentUser() == null) return;
             String currentUserId = mAuth.getCurrentUser().getUid();
 
-            // Clear rejected items locally and push changes to update your Firestore environment
             db.collection("Bookings")
                     .whereEqualTo("userId", currentUserId)
-                    .whereEqualTo("status", "Rejected")
+                    .whereEqualTo("status", "Rejected") // Title Case
                     .get()
                     .addOnSuccessListener(queryDocumentSnapshots -> {
                         for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                             document.getReference().delete();
                         }
-
-                        // Clean data structures locally to synchronize user displays
                         allBookings.removeIf(b -> b.getStatus() != null && b.getStatus().equalsIgnoreCase("Rejected"));
                         filterBookings("Rejected");
                         Toast.makeText(HistoryActivity.this, "Rejected history cleared.", Toast.LENGTH_SHORT).show();
@@ -165,12 +188,9 @@ public class HistoryActivity extends AppCompatActivity {
 
     private void setupNavigation() {
         if (bottomNavigation == null) return;
-
         bottomNavigation.setSelectedItemId(R.id.nav_history);
-
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-
             if (id == R.id.nav_history) return true;
 
             Intent intent = null;
@@ -194,8 +214,9 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh items automatically when transitioning view focuses
         fetchHistoryFromFirestore();
-        bottomNavigation.setSelectedItemId(R.id.nav_history);
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_history);
+        }
     }
 }

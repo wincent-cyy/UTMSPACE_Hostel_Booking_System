@@ -88,7 +88,7 @@
                 android:backgroundTint="#6366F1"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="6dp"
-                android:text="RM 450 / Sem"
+                android:text="RM 450 / Semester"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:textSize="14sp"/>

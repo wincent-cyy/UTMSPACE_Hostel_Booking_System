@@ -2,7 +2,6 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RadioButton;
@@ -22,8 +21,17 @@ public class PaymentActivity extends AppCompatActivity {
     private MaterialCardView cardDebit, cardBank, cardWallet;
     private RadioButton rbDebit, rbBank, rbWallet;
 
-    private String roomName;
-    private String price;
+    // Data parameters received from HistoryActivity
+    private String bookingDocId;
+    private String roomId;
+    private String roomType;
+    private String roomPrice;
+    private String studentName;
+    private String matricNumber;
+    private String phoneNumber;
+    private String checkInDate;
+    private String leaseDuration;
+
     private String selectedMethod = "";
 
     @Override
@@ -31,16 +39,9 @@ public class PaymentActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payment);
 
-        // Retrieve data passed from History
-        roomName = getIntent().getStringExtra("ROOM_NAME");
-        price = getIntent().getStringExtra("PRICE");
-
         initViews();
+        getIntentData();
         setupListeners();
-
-        if (price != null) {
-            tvTotalMain.setText(price);
-        }
     }
 
     private void initViews() {
@@ -59,6 +60,35 @@ public class PaymentActivity extends AppCompatActivity {
         cardWallet = (MaterialCardView) rbWallet.getParent().getParent();
     }
 
+    private void getIntentData() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            // FIXED: Key mappings matched exactly with HistoryActivity specifications
+            bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
+            roomId = intent.getStringExtra("ROOM_ID");
+            roomType = intent.getStringExtra("ROOM_TYPE");
+            roomPrice = intent.getStringExtra("ROOM_PRICE");
+
+            studentName = intent.getStringExtra("STUDENT_NAME");
+            matricNumber = intent.getStringExtra("MATRIC_NUMBER");
+            phoneNumber = intent.getStringExtra("PHONE_NUMBER");
+            checkInDate = intent.getStringExtra("CHECK_IN_DATE");
+            leaseDuration = intent.getStringExtra("LEASE_DURATION");
+
+            // Display price cleanly inside target text field boundary
+            if (roomPrice != null) {
+                // Strip away "/ semester" formatting extensions automatically if present
+                String displayPrice = roomPrice;
+                if (displayPrice.contains("/")) {
+                    displayPrice = displayPrice.split("/")[0].trim();
+                }
+                tvTotalMain.setText(displayPrice);
+            } else {
+                tvTotalMain.setText("RM 0.00");
+            }
+        }
+    }
+
     private void setupListeners() {
         // 1. Back Arrow navigation
         btnBack.setOnClickListener(v -> {
@@ -68,25 +98,36 @@ public class PaymentActivity extends AppCompatActivity {
             finish();
         });
 
-        // 2. Custom Radio Logic: Handle Card Clicks
+        // 2. Custom Radio Logic: Handle Card Container Click Actions
         cardDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
         cardBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
         cardWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
 
-        // 3. Custom Radio Logic: Handle RadioButton Direct Clicks
+        // 3. Custom Radio Logic: Handle RadioButton Direct Click Actions
         rbDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
         rbBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
         rbWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
 
-        // 4. Pay Now Button
+        // 4. Pay Now Execution Path Button
         btnPayNow.setOnClickListener(v -> {
             if (selectedMethod.isEmpty()) {
-                Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select a payment method to proceed.", Toast.LENGTH_SHORT).show();
             } else {
+                // Route explicitly forward into Receipt screen view framework
                 Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
+
+                // Pack full dynamic payload data parameters safely
                 intent.putExtra("PAYMENT_METHOD", selectedMethod);
-                intent.putExtra("ROOM_NAME", roomName != null ? roomName : "N/A");
-                intent.putExtra("PRICE", price != null ? price : "0.00");
+                intent.putExtra("BOOKING_DOC_ID", bookingDocId);
+                intent.putExtra("ROOM_ID", roomId != null ? roomId : "N/A");
+                intent.putExtra("ROOM_TYPE", roomType != null ? roomType : "N/A");
+                intent.putExtra("ROOM_PRICE", roomPrice != null ? roomPrice : "0.00");
+
+                intent.putExtra("STUDENT_NAME", studentName);
+                intent.putExtra("MATRIC_NUMBER", matricNumber);
+                intent.putExtra("PHONE_NUMBER", phoneNumber);
+                intent.putExtra("CHECK_IN_DATE", checkInDate);
+                intent.putExtra("LEASE_DURATION", leaseDuration);
 
                 startActivity(intent);
                 finish();
@@ -95,16 +136,13 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     /**
-     * This method ensures only ONE radio button is checked at a time
-     * and handles the visual selection.
+     * Clear active selected items and toggle only the target RadioButton
      */
     private void updateRadioSelection(RadioButton targetRadio, String method) {
-        // Uncheck all first
         rbDebit.setChecked(false);
         rbBank.setChecked(false);
         rbWallet.setChecked(false);
 
-        // Check the target
         targetRadio.setChecked(true);
         selectedMethod = method;
     }

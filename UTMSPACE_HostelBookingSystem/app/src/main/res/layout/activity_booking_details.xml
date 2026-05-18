@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F1F5F9"
+    tools:context=".BookingDetailsActivity">
+
+    <!-- 1. Premium Minimal Top Header Layer -->
+    <View
+        android:id="@+id/topHeaderBg"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:background="@drawable/dashboard_gradient"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- 2. Header Toolbar controls -->
+    <RelativeLayout
+        android:id="@+id/toolbarLayer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:paddingHorizontal="12dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_alignParentStart="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvDetailsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Booking Details"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02"/>
+    </RelativeLayout>
+
+    <!-- 3. Scrollable Voucher Sheet Canvas -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/toolbarLayer"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingBottom="32dp">
+
+            <!-- MAIN VOUCHER TICKET SLIP -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <!-- Ticket Header: Room ID & Current Status State -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@id/tvStatusTag">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="HOSTEL ACCOMMODATION"
+                                android:textColor="#94A3B8"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.05"/>
+
+                            <TextView
+                                android:id="@+id/tvRoomId"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Room ID Loading..."
+                                android:textColor="#0F172A"
+                                android:textSize="24sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvStatusTag"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:text="PENDING"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="6dp"
+                            android:background="@drawable/input_field_rounded"
+                            android:backgroundTint="#F59E0B"
+                            android:letterSpacing="0.03"/>
+                    </RelativeLayout>
+
+                    <!-- Real App Dynamic Separator Ring (Ticket Cutout style) -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E2E8F0"
+                        android:layout_marginBottom="20dp"/>
+
+                    <!-- Main Meta Metrics: Room Profile Type Info Row -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Room Specification"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvRoomType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Premium Single Suite (Block A)"
+                        android:textColor="#334155"
+                        android:textSize="15sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="20dp"/>
+
+                    <!-- Stay Configuration Grid (Side by Side Grid Matrix) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2"
+                        android:layout_marginBottom="24dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Check-In Date"
+                                android:textColor="#94A3B8"
+                                android:textSize="12sp"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:id="@+id/tvCheckIn"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="28 Oct 2026"
+                                android:textColor="#0F172A"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Lease Duration"
+                                android:textColor="#94A3B8"
+                                android:textSize="12sp"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:id="@+id/tvLeaseDuration"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Full Semester"
+                                android:textColor="#0F172A"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Ticket Dotted Line Cutout Split Segment Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E2E8F0"
+                        android:layout_marginBottom="20dp"/>
+
+                    <!-- Passenger/Student Profile Inline Clean Display Layout -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Resident Profile Details"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp"/>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Full Name"
+                            android:textColor="#64748B"
+                            android:textSize="14sp"/>
+                        <TextView
+                            android:id="@+id/tvStudentName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="Muhammad Harith"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Matric ID"
+                            android:textColor="#64748B"
+                            android:textSize="14sp"/>
+                        <TextView
+                            android:id="@+id/tvMatric"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="A24DW1104"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Phone Contact"
+                            android:textColor="#64748B"
+                            android:textSize="14sp"/>
+                        <TextView
+                            android:id="@+id/tvPhoneNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="+6017-1234567"
+                            android:textColor="#0F172A"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                    </RelativeLayout>
+
+                    <!-- ADDED: Rejection Reason Layout Block Container -->
+                    <LinearLayout
+                        android:id="@+id/layoutRejectReason"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/input_field_rounded"
+                        android:backgroundTint="#FEE2E2"
+                        android:padding="14dp"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Reason for Rejection:"
+                            android:textColor="#991B1B"
+                            android:textStyle="bold"
+                            android:textSize="13sp"/>
+
+                        <TextView
+                            android:id="@+id/tvRejectReasonContent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="No explicit custom feedback was written by the administrator."
+                            android:textColor="#B91C1C"
+                            android:textSize="13sp"/>
+                    </LinearLayout>
+
+                    <!-- Total Statement Footer Component Background Panel -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/input_field_rounded"
+                        android:backgroundTint="#F8FAFC"
+                        android:padding="14dp"
+                        android:layout_marginTop="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total Amount Charged"
+                            android:textColor="#475569"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:layout_gravity="center_vertical"/>
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1"/>
+
+                        <TextView
+                            android:id="@+id/tvPrice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RM 0.00"
+                            android:textColor="#F59E0B"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:layout_gravity="center_vertical"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 4. Sticky Dynamic Action Layer Button Footer (Clean Floating Drawer) -->
+    <LinearLayout
+        android:id="@+id/bottomActionLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#FFFFFF"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="16dp"
+        android:elevation="24dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- PENDING DRAWER ONLY BUTTON -->
+        <Button
+            android:id="@+id/btnCancelBooking"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Cancel Booking Application"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#EF4444"
+            app:cornerRadius="14dp"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:textAllCaps="false"
+            android:visibility="visible"/>
+
+        <!-- APPROVED/REJECTED SPLIT ACTION BUTTONS -->
+        <LinearLayout
+            android:id="@+id/layoutCompletedActions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:visibility="gone"
+            tools:visibility="gone">
+
+            <Button
+                android:id="@+id/btnReturn"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="12dp"
+                android:text="Close"
+                android:textColor="#475569"
+                android:backgroundTint="#F1F5F9"
+                app:cornerRadius="14dp"
+                android:textStyle="bold"
+                android:textSize="14sp"/>
+
+            <Button
+                android:id="@+id/btnShare"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="2"
+                android:text="Share Receipt Voucher"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#6366F1"
+                app:cornerRadius="14dp"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:textAllCaps="false"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

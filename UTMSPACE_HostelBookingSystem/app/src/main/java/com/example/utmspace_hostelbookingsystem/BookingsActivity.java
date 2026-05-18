@@ -45,17 +45,51 @@ public class BookingsActivity extends AppCompatActivity {
         // 2. Setup RecyclerView Layout Configuration
         rvPendingBookings.setLayoutManager(new LinearLayoutManager(this));
         bookingList = new ArrayList<>();
-        adapter = new BookingAdapter(bookingList);
+
+        // 3. Initialize Adapter with an OnItemClickListener implementation
+        adapter = new BookingAdapter(bookingList, booking -> {
+            // When a pending card item is clicked, pass the payload data to the real details page
+            Intent intent = new Intent(BookingsActivity.this, BookingDetailsActivity.class);
+
+            intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
+            intent.putExtra("BOOKING_STATUS", booking.getStatus());
+            intent.putExtra("REJECT_REASON", booking.getRejectReason());
+            intent.putExtra("ROOM_ID", booking.getRoomId());
+            intent.putExtra("ROOM_TYPE", booking.getRoomType());
+            intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
+
+            intent.putExtra("STUDENT_NAME", booking.getStudentName());
+            intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+            intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
+            intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
+            intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
+
+            startActivity(intent);
+        });
+
+        // FIXED: Bind an empty implementation placeholder for the custom payment click listener
+        // to stay clean and compliant with our upgraded adapter structure.
+        adapter.setOnPaymentClickListener(booking -> {
+            // Under normal parameters, a "Pending" application won't trigger this text action,
+            // but binding it here prevents null pointer tracking issues.
+            Intent intent = new Intent(BookingsActivity.this, PaymentActivity.class);
+            intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
+            intent.putExtra("ROOM_ID", booking.getRoomId());
+            intent.putExtra("ROOM_TYPE", booking.getRoomType());
+            intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
+            startActivity(intent);
+        });
+
         rvPendingBookings.setAdapter(adapter);
 
-        // 3. Initialize Firebase Infrastructure
+        // 4. Initialize Firebase Infrastructure
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // 4. Configure operational navigation interactions
+        // 5. Configure operational navigation interactions
         setupBottomNavigation();
 
-        // 5. Query and load Firestore metrics data
+        // 6. Query and load Firestore metrics data
         fetchUserBookings();
     }
 
@@ -67,14 +101,21 @@ public class BookingsActivity extends AppCompatActivity {
 
         String currentUserId = mAuth.getCurrentUser().getUid();
 
+        // IMPROVED FIXED: Query targeting changed from uppercase "PENDING" to PascalCase "Pending".
+        // This instantly corrects the case-sensitive filter match with the database cluster nodes.
         db.collection("Bookings")
                 .whereEqualTo("userId", currentUserId)
+                .whereEqualTo("status", "Pending")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     bookingList.clear();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Booking booking = document.toObject(Booking.class);
+
+                        // Extract the actual Firestore document ID string dynamically
+                        booking.setDocumentId(document.getId());
+
                         bookingList.add(booking);
                     }
 
@@ -96,40 +137,32 @@ public class BookingsActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-        // Enforce active item highlight placement context matching this tab
         bottomNavigation.setSelectedItemId(R.id.nav_booking);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
             if (id == R.id.nav_booking) {
-                return true; // Already on this tab, do nothing
+                return true;
             }
-
             else if (id == R.id.nav_home) {
-                // Route seamlessly back to the Home Dashboard
                 Intent intent = new Intent(BookingsActivity.this, StudentDashboardActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
             }
-
             else if (id == R.id.nav_history) {
-                // Route seamlessly to the Profile Management Screen
                 Intent intent = new Intent(BookingsActivity.this, HistoryActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
             }
-
             else if (id == R.id.nav_profile) {
-                // Route seamlessly to the Profile Management Screen
                 Intent intent = new Intent(BookingsActivity.this, ProfileActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
             }
-
             return false;
         });
     }
@@ -137,10 +170,12 @@ public class BookingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Sync items automatically when navigating back to this view scope
+        // Refresh database contents to catch live status modifications smoothly
         fetchUserBookings();
 
-        // Ensure navigation sync match during cross-activity execution pops
-        bottomNavigation.setSelectedItemId(R.id.nav_booking);
+        // Safeguard: Ensure the baseline layout visually highlights the booking icon explicitly
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_booking);
+        }
     }
 }

@@ -153,7 +153,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
                                 tvStudentName.setText(name);
                             }
 
-                            // CHANGED HERE: Extracting the explicit profilePictureBase64 field key
+                            // Extracting the explicit profilePictureBase64 field key
                             String base64String = snapshot.getString("profilePictureBase64");
                             Log.d("DashboardDebug", "🔥 Base64 string segment detected.");
 
@@ -213,6 +213,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
             }
 
             if (intent != null) {
+                // Optimizes navigation stacks to bring existing task states safely to front
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
             }
@@ -223,6 +225,12 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        // Ensures that when hitting the back button to return home, the icon visually updates cleanly
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        }
+
         if (sliderRunnable != null) {
             sliderHandler.postDelayed(sliderRunnable, 3000);
         }

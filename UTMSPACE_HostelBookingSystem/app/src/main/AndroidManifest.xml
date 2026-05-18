@@ -14,6 +14,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
         <activity
+            android:name=".StaffActionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BookingManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BookingDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StatusActivity"
+            android:exported="false" />
+        <activity
             android:name=".ApplyActivity"
             android:exported="false" />
         <activity
@@ -21,8 +33,8 @@
             android:exported="false" />
         <activity
             android:name=".ProfilePasswordActivity"
-            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"

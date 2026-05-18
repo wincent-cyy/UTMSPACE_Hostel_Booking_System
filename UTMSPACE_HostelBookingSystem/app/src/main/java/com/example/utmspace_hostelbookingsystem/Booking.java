@@ -13,12 +13,18 @@ public class Booking {
     private String matricNumber;
     private String phoneNumber;
 
+    // ADDED: Rejection remark mapping key
+    private String rejectReason;
+
+    // Local storage variable to hold the dynamic Firestore Document ID
+    private String documentId;
+
     // Empty constructor required for Firestore serialization
     public Booking() {}
 
     public Booking(String roomId, String roomType, String roomPrice, String status,
                    String checkInDate, String leaseDuration, String userId,
-                   String studentName, String matricNumber, String phoneNumber) {
+                   String studentName, String matricNumber, String phoneNumber, String rejectReason) {
         this.roomId = roomId;
         this.roomType = roomType;
         this.roomPrice = roomPrice;
@@ -29,6 +35,7 @@ public class Booking {
         this.studentName = studentName;
         this.matricNumber = matricNumber;
         this.phoneNumber = phoneNumber;
+        this.rejectReason = rejectReason;
     }
 
     // Explicit Getters matching your Adapter requirements
@@ -56,10 +63,31 @@ public class Booking {
         return leaseDuration != null ? leaseDuration : "N/A";
     }
 
-    public String getUserId() { return userId; }
-    public String getStudentName() { return studentName; }
-    public String getMatricNumber() { return matricNumber; }
-    public String getPhoneNumber() { return phoneNumber; }
+    public String getUserId() {
+        return userId != null ? userId : "";
+    }
+
+    public String getStudentName() {
+        return studentName != null ? studentName : "N/A";
+    }
+
+    public String getMatricNumber() {
+        return matricNumber != null ? matricNumber : "N/A";
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber != null ? phoneNumber : "N/A";
+    }
+
+    // ADDED: Null-safe explicit Getter for handling rejection comments context smoothly
+    public String getRejectReason() {
+        return rejectReason != null ? rejectReason : "";
+    }
+
+    // Explicit Getter for the tracking key parameter
+    public String getDocumentId() {
+        return documentId;
+    }
 
     // Explicit Setters so Firestore can map incoming document changes
     public void setRoomId(String roomId) { this.roomId = roomId; }
@@ -72,4 +100,12 @@ public class Booking {
     public void setStudentName(String studentName) { this.studentName = studentName; }
     public void setMatricNumber(String matricNumber) { this.matricNumber = matricNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    // ADDED: Explicit Setter for handling rejection changes
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
+
+    // Explicit Setter for the tracking key parameter
+    public void setDocumentId(String documentId) {
+        this.documentId = documentId;
+    }
 }

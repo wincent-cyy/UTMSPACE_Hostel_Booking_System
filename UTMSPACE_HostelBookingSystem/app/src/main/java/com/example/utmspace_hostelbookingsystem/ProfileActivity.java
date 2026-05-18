@@ -47,7 +47,7 @@ public class ProfileActivity extends AppCompatActivity {
     private static final String KEY_SAVED_UID = "SavedUserUid";
 
     private MaterialButton btnLogout, btnDeleteAccount;
-    private RelativeLayout settingPersonalInfo, settingChangePassword; // Added change password container view
+    private RelativeLayout settingPersonalInfo, settingChangePassword;
     private ShapeableImageView ivProfileLarge, btnEditPicture;
     private TextView tvUserName, tvUserEmail;
     private CompoundButton switchBiometric;
@@ -96,7 +96,7 @@ public class ProfileActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
         initViews();
-        fetchUserProfileData();
+        fetchUserProfileData(); // Role is identified here, which also updates the Bottom Navigation menu item items
         loadBiometricToggleStatus();
         setupListeners();
     }
@@ -106,7 +106,7 @@ public class ProfileActivity extends AppCompatActivity {
         btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         settingPersonalInfo = findViewById(R.id.setting_change_username);
-        settingChangePassword = findViewById(R.id.setting_change_password); // Linked to your UI layout component ID
+        settingChangePassword = findViewById(R.id.setting_change_password);
 
         ivProfileLarge = findViewById(R.id.ivProfileLarge);
         btnEditPicture = findViewById(R.id.btnEditPicture);
@@ -167,6 +167,8 @@ public class ProfileActivity extends AppCompatActivity {
                         String role = documentSnapshot.getString("role");
                         if (role != null) {
                             userRole = role.toLowerCase();
+                            // CRITICAL FIX: Re-inflate menu components explicitly based on Staff or Student context assignments
+                            updateBottomMenuStructure();
                         }
 
                         String name = documentSnapshot.getString("name");
@@ -196,6 +198,23 @@ public class ProfileActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch user profile details", e));
+    }
+
+    // Dynamic Menu Swapping Infrastructure to prevent role mixing bugs
+    private void updateBottomMenuStructure() {
+        if (bottomNavigation == null) return;
+
+        bottomNavigation.getMenu().clear();
+        if ("staff".equalsIgnoreCase(userRole)) {
+            // Inflates your designated Staff design layout file
+            bottomNavigation.inflateMenu(R.menu.staff_nav_menu);
+        } else {
+            // Default student/technician layout menu file
+            bottomNavigation.inflateMenu(R.menu.student_nav_menu);
+        }
+
+        // Re-verify visual indicator anchor rules remain focused on Profile selection area
+        bottomNavigation.setSelectedItemId(R.id.nav_profile);
     }
 
     private void processAndUploadFirestoreImage(Uri imageUri) {
@@ -261,24 +280,38 @@ public class ProfileActivity extends AppCompatActivity {
                 if (itemId == R.id.nav_profile) return true;
 
                 Intent intent = null;
-                if (itemId == R.id.nav_home) {
-                    if (userRole.equals("staff")) {
+
+                // FIXED: Processes conditional ID checks separately according to inflated role parameters
+                if (itemId == R.id.nav_home || itemId == R.id.nav_staff_home) {
+                    if ("staff".equalsIgnoreCase(userRole)) {
                         intent = new Intent(this, StaffDashboardActivity.class);
-                    } else if (userRole.equals("technician")){
+                    } else if ("technician".equalsIgnoreCase(userRole)) {
                         intent = new Intent(this, TechnicianDashboardActivity.class);
                     } else {
                         intent = new Intent(this, StudentDashboardActivity.class);
                     }
-                } else if (itemId == R.id.nav_booking) {
-                    intent = new Intent(this, BookingsActivity.class);
-                } else if (itemId == R.id.nav_history) {
+                }
+                else if (itemId == R.id.nav_booking || itemId == R.id.nav_staff_bookings) {
+                    if ("staff".equalsIgnoreCase(userRole)) {
+                        intent = new Intent(this, BookingManagementActivity.class);
+                    } else if ("technician".equalsIgnoreCase(userRole)) {
+                        Toast.makeText(this, "Technician booking access coming soon!", Toast.LENGTH_SHORT).show();
+                        return false;
+                    } else {
+                        intent = new Intent(this, BookingsActivity.class);
+                    }
+                }
+                else if (itemId == R.id.nav_history) {
                     intent = new Intent(this, HistoryActivity.class);
+                }
+                else if (itemId == R.id.nav_rooms) {
+                    Toast.makeText(this, "Room management features coming soon!", Toast.LENGTH_SHORT).show();
+                    return false;
                 }
 
                 if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                     startActivity(intent);
-                    overridePendingTransition(0, 0);
-                    finish();
                     return true;
                 }
                 return false;
@@ -292,7 +325,6 @@ public class ProfileActivity extends AppCompatActivity {
             });
         }
 
-        // Clean redirection navigation route mapping to ForgotPasswordActivity
         if (settingChangePassword != null) {
             settingChangePassword.setOnClickListener(v -> {
                 Intent intent = new Intent(ProfileActivity.this, ProfilePasswordActivity.class);
@@ -405,6 +437,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void performLogout() {
         try {
+            mAuth.signOut();
             Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
             navigateToLogin();
         } catch (Exception e) {
@@ -417,5 +450,13 @@ public class ProfileActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_profile);
+        }
     }
 }

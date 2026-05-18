@@ -76,8 +76,25 @@ public class RoomDetailsActivity extends AppCompatActivity {
     private void populateRoomDetails() {
         if (roomId != null) tvRoomNumber.setText(roomId);
         if (roomType != null) tvRoomType.setText(roomType);
-        if (roomPrice != null) tvRoomPriceTag.setText(roomPrice);
         if (roomDescription != null) tvRoomDescription.setText(roomDescription);
+
+        // --- FIXED: PRICING DISPLAY INTERPOLATION ENGINE ---
+        if (roomPrice != null && !roomPrice.isEmpty()) {
+            String formattedPrice = roomPrice.trim();
+
+            // Strip away existing "/ Month", "/ Mth", or "/ Sem" suffixes to prevent text overlapping
+            if (formattedPrice.contains("/")) {
+                formattedPrice = formattedPrice.split("/")[0].trim();
+            }
+
+            // Ensure price starts with standard currency unit "RM " structure safely
+            if (!formattedPrice.toUpperCase().startsWith("RM")) {
+                formattedPrice = "RM " + formattedPrice;
+            }
+
+            // Append standard semester metric sequence onto your interface
+            tvRoomPriceTag.setText(formattedPrice + " / Semester");
+        }
 
         if (roomStatus != null) {
             tvRoomStatusBadge.setText(roomStatus);
@@ -148,7 +165,9 @@ public class RoomDetailsActivity extends AppCompatActivity {
         Intent applyIntent = new Intent(RoomDetailsActivity.this, ApplyActivity.class);
         applyIntent.putExtra("SELECTED_ROOM_ID", roomId);
         applyIntent.putExtra("SELECTED_ROOM_TYPE", roomType);
-        applyIntent.putExtra("SELECTED_ROOM_PRICE", roomPrice);
+
+        // Pass the updated semester-formatted price directly down into your reservation forms
+        applyIntent.putExtra("SELECTED_ROOM_PRICE", tvRoomPriceTag.getText().toString());
         startActivity(applyIntent);
     }
 }

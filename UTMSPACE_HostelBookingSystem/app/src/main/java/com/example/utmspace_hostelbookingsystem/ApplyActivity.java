@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -115,7 +116,7 @@ public class ApplyActivity extends AppCompatActivity {
     }
 
     private void setupSpinnerOptions() {
-        String[] leaseDurations = {"6 Months (1 Semester)", "12 Months (Full Academic Year)", "Short Term (1 Month)"};
+        String[] leaseDurations = {"1 Semester", "2 Semesters (Full Academic Year)"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, leaseDurations);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnDuration.setAdapter(adapter);
@@ -153,22 +154,41 @@ public class ApplyActivity extends AppCompatActivity {
             String duration = spnDuration.getSelectedItem().toString();
 
             // 1. Structural Checklist Validation Empty Bounds
-            if (name.isEmpty() || matric.isEmpty() || phone.isEmpty() || date.isEmpty()) {
-                Toast.makeText(this, "Please complete all fields before submitting.", Toast.LENGTH_SHORT).show();
+            if (name.isEmpty()) {
+                etFullName.setError("Full name is required");
+                etFullName.requestFocus();
+                return;
+            }
+
+            if (matric.isEmpty()) {
+                etStudentId.setError("Student Matric Number is required");
+                etStudentId.requestFocus();
+                return;
+            }
+
+            if (phone.isEmpty()) {
+                etPhoneNumber.setError("Phone number is required");
+                etPhoneNumber.requestFocus();
+                return;
+            }
+
+            if (date.isEmpty() || date.toLowerCase().contains("select")) {
+                Toast.makeText(this, "Please select an intended check-in date.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // 2. Verify Matric format satisfies structural condition: "A24DW0000"
-            // Pattern components check: 1 uppercase letter, 2 digits, 2 uppercase letters, 4 digits
             String matricPattern = "^[A-Z]\\d{2}[A-Z]{2}\\d{4}$";
             if (!matric.matches(matricPattern)) {
                 etStudentId.setError("Invalid format! Use exact pattern layout (e.g., A24DW0000)");
+                etStudentId.requestFocus();
                 return;
             }
 
             // 3. Verify phone data string fits numerical length boundaries
             if (phone.length() < 10 || phone.length() > 11) {
                 etPhoneNumber.setError("Phone number layout must be between 10 to 11 digits length.");
+                etPhoneNumber.requestFocus();
                 return;
             }
 
@@ -179,39 +199,75 @@ public class ApplyActivity extends AppCompatActivity {
                 return;
             }
 
-            // Disable submit button to prevent double-tap submissions
+            // Disable submit button temporarily to prevent rapid duplicate double-tap submissions
             btnSubmitApplication.setEnabled(false);
 
-            // 4. Construct Data Model HashMap to transmit collection payload (CORRECTED TO .put)
-            Map<String, Object> bookingData = new HashMap<>();
-            bookingData.put("userId", currentUser.getUid());
-            bookingData.put("studentName", name);
-            bookingData.put("matricNumber", matric);
-            bookingData.put("phoneNumber", phone);
-            bookingData.put("checkInDate", date);
-            bookingData.put("leaseDuration", duration);
-            bookingData.put("roomId", selectedRoomId != null ? selectedRoomId : "Unknown Room");
-            bookingData.put("roomType", selectedRoomType != null ? selectedRoomType : "Unknown Type");
-            bookingData.put("roomPrice", selectedRoomPrice != null ? selectedRoomPrice : "Unknown Price");
-            bookingData.put("status", "Pending"); // Automatically sets status to 'Pending'
-            bookingData.put("timestamp", com.google.firebase.Timestamp.now());
-
-            // 5. Submit Document transaction block direct payload assignment
+            // 4. --- IMPROVED: REJECTION AND DUPLICATE APPLICATION CHECK ---
             db.collection("Bookings")
-                    .add(bookingData)
-                    .addOnSuccessListener(documentReference -> {
-                        Toast.makeText(ApplyActivity.this, "Application submitted successfully! Status: Pending", Toast.LENGTH_LONG).show();
+                    .whereEqualTo("userId", currentUser.getUid())
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            boolean hasActiveApplication = false;
 
-                        // Pass confirmation details back to pipeline stack execution frame
-                        Intent intent = new Intent(ApplyActivity.this, StudentDashboardActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                        startActivity(intent);
-                        finish();
-                    })
-                    .addOnFailureListener(e -> {
-                        btnSubmitApplication.setEnabled(true); // Re-enable interaction components upon error
-                        Toast.makeText(ApplyActivity.this, "Submission failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                String status = document.getString("status");
+                                // If they have an application that is NOT rejected, block them
+                                if (status != null && !status.equalsIgnoreCase("Rejected")) {
+                                    hasActiveApplication = true;
+                                    break;
+                                }
+                            }
+
+                            if (hasActiveApplication) {
+                                Toast.makeText(ApplyActivity.this,
+                                        "You already have an active or pending booking application!",
+                                        Toast.LENGTH_LONG).show();
+                                btnSubmitApplication.setEnabled(true); // Re-enable so they can navigate away or fix fields
+                            } else {
+                                // Student has no application or previous ones were rejected; proceed to submit
+                                executeApplicationSubmission(currentUser.getUid(), name, matric, phone, date, duration);
+                            }
+                        } else {
+                            btnSubmitApplication.setEnabled(true);
+                            Toast.makeText(ApplyActivity.this, "Error checking active bookings: " +
+                                            (task.getException() != null ? task.getException().getMessage() : "Unknown error"),
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     });
         });
+    }
+
+    private void executeApplicationSubmission(String uid, String name, String matric, String phone, String date, String duration) {
+        // Construct Data Model HashMap to transmit collection payload
+        Map<String, Object> bookingData = new HashMap<>();
+        bookingData.put("userId", uid);
+        bookingData.put("studentName", name);
+        bookingData.put("matricNumber", matric);
+        bookingData.put("phoneNumber", phone);
+        bookingData.put("checkInDate", date);
+        bookingData.put("leaseDuration", duration);
+        bookingData.put("roomId", selectedRoomId != null ? selectedRoomId : "Unknown Room");
+        bookingData.put("roomType", selectedRoomType != null ? selectedRoomType : "Unknown Type");
+        bookingData.put("roomPrice", selectedRoomPrice != null ? selectedRoomPrice : "Unknown Price");
+        bookingData.put("status", "Pending"); // Automatically sets status to 'Pending'
+        bookingData.put("timestamp", com.google.firebase.Timestamp.now());
+
+        // Submit Document transaction block direct payload assignment
+        db.collection("Bookings")
+                .add(bookingData)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(ApplyActivity.this, "Application submitted successfully! Status: Pending", Toast.LENGTH_LONG).show();
+
+                    // Pass confirmation details back to pipeline stack execution frame
+                    Intent intent = new Intent(ApplyActivity.this, StudentDashboardActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnSubmitApplication.setEnabled(true); // Re-enable interaction components upon error
+                    Toast.makeText(ApplyActivity.this, "Submission failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 }

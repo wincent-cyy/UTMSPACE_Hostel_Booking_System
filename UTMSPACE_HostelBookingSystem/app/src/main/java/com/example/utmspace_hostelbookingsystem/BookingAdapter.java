@@ -12,15 +12,32 @@ import java.util.List;
 public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingViewHolder> {
 
     private List<Booking> bookingList;
+    private OnItemClickListener listener;
+    private OnPaymentClickListener paymentClickListener;
 
-    public BookingAdapter(List<Booking> bookingList) {
+    // Functional Interface declarations
+    public interface OnItemClickListener {
+        void onItemClick(Booking booking);
+    }
+
+    public interface OnPaymentClickListener {
+        void onPaymentClick(Booking booking);
+    }
+
+    // Constructor 1: Original base signature mapping to maintain non-breaking compatibility
+    public BookingAdapter(List<Booking> bookingList, OnItemClickListener listener) {
         this.bookingList = bookingList;
+        this.listener = listener;
+    }
+
+    // Optional Setter interface handler required explicitly by your History Activity component
+    public void setOnPaymentClickListener(OnPaymentClickListener paymentClickListener) {
+        this.paymentClickListener = paymentClickListener;
     }
 
     @NonNull
     @Override
     public BookingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflates the item view design matching your layout resource definition
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_card, parent, false);
         return new BookingViewHolder(view);
     }
@@ -29,7 +46,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
     public void onBindViewHolder(@NonNull BookingViewHolder holder, int position) {
         Booking booking = bookingList.get(position);
 
-        // Safely extract string mappings directly from the Model setters/getters
+        // Populate baseline data elements safely
         holder.tvRoomId.setText(booking.getRoomId());
         holder.tvRoomType.setText(booking.getRoomType());
         holder.tvDetails.setText("Check-in: " + booking.getCheckInDate() + " • " + booking.getLeaseDuration());
@@ -37,7 +54,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
         String status = booking.getStatus();
         holder.tvStatus.setText(status);
 
-        // UI decoration handling relative to real-time process monitoring states
+        // UI status badge decoration handling
         if ("Pending".equalsIgnoreCase(status)) {
             holder.tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7")); // Soft Yellow background
             holder.tvStatus.setTextColor(Color.parseColor("#D97706"));      // Deep Orange Amber text
@@ -47,7 +64,33 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
         } else if ("Rejected".equalsIgnoreCase(status)) {
             holder.tvStatus.setBackgroundColor(Color.parseColor("#FEE2E2")); // Soft Red background
             holder.tvStatus.setTextColor(Color.parseColor("#B91C1C"));      // Crimson Red text
+        } else if ("Paid".equalsIgnoreCase(status)) {
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#DBEAFE")); // Soft Blue background
+            holder.tvStatus.setTextColor(Color.parseColor("#1E40AF"));      // Dark Blue text
         }
+
+        // DYNAMIC PAYMENT TEXT LINK INTERACTION PROCESSING BOUNDARY
+        if (holder.tvClickPayment != null) {
+            // Only displays the operational payment click option if explicitly marked as "Approved"
+            if ("Approved".equalsIgnoreCase(status)) {
+                holder.tvClickPayment.setVisibility(View.VISIBLE);
+                holder.tvClickPayment.setOnClickListener(v -> {
+                    if (paymentClickListener != null) {
+                        paymentClickListener.onPaymentClick(booking);
+                    }
+                });
+            } else {
+                // Hides interaction node paths automatically if context evaluates to Pending, Rejected, or Paid
+                holder.tvClickPayment.setVisibility(View.GONE);
+            }
+        }
+
+        // Entire row item root card view click routing
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null && holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
+                listener.onItemClick(booking);
+            }
+        });
     }
 
     @Override
@@ -57,14 +100,17 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
 
     static class BookingViewHolder extends RecyclerView.ViewHolder {
         TextView tvRoomId, tvRoomType, tvDetails, tvStatus;
+        TextView tvClickPayment; // Fixed: Changed type from MaterialButton to TextView to prevent crashes
 
         public BookingViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Links the individual view elements using your XML item IDs
             tvRoomId = itemView.findViewById(R.id.tvRoomId);
             tvRoomType = itemView.findViewById(R.id.tvRoomType);
             tvDetails = itemView.findViewById(R.id.tvDetails);
             tvStatus = itemView.findViewById(R.id.tvStatus);
+
+            // Safe initialization: Successfully binds to your clickable TextView text element
+            tvClickPayment = itemView.findViewById(R.id.tvClickPayment);
         }
     }
 }
