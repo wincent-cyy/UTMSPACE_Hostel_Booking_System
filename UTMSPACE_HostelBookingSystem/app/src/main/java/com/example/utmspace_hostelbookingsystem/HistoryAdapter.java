@@ -25,8 +25,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     @NonNull
     @Override
     public HistoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflates your original custom history item layout design row
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_history, parent, false);
+        // IMPROVED: pointed layout to item_booking_card to keep UI design perfectly uniform
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_card, parent, false);
         return new HistoryViewHolder(view);
     }
 
@@ -34,49 +34,83 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     public void onBindViewHolder(@NonNull HistoryViewHolder holder, int position) {
         Booking booking = bookingList.get(position);
 
-        // CORRECTED: Safely map parameters to match our updated Booking object properties
+        // Populate baseline layout elements safely using our unified model mappings
         holder.tvRoomType.setText(booking.getRoomType());
-        holder.tvDate.setText(booking.getCheckInDate());
+        holder.tvRoomId.setText("Room: " + booking.getRoomId());
+        holder.tvDetails.setText("Check-in: " + booking.getCheckInDate() + " • " + booking.getLeaseDuration());
+        holder.tvTotalPrice.setText(booking.getRoomPrice());
         holder.tvStatus.setText(booking.getStatus());
-        holder.tvPrice.setText(booking.getRoomPrice());
 
-        // Default Setup State: Clear visibility metrics to prevent recycling glitches
+        // Default Reset State: Prevents row recycling visual state bugs
         holder.tvClickPayment.setVisibility(View.GONE);
-        holder.tvClickPayment.setOnClickListener(null);
-        holder.itemView.setOnClickListener(null);
 
-        String status = booking.getStatus() != null ? booking.getStatus() : "";
+        String status = booking.getStatus() != null ? booking.getStatus().trim() : "";
 
-        // Status Logic evaluations
+        // UI status badge and click engine handler processing logic
         if (status.equalsIgnoreCase("Approved")) {
-            holder.tvStatus.setTextColor(Color.parseColor("#10B981")); // Emerald Green
+            // Match design profiles: soft background colors handled by your architecture or code
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#DCFCE7")); // Soft Green
+            holder.tvStatus.setTextColor(Color.parseColor("#15803D"));      // Emerald Green
 
-            // Show the payment context link ONLY for approved items
+            // Show payment interactive text link option
             holder.tvClickPayment.setVisibility(View.VISIBLE);
+            holder.tvClickPayment.setText("Pay Now →");
 
-            // Bind click engine listener framework to navigate towards checkouts
+            // Direct route pathway to checkout system terminal layout
             holder.tvClickPayment.setOnClickListener(v -> {
                 try {
                     Intent intent = new Intent(context, PaymentActivity.class);
-                    // Pass matching variables to the checkout activity pipeline
-                    intent.putExtra("ROOM_NAME", booking.getRoomType());
-                    intent.putExtra("PRICE", booking.getRoomPrice());
-                    intent.putExtra("ROOM_ID", booking.getRoomId());
-
+                    passCompleteBookingPayload(intent, booking);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 } catch (Exception e) {
-                    Toast.makeText(context, "Navigation Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Payment Route Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
 
         } else if (status.equalsIgnoreCase("Paid")) {
-            holder.tvStatus.setTextColor(Color.parseColor("#6366F1")); // Indigo Blue
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#DBEAFE")); // Soft Blue
+            holder.tvStatus.setTextColor(Color.parseColor("#1E40AF"));      // Dark Blue
             holder.tvClickPayment.setVisibility(View.GONE);
+
+        } else if (status.equalsIgnoreCase("Rejected")) {
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#FEE2E2")); // Soft Red
+            holder.tvStatus.setTextColor(Color.parseColor("#B91C1C"));      // Crimson Red
+            holder.tvClickPayment.setVisibility(View.GONE);
+
         } else {
-            holder.tvStatus.setTextColor(Color.parseColor("#EF4444")); // Crimson Red
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7")); // Soft Amber fallback
+            holder.tvStatus.setTextColor(Color.parseColor("#D97706"));
             holder.tvClickPayment.setVisibility(View.GONE);
         }
+
+        // Entire Row Click Setup: Passes complete data directly to Detail view screen
+        holder.itemView.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent(context, BookingDetailsActivity.class);
+                passCompleteBookingPayload(intent, booking);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(context, "Details Route Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // Helper method to make sure both checkout and details intents receive the complete data package safely
+    private void passCompleteBookingPayload(Intent intent, Booking booking) {
+        intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
+        intent.putExtra("BOOKING_STATUS", booking.getStatus());
+        intent.putExtra("ROOM_ID", booking.getRoomId());
+        intent.putExtra("ROOM_TYPE", booking.getRoomType());
+        intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
+
+        intent.putExtra("STUDENT_NAME", booking.getStudentName());
+        intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+        intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
+        intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
+        intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
+        intent.putExtra("REJECT_REASON", booking.getRejectReason());
     }
 
     @Override
@@ -85,14 +119,16 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
     }
 
     public static class HistoryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomType, tvDate, tvStatus, tvPrice, tvClickPayment;
+        // Updated field variables list to match item_booking_card layout structure completely
+        TextView tvRoomType, tvRoomId, tvDetails, tvStatus, tvTotalPrice, tvClickPayment;
 
         public HistoryViewHolder(@NonNull View itemView) {
             super(itemView);
             tvRoomType = itemView.findViewById(R.id.tvRoomType);
-            tvDate = itemView.findViewById(R.id.tvBookingDate);
+            tvRoomId = itemView.findViewById(R.id.tvRoomId);         // Fixed: mapped safely away from tvBookingDate
+            tvDetails = itemView.findViewById(R.id.tvDetails);       // Maps check-in and lease text strings
             tvStatus = itemView.findViewById(R.id.tvStatus);
-            tvPrice = itemView.findViewById(R.id.tvTotalPrice);
+            tvTotalPrice = itemView.findViewById(R.id.tvTotalPrice); // Maps final price value field
             tvClickPayment = itemView.findViewById(R.id.tvClickPayment);
         }
     }

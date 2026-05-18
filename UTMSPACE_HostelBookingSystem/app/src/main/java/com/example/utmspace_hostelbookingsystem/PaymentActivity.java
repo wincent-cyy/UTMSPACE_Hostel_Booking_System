@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class PaymentActivity extends AppCompatActivity {
 
@@ -34,10 +35,16 @@ public class PaymentActivity extends AppCompatActivity {
 
     private String selectedMethod = "";
 
+    // IMPROVED: Added FirebaseFirestore instance reference
+    private FirebaseFirestore db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payment);
+
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
 
         initViews();
         getIntentData();
@@ -63,7 +70,7 @@ public class PaymentActivity extends AppCompatActivity {
     private void getIntentData() {
         Intent intent = getIntent();
         if (intent != null) {
-            // FIXED: Key mappings matched exactly with HistoryActivity specifications
+            // Key mappings matched exactly with HistoryActivity specifications
             bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
             roomId = intent.getStringExtra("ROOM_ID");
             roomType = intent.getStringExtra("ROOM_TYPE");
@@ -112,25 +119,43 @@ public class PaymentActivity extends AppCompatActivity {
         btnPayNow.setOnClickListener(v -> {
             if (selectedMethod.isEmpty()) {
                 Toast.makeText(this, "Please select a payment method to proceed.", Toast.LENGTH_SHORT).show();
+            } else if (bookingDocId == null || bookingDocId.isEmpty()) {
+                Toast.makeText(this, "Error: Invalid booking reference identifier.", Toast.LENGTH_SHORT).show();
             } else {
-                // Route explicitly forward into Receipt screen view framework
-                Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
+                // Disable button to prevent double-clicks during server processing
+                btnPayNow.setEnabled(false);
 
-                // Pack full dynamic payload data parameters safely
-                intent.putExtra("PAYMENT_METHOD", selectedMethod);
-                intent.putExtra("BOOKING_DOC_ID", bookingDocId);
-                intent.putExtra("ROOM_ID", roomId != null ? roomId : "N/A");
-                intent.putExtra("ROOM_TYPE", roomType != null ? roomType : "N/A");
-                intent.putExtra("ROOM_PRICE", roomPrice != null ? roomPrice : "0.00");
+                // IMPROVED: Update booking document status directly to "Paid" in Firestore
+                db.collection("Bookings").document(bookingDocId)
+                        .update("status", "Paid")
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(PaymentActivity.this, "Payment successful!", Toast.LENGTH_SHORT).show();
 
-                intent.putExtra("STUDENT_NAME", studentName);
-                intent.putExtra("MATRIC_NUMBER", matricNumber);
-                intent.putExtra("PHONE_NUMBER", phoneNumber);
-                intent.putExtra("CHECK_IN_DATE", checkInDate);
-                intent.putExtra("LEASE_DURATION", leaseDuration);
+                            // Route explicitly forward into Receipt screen view framework
+                            Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
 
-                startActivity(intent);
-                finish();
+                            // Pack full dynamic payload data parameters safely
+                            intent.putExtra("PAYMENT_METHOD", selectedMethod);
+                            intent.putExtra("BOOKING_DOC_ID", bookingDocId);
+                            intent.putExtra("BOOKING_STATUS", "Paid"); // Updated status payload
+                            intent.putExtra("ROOM_ID", roomId != null ? roomId : "N/A");
+                            intent.putExtra("ROOM_TYPE", roomType != null ? roomType : "N/A");
+                            intent.putExtra("ROOM_PRICE", roomPrice != null ? roomPrice : "0.00");
+
+                            intent.putExtra("STUDENT_NAME", studentName);
+                            intent.putExtra("MATRIC_NUMBER", matricNumber);
+                            intent.putExtra("PHONE_NUMBER", phoneNumber);
+                            intent.putExtra("CHECK_IN_DATE", checkInDate);
+                            intent.putExtra("LEASE_DURATION", leaseDuration);
+
+                            startActivity(intent);
+                            finish();
+                        })
+                        .addOnFailureListener(e -> {
+                            // Re-enable button on error path
+                            btnPayNow.setEnabled(true);
+                            Toast.makeText(PaymentActivity.this, "Transaction failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
             }
         });
     }
