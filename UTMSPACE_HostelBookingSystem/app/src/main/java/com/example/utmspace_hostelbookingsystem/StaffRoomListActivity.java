@@ -6,7 +6,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,7 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -27,7 +25,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
 
     private RecyclerView rvRoomList;
     private EditText etSearchRoom;
-    private TabLayout tabFilter;
     private LinearLayout emptyState;
     private TextView tvRoomCount;
     private BottomNavigationView bottomNavigation;
@@ -36,8 +33,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
     private StaffRoomAdapter adapter;
     private List<RoomModel> masterRoomList;
     private List<RoomModel> filteredRoomList;
-
-    private String currentFilter = "All";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +44,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
         initViews();
         setupRecyclerView();
         setupSearchFilter();
-        setupTabFilter();
         setupNavigation();
         fetchAllRooms();
     }
@@ -57,7 +51,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
     private void initViews() {
         rvRoomList = findViewById(R.id.rvRoomList);
         etSearchRoom = findViewById(R.id.etSearchRoom);
-        tabFilter = findViewById(R.id.tabFilter);
         emptyState = findViewById(R.id.emptyState);
         tvRoomCount = findViewById(R.id.tvRoomCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -121,50 +114,16 @@ public class StaffRoomListActivity extends AppCompatActivity {
         });
     }
 
-    private void setupTabFilter() {
-        tabFilter.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                if (tab.getText() != null) {
-                    currentFilter = tab.getText().toString();
-                    applyFilters();
-                }
-            }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {}
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-                if (tab.getText() != null) {
-                    currentFilter = tab.getText().toString();
-                    applyFilters();
-                }
-            }
-        });
-    }
-
     private void applyFilters() {
         filteredRoomList.clear();
         String searchQuery = etSearchRoom.getText().toString().toLowerCase().trim();
 
         for (RoomModel room : masterRoomList) {
-            boolean matchesFilter = true;
-            if (!currentFilter.equals("All")) {
-                if (currentFilter.equals("Available") && !room.getStatus().equalsIgnoreCase("Available")) {
-                    matchesFilter = false;
-                } else if (currentFilter.equals("Full") && !room.isFull()) {
-                    matchesFilter = false;
-                } else if (currentFilter.equals("Maintenance") && !room.getCondition().equalsIgnoreCase("Under Maintenance")) {
-                    matchesFilter = false;
-                }
-            }
-
             boolean matchesSearch = searchQuery.isEmpty() ||
                     room.getRoomNumber().toLowerCase().contains(searchQuery) ||
                     room.getLocation().toLowerCase().contains(searchQuery);
 
-            if (matchesFilter && matchesSearch) {
+            if (matchesSearch) {
                 filteredRoomList.add(room);
             }
         }
@@ -189,6 +148,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
 
     private void setupNavigation() {
         bottomNavigation.setSelectedItemId(R.id.nav_rooms);
+
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 

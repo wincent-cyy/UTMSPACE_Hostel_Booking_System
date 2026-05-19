@@ -18,11 +18,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class ReceiptActivity extends AppCompatActivity {
 
     private MaterialButton btnDownload, btnBackHome;
-    private TextView tvTotalAmount, tvReceiptMethod, tvReceiptRoom, tvReceiptDate, tvTransactionId;
+    private TextView tvTotalAmount, tvReceiptMethod, tvReceiptRoom, tvReceiptDate, tvTransactionId, tvReceiptMatric;
     private View receiptCard;
 
     @Override
@@ -44,26 +47,33 @@ public class ReceiptActivity extends AppCompatActivity {
         tvReceiptRoom = findViewById(R.id.tvReceiptRoom);
         tvReceiptDate = findViewById(R.id.tvReceiptDate);
         tvTransactionId = findViewById(R.id.tvTransactionId);
+        tvReceiptMatric = findViewById(R.id.tvReceiptMatric); // New field
 
         receiptCard = findViewById(R.id.receiptCard);
-
-        // Fallback if ID is missing in XML
-        if (receiptCard == null) {
-            receiptCard = (View) tvTotalAmount.getParent().getParent();
-        }
     }
 
     private void displayData() {
-        String method = getIntent().getStringExtra("PAYMENT_METHOD");
-        String room = getIntent().getStringExtra("ROOM_NAME");
-        String price = getIntent().getStringExtra("PRICE");
+        Intent intent = getIntent();
 
-        tvReceiptMethod.setText(method != null ? method : "E-Wallet");
+        // Retrieve data passed from PaymentActivity
+        String method = intent.getStringExtra("PAYMENT_METHOD");
+        String room = intent.getStringExtra("ROOM_ID");
+        String price = intent.getStringExtra("ROOM_PRICE");
+        String bookingId = intent.getStringExtra("BOOKING_DOC_ID");
+        String matric = intent.getStringExtra("MATRIC_NUMBER");
+
+        // Set Text Fields
+        tvReceiptMethod.setText(method != null ? method : "N/A");
         tvReceiptRoom.setText(room != null ? room : "N/A");
-        tvTotalAmount.setText(price != null ? price : "RM 0.00");
+        tvTotalAmount.setText(price != null ? "RM " + price : "RM 0.00");
+        tvReceiptMatric.setText(matric != null ? matric : "N/A");
 
-        tvReceiptDate.setText("09 May 2026, 08:30 PM");
-        tvTransactionId.setText("UTM-" + System.currentTimeMillis() / 1000);
+        // Set Current Date
+        String currentDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
+        tvReceiptDate.setText(currentDate);
+
+        // Set Transaction ID (Use booking ID if available, otherwise fallback)
+        tvTransactionId.setText(bookingId != null ? bookingId : "UTM-" + System.currentTimeMillis() / 1000);
     }
 
     private void setupListeners() {
@@ -78,12 +88,14 @@ public class ReceiptActivity extends AppCompatActivity {
     }
 
     private void generatePDF() {
-        // 1. Create a bitmap of the receipt card
+        // Ensure the view is measured for the bitmap
+        receiptCard.measure(View.MeasureSpec.makeMeasureSpec(receiptCard.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(receiptCard.getHeight(), View.MeasureSpec.EXACTLY));
+
         Bitmap bitmap = Bitmap.createBitmap(receiptCard.getWidth(), receiptCard.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         receiptCard.draw(canvas);
 
-        // 2. Create PDF document
         PdfDocument document = new PdfDocument();
         PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), 1).create();
         PdfDocument.Page page = document.startPage(pageInfo);
@@ -92,9 +104,7 @@ public class ReceiptActivity extends AppCompatActivity {
         pdfCanvas.drawBitmap(bitmap, 0, 0, null);
         document.finishPage(page);
 
-        // 3. Save to Downloads folder using MediaStore
         String fileName = "UTMSpace_Receipt_" + System.currentTimeMillis() + ".pdf";
-
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
         values.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
@@ -108,10 +118,7 @@ public class ReceiptActivity extends AppCompatActivity {
                 document.writeTo(outputStream);
                 document.close();
                 outputStream.close();
-
                 Toast.makeText(this, "Receipt saved to Downloads", Toast.LENGTH_SHORT).show();
-
-                // 4. OPEN THE PDF IMMEDIATELY
                 openReceipt(uri);
             }
         } catch (Exception e) {
@@ -124,12 +131,10 @@ public class ReceiptActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, "application/pdf");
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
         try {
-            // This triggers the system "Open with..." dialog
             startActivity(Intent.createChooser(intent, "Open Receipt PDF"));
         } catch (Exception e) {
-            Toast.makeText(this, "No PDF viewer found on this device", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No PDF viewer found", Toast.LENGTH_SHORT).show();
         }
     }
 }

@@ -51,7 +51,7 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder
 
         // If room is physically full, override status to show "FULL"
         if (room.isFull()) {
-            holder.tvStatus.setText("FULL");
+            holder.tvStatus.setText("Full");
             holder.tvStatus.setTextColor(Color.parseColor("#EF4444")); // Red
             holder.tvCapacity.setTextColor(Color.parseColor("#EF4444")); // Red for urgency
         } else if ("Available".equalsIgnoreCase(status)) {

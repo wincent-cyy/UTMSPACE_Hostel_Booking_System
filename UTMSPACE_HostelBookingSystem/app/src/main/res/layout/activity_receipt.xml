@@ -25,7 +25,7 @@
             android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- Content Container (Replaced ScrollView) -->
+    <!-- Content Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -35,7 +35,6 @@
         app:layout_constraintBottom_toTopOf="@+id/buttonContainer"
         app:layout_constraintTop_toBottomOf="@id/topBar">
 
-        <!-- Main White Receipt Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/receiptCard"
             android:layout_width="match_parent"
@@ -90,7 +89,7 @@
                     android:layout_marginVertical="24dp"
                     android:background="#F1F5F9" />
 
-                <!-- Data Rows -->
+                <!-- Transaction Details -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -107,13 +106,19 @@
                 </RelativeLayout>
 
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hostel" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptRoom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Hostel Blok A1" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Room ID" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvReceiptRoom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="A1-101" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+                <!-- New Matric Row -->
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Matric No." android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvReceiptMatric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="09 May 2026, 08:30 PM" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvReceiptDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="09 May 2026" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
@@ -132,10 +137,9 @@
             android:text="Thank you for staying with UTMSpace!"
             android:textColor="#94A3B8"
             android:textSize="13sp" />
-
     </LinearLayout>
 
-    <!-- Bottom Buttons Container -->
+    <!-- Bottom Buttons -->
     <LinearLayout
         android:id="@+id/buttonContainer"
         android:layout_width="match_parent"

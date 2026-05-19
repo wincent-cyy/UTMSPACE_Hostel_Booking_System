@@ -2,6 +2,7 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.InputFilter;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -80,6 +81,11 @@ public class EditInfoActivity extends AppCompatActivity {
         etPhoneNumber = findViewById(R.id.etPhoneNumber);
         etEmergencyPhone = findViewById(R.id.etEmergencyPhone);
 
+        // FIXED: Force EditText input filter layer to transform typing to uppercase instantly
+        if (etFullName != null) {
+            etFullName.setFilters(new InputFilter[]{new InputFilter.AllCaps()});
+        }
+
         layoutSelectGender = findViewById(R.id.layoutSelectGender);
         btnSaveChanges = findViewById(R.id.btnSaveChanges);
     }
@@ -124,7 +130,10 @@ public class EditInfoActivity extends AppCompatActivity {
         String nameValue = doc.getString("name");
         String phoneValue = doc.getString("phone");
 
-        if (nameValue != null && !nameValue.isEmpty()) etFullName.setText(nameValue);
+        // FIXED: Show name automatically but keep editable, applying explicit uppercase conversion right at rendering step
+        if (nameValue != null && !nameValue.isEmpty()) {
+            etFullName.setText(nameValue.toUpperCase());
+        }
         if (phoneValue != null && !phoneValue.isEmpty()) etPhoneNumber.setText(phoneValue);
 
         if (doc.contains("emergencyContact")) etEmergencyPhone.setText(doc.getString("emergencyContact"));
@@ -173,7 +182,7 @@ public class EditInfoActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. Validate Full Name (Alphabets and spaces only)
+        // 2. Validate Full Name (Alphabets and spaces only - supports both upper and lower matches safely)
         if (!updatedName.matches("^[a-zA-Z\\s]+$")) {
             etFullName.setError("Full name must only contain alphabetic letters");
             etFullName.requestFocus();
@@ -200,9 +209,9 @@ public class EditInfoActivity extends AppCompatActivity {
         btnSaveChanges.setEnabled(false);
         Toast.makeText(this, "Saving changes...", Toast.LENGTH_SHORT).show();
 
-        // Package data fields safely
+        // Package data fields safely (Forces name string to uppercase configuration before pushing values to Firestore)
         Map<String, Object> profileUpdates = new HashMap<>();
-        profileUpdates.put("name", updatedName);
+        profileUpdates.put("name", updatedName.toUpperCase());
         profileUpdates.put("phone", updatedPhone);
         profileUpdates.put("emergencyContact", emergencyPhone);
         profileUpdates.put("gender", selectedGender);

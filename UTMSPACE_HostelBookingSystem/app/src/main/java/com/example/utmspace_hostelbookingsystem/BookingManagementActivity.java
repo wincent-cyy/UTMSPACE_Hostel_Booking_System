@@ -30,9 +30,9 @@ public class BookingManagementActivity extends AppCompatActivity {
 
     // Database Architecture & Lists
     private FirebaseFirestore db;
-    private BookingAdapter adapter; // Reusing model properties for systemic unity
-    private List<Booking> masterPendingList;
-    private List<Booking> filteredPendingList;
+    private BookingAdapter adapter;
+    private List<Booking> masterAllBookingsList;
+    private List<Booking> filteredBookingsList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +47,8 @@ public class BookingManagementActivity extends AppCompatActivity {
         setupSearchFilter();
         setupNavigation();
 
-        // Automatically stream pending requests right on initialization
-        fetchPendingApplicationsFromFirestore();
+        // Fetch ALL bookings (not just pending)
+        fetchAllBookingsFromFirestore();
     }
 
     private void initViews() {
@@ -59,14 +59,13 @@ public class BookingManagementActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        masterPendingList = new ArrayList<>();
-        filteredPendingList = new ArrayList<>();
+        masterAllBookingsList = new ArrayList<>();
+        filteredBookingsList = new ArrayList<>();
 
         rvStaffBookings.setLayoutManager(new LinearLayoutManager(this));
 
-        // Setup adapter targeting your staff detailed evaluation layout sheet view profile
-        adapter = new BookingAdapter(filteredPendingList, booking -> {
-            // Explicitly route to a dedicated Staff action script screen
+        // Setup adapter
+        adapter = new BookingAdapter(filteredBookingsList, booking -> {
             Intent intent = new Intent(BookingManagementActivity.this, StaffActionActivity.class);
 
             // Inject complete transactional keys for evaluation mapping
@@ -81,8 +80,6 @@ public class BookingManagementActivity extends AppCompatActivity {
             intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
             intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
             intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
-
-            // FIXED CRITICAL GAP: Pass the student user mapping token so StaffAction Activity can track identity bounds
             intent.putExtra("userId", booking.getUserId());
 
             startActivity(intent);
@@ -91,23 +88,20 @@ public class BookingManagementActivity extends AppCompatActivity {
         rvStaffBookings.setAdapter(adapter);
     }
 
-    private void fetchPendingApplicationsFromFirestore() {
-        // Automatically fetches ALL records from the system where status is "Pending"
+    private void fetchAllBookingsFromFirestore() {
+        // Fetch ALL bookings (not just pending)
         db.collection("Bookings")
-                .whereEqualTo("status", "Pending")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    masterPendingList.clear();
+                    masterAllBookingsList.clear();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Booking booking = document.toObject(Booking.class);
-
-                        // Inject unique document key identifier sequence for modification passes
                         booking.setDocumentId(document.getId());
-                        masterPendingList.add(booking);
+                        masterAllBookingsList.add(booking);
                     }
 
-                    // Synchronize and render views
+                    // Apply search filter
                     filterStaffData(etStaffSearch.getText().toString());
                 })
                 .addOnFailureListener(e -> {
@@ -131,20 +125,24 @@ public class BookingManagementActivity extends AppCompatActivity {
     }
 
     private void filterStaffData(String query) {
-        filteredPendingList.clear();
+        filteredBookingsList.clear();
         String cleanQuery = query.toLowerCase().trim();
 
-        for (Booking b : masterPendingList) {
-            String name = b.getStudentName() != null ? b.getStudentName().toLowerCase() : "";
-            String matric = b.getMatricNumber() != null ? b.getMatricNumber().toLowerCase() : "";
+        for (Booking booking : masterAllBookingsList) {
+            if (cleanQuery.isEmpty()) {
+                filteredBookingsList.add(booking);
+            } else {
+                String name = booking.getStudentName() != null ? booking.getStudentName().toLowerCase() : "";
+                String matric = booking.getMatricNumber() != null ? booking.getMatricNumber().toLowerCase() : "";
 
-            if (name.contains(cleanQuery) || matric.contains(cleanQuery)) {
-                filteredPendingList.add(b);
+                if (name.contains(cleanQuery) || matric.contains(cleanQuery)) {
+                    filteredBookingsList.add(booking);
+                }
             }
         }
 
-        // Toggle Empty Screen layout views seamlessly
-        if (filteredPendingList.isEmpty()) {
+        // Toggle Empty Screen layout views
+        if (filteredBookingsList.isEmpty()) {
             rvStaffBookings.setVisibility(View.GONE);
             staffEmptyState.setVisibility(View.VISIBLE);
         } else {
@@ -156,7 +154,7 @@ public class BookingManagementActivity extends AppCompatActivity {
     }
 
     private void setupNavigation() {
-        // Highlight active layout state position item profile anchor matching your Staff menu configuration
+        // Highlight active layout state position
         bottomNavigation.setSelectedItemId(R.id.nav_staff_bookings);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -176,7 +174,6 @@ public class BookingManagementActivity extends AppCompatActivity {
             }
 
             if (intent != null) {
-                // Brings the background task forward instead of destroying and recreating layout layers
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
@@ -188,10 +185,10 @@ public class BookingManagementActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Force list state refresh upon interaction focus re-entry
-        fetchPendingApplicationsFromFirestore();
+        // Refresh list when returning from StaffActionActivity
+        fetchAllBookingsFromFirestore();
 
-        // Safety Synchronization: Re-forces the correct bottom icon highlight ring state explicitly
+        // Re-force bottom icon highlight
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_staff_bookings);
         }

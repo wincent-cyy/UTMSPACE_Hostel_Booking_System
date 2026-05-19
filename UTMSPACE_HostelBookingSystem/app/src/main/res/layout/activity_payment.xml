@@ -42,7 +42,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnBack" />
 
-    <!-- OVERLAPPING PRICE CARD (Half-in, Half-out) -->
+    <!-- OVERLAPPING PRICE CARD -->
     <androidx.cardview.widget.CardView
         android:id="@+id/priceCard"
         android:layout_width="match_parent"
@@ -68,7 +68,7 @@
                 android:id="@+id/tvTotalMain"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$475.00"
+                android:text="RM475.00"
                 android:textColor="#FFFFFF"
                 android:textSize="36sp"
                 android:textStyle="bold" />
@@ -96,7 +96,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
-                android:text="Billing Breakdown"
+                android:text="Personal Information"
                 android:textColor="#1E293B"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -114,13 +114,20 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
+
                     <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                        <TextView android:text="Room Rental" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <TextView android:layout_alignParentEnd="true" android:text="$450.00" android:textColor="#1E293B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:text="Full Name" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:id="@+id/tvDisplayName" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </RelativeLayout>
-                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp">
-                        <TextView android:text="Processing Fee" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <TextView android:layout_alignParentEnd="true" android:text="$25.00" android:textColor="#1E293B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
+                        <TextView android:text="Matric No." android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:id="@+id/tvDisplayMatric" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </RelativeLayout>
+
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
+                        <TextView android:text="Phone Number" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:id="@+id/tvDisplayPhone" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                     </RelativeLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -153,7 +160,7 @@
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="#FFFFFF">
                     <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
-                        <ImageView android:id="@+id/iconCard" android:scaleType="fitCenter" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/debit_card" />
+                        <ImageView android:id="@+id/iconCard" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/debit_card" />
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerVertical="true" android:layout_marginStart="16dp" android:layout_toEndOf="@id/iconCard" android:text="Credit / Debit Card" android:textColor="#1E293B" android:textStyle="bold" />
                         <RadioButton android:id="@+id/rbCard" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
                     </RelativeLayout>
@@ -169,7 +176,7 @@
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="#FFFFFF">
                     <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
-                        <ImageView android:id="@+id/iconBank" android:scaleType="fitCenter" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/online_banking" />
+                        <ImageView android:id="@+id/iconBank" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/online_banking" />
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerVertical="true" android:layout_marginStart="16dp" android:layout_toEndOf="@id/iconBank" android:text="Online Banking (FPX)" android:textColor="#1E293B" android:textStyle="bold" />
                         <RadioButton android:id="@+id/rbBank" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
                     </RelativeLayout>
@@ -185,7 +192,7 @@
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="#FFFFFF">
                     <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
-                        <ImageView android:id="@+id/iconWallet" android:scaleType="fitCenter" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/tng" />
+                        <ImageView android:id="@+id/iconWallet" android:layout_width="32dp" android:layout_height="32dp" android:layout_centerVertical="true" android:src="@drawable/tng" />
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_centerVertical="true" android:layout_marginStart="16dp" android:layout_toEndOf="@id/iconWallet" android:text="E-Wallet" android:textColor="#1E293B" android:textStyle="bold" />
                         <RadioButton android:id="@+id/rbWallet" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
                     </RelativeLayout>

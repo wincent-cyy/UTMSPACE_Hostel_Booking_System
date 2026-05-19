@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -14,6 +16,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
         <activity
+            android:name=".StaffRoomDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StaffRoomListActivity"
+            android:exported="false" />
+        <activity
             android:name=".StaffActionActivity"
             android:exported="false" />
         <activity
@@ -21,9 +29,6 @@
             android:exported="false" />
         <activity
             android:name=".BookingDetailsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".StatusActivity"
             android:exported="false" />
         <activity
             android:name=".ApplyActivity"

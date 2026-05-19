@@ -64,7 +64,7 @@
         app:layout_constraintTop_toTopOf="@+id/headerTextLayer"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Tab Layout - Moved up slightly to fit within headerBg -->
+    <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
@@ -86,6 +86,21 @@
             android:layout_height="wrap_content"
             android:text="History" />
     </com.google.android.material.tabs.TabLayout>
+
+    <!-- Empty State Informational Text Display -->
+    <TextView
+        android:id="@+id/tvEmptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Doesn't have record yet"
+        android:textColor="#64748B"
+        android:textSize="16sp"
+        android:textStyle="normal"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerBg" />
 
     <!-- Shared RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView

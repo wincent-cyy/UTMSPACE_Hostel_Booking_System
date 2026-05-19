@@ -3,6 +3,7 @@ package com.example.utmspace_hostelbookingsystem;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -24,6 +25,9 @@ public class HistoryActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigation;
     private TabLayout tabLayout;
     private MaterialButton btnClearHistory;
+
+    // Reference pointer variable for Empty State placeholder layout
+    private TextView tvEmptyState;
 
     private BookingAdapter adapter;
     private List<Booking> allBookings;
@@ -55,6 +59,9 @@ public class HistoryActivity extends AppCompatActivity {
         bottomNavigation = findViewById(R.id.bottomNavigation);
         tabLayout = findViewById(R.id.tabLayout);
         btnClearHistory = findViewById(R.id.btnClearHistory);
+
+        // Connect empty state text reference placeholder node
+        tvEmptyState = findViewById(R.id.tvEmptyState);
 
         // 預設隱藏清除按鈕（因為第一頁是 Ongoing）
         if (btnClearHistory != null) {
@@ -164,10 +171,18 @@ public class HistoryActivity extends AppCompatActivity {
         filterBookingsByTab(currentTabName);
     }
 
-    // 💡 核心改動：重新定義分頁過濾邏輯
     private void filterBookingsByTab(String tabName) {
         if (filteredList == null) filteredList = new ArrayList<>();
         filteredList.clear();
+
+        // FIXED: Button visibility rules now execute reliably based on active layout position tags
+        if (btnClearHistory != null) {
+            if (tabName.equalsIgnoreCase("History")) {
+                btnClearHistory.setVisibility(View.VISIBLE);
+            } else {
+                btnClearHistory.setVisibility(View.GONE);
+            }
+        }
 
         for (Booking b : allBookings) {
             if (b.getStatus() != null) {
@@ -178,16 +193,23 @@ public class HistoryActivity extends AppCompatActivity {
                     if (status.equalsIgnoreCase("Approved")) {
                         filteredList.add(b);
                     }
-                    if (btnClearHistory != null) btnClearHistory.setVisibility(View.GONE);
-
                 } else if (tabName.equalsIgnoreCase("History")) {
                     // History 分頁：Paid 和 Rejected 通通放進來！
                     if (status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Rejected")) {
                         filteredList.add(b);
                     }
-                    // 在 History 分頁顯示清除按鈕（如果你希望學生能清除歷史的話）
-                    if (btnClearHistory != null) btnClearHistory.setVisibility(View.VISIBLE);
                 }
+            }
+        }
+
+        // FIXED: Empty List Verification Layout Visibility Engine Blocks Toggle
+        if (tvEmptyState != null) {
+            if (filteredList.isEmpty()) {
+                tvEmptyState.setVisibility(View.VISIBLE);
+                rvBookingHistory.setVisibility(View.GONE); // Hide layout recyclerview container for cleanliness
+            } else {
+                tvEmptyState.setVisibility(View.GONE);
+                rvBookingHistory.setVisibility(View.VISIBLE);
             }
         }
 
@@ -203,7 +225,6 @@ public class HistoryActivity extends AppCompatActivity {
             if (mAuth.getCurrentUser() == null) return;
             String currentUserId = mAuth.getCurrentUser().getUid();
 
-            // 點擊清除歷史時，同時清除該用戶下為 "Rejected" 和 "Paid" 的歷史紀錄（或依需求修改）
             db.collection("Bookings")
                     .whereEqualTo("userId", currentUserId)
                     .get()
@@ -216,6 +237,8 @@ public class HistoryActivity extends AppCompatActivity {
                         }
                         allBookings.removeIf(b -> b.getStatus() != null &&
                                 ("Rejected".equalsIgnoreCase(b.getStatus().trim()) || "Paid".equalsIgnoreCase(b.getStatus().trim())));
+
+                        // Re-evaluate filters automatically after dataset is purged from memory
                         filterBookingsByTab("History");
                         Toast.makeText(HistoryActivity.this, "History cleared.", Toast.LENGTH_SHORT).show();
                     });

@@ -16,9 +16,6 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
     private OnItemClickListener listener;
     private OnPaymentClickListener paymentClickListener;
 
-    private static final int VIEW_TYPE_ONGOING = 0;
-    private static final int VIEW_TYPE_STATIC = 1;
-
     public interface OnItemClickListener {
         void onItemClick(Booking booking);
     }
@@ -36,26 +33,10 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
         this.paymentClickListener = paymentClickListener;
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        if (bookingList == null || position >= bookingList.size()) return VIEW_TYPE_STATIC;
-        Booking booking = bookingList.get(position);
-
-        if (booking != null && booking.getStatus() != null && "Approved".equalsIgnoreCase(booking.getStatus().trim())) {
-            return VIEW_TYPE_ONGOING;
-        }
-        return VIEW_TYPE_STATIC;
-    }
-
     @NonNull
     @Override
     public BookingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view;
-        if (viewType == VIEW_TYPE_ONGOING) {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_history, parent, false);
-        } else {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_card, parent, false);
-        }
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_booking_history, parent, false);
         return new BookingViewHolder(view);
     }
 
@@ -78,15 +59,22 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
             holder.tvDetails.setText("Check-in: " + date + " • " + duration);
         }
 
+        // Clean string inputs from Firestore
         if (holder.tvTotalPrice != null) {
-            holder.tvTotalPrice.setText(booking.getRoomPrice() != null ? booking.getRoomPrice() : "RM 0.00");
+            String rawPrice = booking.getRoomPrice();
+            if (rawPrice != null) {
+                String cleanPrice = rawPrice.split("(?i)/")[0].trim();
+                holder.tvTotalPrice.setText(cleanPrice);
+            } else {
+                holder.tvTotalPrice.setText("RM 0");
+            }
         }
 
         String status = booking.getStatus() != null ? booking.getStatus().trim() : "Pending";
         if (holder.tvStatus != null) {
             holder.tvStatus.setText(status);
 
-            // FIXED: Use setBackgroundTintList to preserve background shapes and prevent layout engine crashes
+            // Handle status background colors safely
             if ("Pending".equalsIgnoreCase(status)) {
                 holder.tvStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FEF3C7")));
                 holder.tvStatus.setTextColor(Color.parseColor("#D97706"));
@@ -105,6 +93,7 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
             }
         }
 
+        // Action Link: "Pay Now" logic remains active and distinct
         if (holder.tvClickPayment != null) {
             if ("Approved".equalsIgnoreCase(status)) {
                 holder.tvClickPayment.setVisibility(View.VISIBLE);
@@ -119,12 +108,23 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
             }
         }
 
-        holder.itemView.setOnClickListener(v -> {
-            int currentPos = holder.getBindingAdapterPosition();
-            if (listener != null && currentPos != RecyclerView.NO_POSITION) {
-                listener.onItemClick(bookingList.get(currentPos));
-            }
-        });
+        // FIXED: Conditional evaluation logic block removes item click functionality for ongoing cards
+        if ("Approved".equalsIgnoreCase(status)) {
+            // Disable whole card interaction when card state matches "Approved" (Ongoing Tab)
+            holder.itemView.setOnClickListener(null);
+            holder.itemView.setClickable(false);
+            holder.itemView.setFocusable(false);
+        } else {
+            // Maintain regular structural click transitions exclusively for past items (History Tab: Paid/Rejected)
+            holder.itemView.setClickable(true);
+            holder.itemView.setFocusable(true);
+            holder.itemView.setOnClickListener(v -> {
+                int currentPos = holder.getBindingAdapterPosition();
+                if (listener != null && currentPos != RecyclerView.NO_POSITION) {
+                    listener.onItemClick(bookingList.get(currentPos));
+                }
+            });
+        }
     }
 
     @Override

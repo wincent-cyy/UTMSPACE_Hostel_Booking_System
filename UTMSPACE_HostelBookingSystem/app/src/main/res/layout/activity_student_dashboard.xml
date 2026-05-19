@@ -8,354 +8,340 @@
     android:background="#F1F5F9"
     tools:context=".StudentDashboardActivity">
 
-    <!-- 1. Header Background Layer (Stays at the very top) -->
+    <!-- 1. Header Background Layer -->
     <View
         android:id="@+id/topHeaderBg"
         android:layout_width="match_parent"
-        android:layout_height="280dp"
+        android:layout_height="240dp"
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- 2. Scrollable Content Area -->
-    <androidx.core.widget.NestedScrollView
+    <!-- 2. Fixed Vertical Content Container (Replaced NestedScrollView with a standard LinearLayout) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:fillViewport="true"
-        android:scrollbars="none"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintTop_toTopOf="parent">
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
+        <!-- Profile and Search Section -->
         <LinearLayout
+            android:id="@+id/headerTextLayer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <!-- Profile and Search Section -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Good Morning,"
+                        android:textColor="#C7D2FE"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvStudentName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Alex Johnson"
+                        android:textColor="#FFFFFF"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivProfilePicture"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_alignParentEnd="true"
+                    android:padding="2dp"
+                    android:src="@drawable/profile_pic"
+                    app:shapeAppearanceOverlay="@style/CircleImage"
+                    app:strokeColor="#FFFFFF"
+                    app:strokeWidth="2dp" />
+            </RelativeLayout>
+
+            <!-- Search Bar with Filter Button -->
             <LinearLayout
-                android:id="@+id/headerTextLayer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_weight="1"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="8dp"
+                    app:cardBackgroundColor="#FFFFFF">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@android:drawable/ic_menu_search"
+                            app:tint="#6366F1" />
+
+                        <EditText
+                            android:id="@+id/etSearchRoom"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@android:color/transparent"
+                            android:hint="Find a room ..."
+                            android:paddingStart="12dp"
+                            android:textSize="15sp"
+                            android:textColor="#1E293B"
+                            android:textColorHint="#94A3B8"
+                            android:inputType="text"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilter"
+                    style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:layout_marginStart="12dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    app:strokeColor="#80FFFFFF"
+                    app:strokeWidth="1dp"
+                    app:backgroundTint="#33FFFFFF"
+                    app:cornerRadius="16dp"
+                    app:icon="@android:drawable/ic_menu_sort_by_size"
+                    app:iconTint="#FFFFFF"
+                    app:iconSize="35dp"
+                    app:iconGravity="textStart"
+                    tools:ignore="SpeakableTextPresentCheck" />
+            </LinearLayout>
+
+            <!-- Search Results Layout -->
+            <LinearLayout
+                android:id="@+id/searchResultsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="24dp">
+                android:layout_marginTop="16dp"
+                android:visibility="gone"/>
+        </LinearLayout>
 
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="24dp">
+        <!-- News Banner Section -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/newsViewPager"
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="10dp" />
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/bannerIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="12dp"
+            android:layout_marginTop="8dp"
+            android:layout_gravity="center"
+            android:background="@android:color/transparent"
+            app:tabMinWidth="12dp"
+            app:tabMaxWidth="12dp"
+            app:tabBackground="@drawable/indicator_selector"
+            app:tabIndicatorHeight="0dp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Good Morning,"
-                            android:textColor="#C7D2FE"
-                            android:textSize="14sp" />
+        <!-- Room Categories Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
-                        <TextView
-                            android:id="@+id/tvStudentName"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Alex Johnson"
-                            android:textColor="#FFFFFF"
-                            android:textSize="26sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Room Categories"
+                android:textColor="#1E293B"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/ivProfilePicture"
-                        android:layout_width="55dp"
-                        android:layout_height="55dp"
-                        android:layout_alignParentEnd="true"
-                        android:padding="2dp"
-                        android:src="@drawable/profile_pic"
-                        app:shapeAppearanceOverlay="@style/CircleImage"
-                        app:strokeColor="#FFFFFF"
-                        app:strokeWidth="2dp" />
-                </RelativeLayout>
+            <!-- KEEPS HORIZONTAL SCROLL ALIVE -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
 
-                <!-- Search Bar with Filter Button -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
+                    <!-- Single Room Card -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="0dp"
-                        android:layout_height="54dp"
-                        android:layout_weight="1"
-                        app:cardCornerRadius="16dp"
-                        app:cardElevation="8dp"
-                        app:cardBackgroundColor="#FFFFFF">
+                        android:id="@+id/cardSingle"
+                        android:layout_width="170dp"
+                        android:layout_height="205dp"
+                        android:layout_margin="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:gravity="center_vertical"
-                            android:paddingStart="20dp">
+                            android:orientation="vertical">
 
                             <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@android:drawable/ic_menu_search"
-                                app:tint="#6366F1" />
-
-                            <EditText
-                                android:id="@+id/etSearchRoom"
                                 android:layout_width="match_parent"
+                                android:layout_height="135dp"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/single_room" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:background="@android:color/transparent"
-                                android:hint="Search available rooms..."
                                 android:paddingStart="12dp"
-                                android:textSize="14sp"
+                                android:paddingTop="10dp"
+                                android:paddingEnd="12dp"
+                                android:text="Single Room"
                                 android:textColor="#1E293B"
-                                android:textColorHint="#94A3B8"
-                                android:inputType="text"/>
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingTop="8dp"
+                                android:text="RM 1500/sem"
+                                android:textColor="#6366F1"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
 
-                    <ImageButton
-                        android:id="@+id/btnFilter"
-                        android:layout_width="54dp"
-                        android:layout_height="54dp"
-                        android:layout_marginStart="12dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#FFFFFF"
-                        android:padding="12dp"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="#6366F1" />
+                    <!-- Double Room Card -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardDouble"
+                        android:layout_width="170dp"
+                        android:layout_height="205dp"
+                        android:layout_margin="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="135dp"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/double_room" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingTop="10dp"
+                                android:paddingEnd="12dp"
+                                android:text="Double Room"
+                                android:textColor="#1E293B"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingTop="8dp"
+                                android:text="RM 1200/sem"
+                                android:textColor="#6366F1"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Quad Room Card -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardQuad"
+                        android:layout_width="170dp"
+                        android:layout_height="205dp"
+                        android:layout_margin="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?android:attr/selectableItemBackground"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="135dp"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/quad_room" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingTop="10dp"
+                                android:paddingEnd="12dp"
+                                android:text="Quad Room"
+                                android:textColor="#1E293B"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingStart="12dp"
+                                android:paddingTop="8dp"
+                                android:text="RM 800/sem"
+                                android:textColor="#6366F1"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
                 </LinearLayout>
-
-                <!-- Search Results Layout -->
-                <LinearLayout
-                    android:id="@+id/searchResultsLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="16dp"
-                    android:visibility="gone"/>
-            </LinearLayout>
-
-            <!-- News Banner Section -->
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/newsViewPager"
-                android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="12dp" />
-
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/bannerIndicator"
-                android:layout_width="wrap_content"
-                android:layout_height="12dp"
-                android:layout_marginTop="8dp"
-                android:layout_gravity="center"
-                android:background="@android:color/transparent"
-                app:tabMinWidth="12dp"
-                app:tabMaxWidth="12dp"
-                app:tabBackground="@drawable/indicator_selector"
-                app:tabIndicatorHeight="0dp" />
-
-            <!-- Room Categories Section -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="20dp"
-                android:paddingTop="20dp"
-                android:paddingBottom="24dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Room Categories"
-                    android:textColor="#1E293B"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp"/>
-
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <!-- Single Room Card -->
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/cardSingle"
-                            android:layout_width="170dp"
-                            android:layout_height="230dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?android:attr/selectableItemBackground"
-                            app:cardCornerRadius="20dp"
-                            app:cardElevation="4dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:orientation="vertical">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="140dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/single_room" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Single Room"
-                                    android:textColor="#1E293B"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 1500/sem"
-                                    android:textColor="#6366F1"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:paddingTop="4dp"
-                                    android:text="Private room"
-                                    android:textColor="#94A3B8"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-                        </androidx.cardview.widget.CardView>
-
-                        <!-- Double Room Card -->
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/cardDouble"
-                            android:layout_width="170dp"
-                            android:layout_height="230dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?android:attr/selectableItemBackground"
-                            app:cardCornerRadius="20dp"
-                            app:cardElevation="4dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:orientation="vertical">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="140dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/double_room" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Double Room"
-                                    android:textColor="#1E293B"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 1200/sem"
-                                    android:textColor="#6366F1"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:paddingTop="4dp"
-                                    android:text="Shared with 1"
-                                    android:textColor="#94A3B8"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-                        </androidx.cardview.widget.CardView>
-
-                        <!-- Quad Room Card -->
-                        <androidx.cardview.widget.CardView
-                            android:id="@+id/cardQuad"
-                            android:layout_width="170dp"
-                            android:layout_height="230dp"
-                            android:layout_margin="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?android:attr/selectableItemBackground"
-                            app:cardCornerRadius="20dp"
-                            app:cardElevation="4dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:orientation="vertical">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="140dp"
-                                    android:scaleType="centerCrop"
-                                    android:src="@drawable/quad_room" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:padding="12dp"
-                                    android:text="Quad Room"
-                                    android:textColor="#1E293B"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:text="RM 800/sem"
-                                    android:textColor="#6366F1"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:paddingStart="12dp"
-                                    android:paddingTop="4dp"
-                                    android:text="Shared with 3"
-                                    android:textColor="#94A3B8"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-                        </androidx.cardview.widget.CardView>
-                    </LinearLayout>
-                </HorizontalScrollView>
-            </LinearLayout>
+            </HorizontalScrollView>
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
 
-    <!-- 3. Bottom Navigation (Fixed at Bottom) -->
+    <!-- 3. Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         style="@style/BottomNavStyle"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="#FFFFFF"
-        app:elevation="16dp"
+        app:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:menu="@menu/student_nav_menu" />
 

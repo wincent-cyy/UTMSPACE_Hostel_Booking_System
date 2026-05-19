@@ -1,378 +1,143 @@
 package com.example.utmspace_hostelbookingsystem;
 
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Base64;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.DocumentSnapshot;
 
-import java.util.ArrayList;
-import java.util.List;
+public class StaffDashboardActivity extends AppCompatActivity {
 
-public class StudentDashboardActivity extends AppCompatActivity {
-
-    // UI Elements
-    private TextView tvStudentName;
-    private ShapeableImageView ivProfilePicture;
-    private ViewPager2 newsViewPager;
-    private TabLayout bannerIndicator;
     private BottomNavigationView bottomNavigationView;
-    private EditText etSearchRoom;
-    private ImageButton btnFilter;
-    private LinearLayout searchResultsLayout;
+    private TextView tvStaffName;
+    private ShapeableImageView ivProfilePicture;
 
-    // Category Cards
-    private CardView cardSingle, cardDouble, cardQuad;
-
-    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private ListenerRegistration userDataListener;
-
-    // News Banner
-    private final Handler sliderHandler = new Handler(Looper.getMainLooper());
-    private Runnable sliderRunnable;
+    private FirebaseUser currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_student_dashboard);
+        setContentView(R.layout.activity_staff_dashboard);
 
         // Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        currentUser = mAuth.getCurrentUser();
 
-        // Initialize UI Views
-        initViews();
-
-        // Setup Functions
-        setupNavigation();
-        setupNewsBanner();
-        setupCategoryClicks();
-        setupRoomSearch();
-        setupFilterButton();
-
-        // Listen to live profile data updates
-        startRealtimeUserListener();
-    }
-
-    private void initViews() {
-        tvStudentName = findViewById(R.id.tvStudentName);
-        ivProfilePicture = findViewById(R.id.ivProfilePicture);
-        newsViewPager = findViewById(R.id.newsViewPager);
-        bannerIndicator = findViewById(R.id.bannerIndicator);
+        // Initialize views
         bottomNavigationView = findViewById(R.id.bottomNavigation);
+        tvStaffName = findViewById(R.id.tvStaffName);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
 
-        // Search and Filter Views
-        etSearchRoom = findViewById(R.id.etSearchRoom);
-        btnFilter = findViewById(R.id.btnFilter);
-        searchResultsLayout = findViewById(R.id.searchResultsLayout);
+        // Load staff name and profile picture
+        loadStaffData();
 
-        // Category Cards
-        cardSingle = findViewById(R.id.cardSingle);
-        cardDouble = findViewById(R.id.cardDouble);
-        cardQuad = findViewById(R.id.cardQuad);
+        // Setup navigation
+        setupNavigation();
     }
 
-    private void setupCategoryClicks() {
-        cardSingle.setOnClickListener(v -> openRoomList("Single Room"));
-        cardDouble.setOnClickListener(v -> openRoomList("Double Room"));
-        cardQuad.setOnClickListener(v -> openRoomList("Quad Room"));
-    }
-
-    private void openRoomList(String roomType) {
-        Intent intent = new Intent(StudentDashboardActivity.this, RoomListActivity.class);
-        intent.putExtra("ROOM_TYPE", roomType);
-        startActivity(intent);
-    }
-
-    private void setupNewsBanner() {
-        List<Integer> images = new ArrayList<>();
-        images.add(R.drawable.news_img1);
-        images.add(R.drawable.news_img2);
-        images.add(R.drawable.news_img3);
-
-        NewsAdapter adapter = new NewsAdapter(images);
-        newsViewPager.setAdapter(adapter);
-
-        new TabLayoutMediator(bannerIndicator, newsViewPager, (tab, position) -> {}).attach();
-
-        bannerIndicator.post(() -> {
-            if (isFinishing() || isDestroyed()) return;
-            ViewGroup tabStrip = (ViewGroup) bannerIndicator.getChildAt(0);
-            for (int i = 0; i < tabStrip.getChildCount(); i++) {
-                View tabView = tabStrip.getChildAt(i);
-                int size = (int) (8 * getResources().getDisplayMetrics().density);
-                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) tabView.getLayoutParams();
-                lp.width = size;
-                lp.height = size;
-                lp.setMargins(10, 0, 10, 0);
-                tabView.setLayoutParams(lp);
-            }
-        });
-
-        sliderRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (newsViewPager != null && adapter.getItemCount() > 0) {
-                    int nextItem = (newsViewPager.getCurrentItem() + 1) % images.size();
-                    newsViewPager.setCurrentItem(nextItem, true);
-                    sliderHandler.postDelayed(this, 3000);
-                }
-            }
-        };
-    }
-
-    private void setupRoomSearch() {
-        etSearchRoom.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                if (query.length() > 1) {
-                    searchAvailableRooms(query);
-                } else {
-                    searchResultsLayout.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void setupFilterButton() {
-        btnFilter.setOnClickListener(v -> showFilterDialog());
-    }
-
-    private void showFilterDialog() {
-        String[] filterOptions = {"All Rooms", "Single Room", "Double Room", "Quad Room", "Available Only"};
-
-        new AlertDialog.Builder(this)
-                .setTitle("Filter Rooms")
-                .setItems(filterOptions, (dialog, which) -> {
-                    String filter = filterOptions[which];
-                    applyRoomFilter(filter);
-                })
-                .show();
-    }
-
-    private void applyRoomFilter(String filter) {
-        // Reset visibility
-        cardSingle.setVisibility(View.VISIBLE);
-        cardDouble.setVisibility(View.VISIBLE);
-        cardQuad.setVisibility(View.VISIBLE);
-
-        switch (filter) {
-            case "Single Room":
-                cardDouble.setVisibility(View.GONE);
-                cardQuad.setVisibility(View.GONE);
-                Toast.makeText(this, "Showing: Single Rooms", Toast.LENGTH_SHORT).show();
-                break;
-            case "Double Room":
-                cardSingle.setVisibility(View.GONE);
-                cardQuad.setVisibility(View.GONE);
-                Toast.makeText(this, "Showing: Double Rooms", Toast.LENGTH_SHORT).show();
-                break;
-            case "Quad Room":
-                cardSingle.setVisibility(View.GONE);
-                cardDouble.setVisibility(View.GONE);
-                Toast.makeText(this, "Showing: Quad Rooms", Toast.LENGTH_SHORT).show();
-                break;
-            case "Available Only":
-                filterAvailableOnly();
-                break;
-            case "All Rooms":
-                Toast.makeText(this, "Showing: All Room Types", Toast.LENGTH_SHORT).show();
-                break;
+    private void loadStaffData() {
+        if (currentUser == null) {
+            tvStaffName.setText("Staff Member");
+            return;
         }
-    }
 
-    private void filterAvailableOnly() {
-        Intent intent = new Intent(StudentDashboardActivity.this, RoomListActivity.class);
-        intent.putExtra("ROOM_TYPE", "Available");
-        startActivity(intent);
-    }
+        String userId = currentUser.getUid();
+        db.collection("Users").document(userId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Get staff name from different possible field names
+                        String name = documentSnapshot.getString("name");
+                        String firstName = documentSnapshot.getString("firstName");
+                        String lastName = documentSnapshot.getString("lastName");
 
-    private void searchAvailableRooms(String query) {
-        db.collection("Rooms")
-                .whereEqualTo("status", "Available")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<RoomModel> availableRooms = new ArrayList<>();
-
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        RoomModel room = document.toObject(RoomModel.class);
-                        // Filter by room number or location
-                        if (room.getRoomNumber().toLowerCase().contains(query.toLowerCase()) ||
-                                room.getLocation().toLowerCase().contains(query.toLowerCase())) {
-                            room.setDocumentId(document.getId());
-                            availableRooms.add(room);
+                        // Set staff name
+                        if (name != null && !name.isEmpty()) {
+                            tvStaffName.setText(name);
+                        } else if (firstName != null && lastName != null) {
+                            tvStaffName.setText(firstName + " " + lastName);
+                        } else if (firstName != null) {
+                            tvStaffName.setText(firstName);
+                        } else {
+                            tvStaffName.setText("Staff Member");
                         }
-                    }
 
-                    if (!availableRooms.isEmpty()) {
-                        showSearchResults(availableRooms);
+                        // Load profile picture from Base64 (matches your ProfileActivity)
+                        String profilePictureBase64 = documentSnapshot.getString("profilePictureBase64");
+                        if (profilePictureBase64 != null && !profilePictureBase64.isEmpty()) {
+                            loadProfileImageFromBase64(profilePictureBase64);
+                        } else {
+                            // Try old field name as fallback
+                            String profileImageUrl = documentSnapshot.getString("profileImageUrl");
+                            if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                                // Note: This would require Glide, but we're avoiding it
+                                // Just set default for now
+                                ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                            } else {
+                                ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                            }
+                        }
                     } else {
-                        searchResultsLayout.setVisibility(View.GONE);
-                        Toast.makeText(this, "No available rooms found for '" + query + "'", Toast.LENGTH_SHORT).show();
+                        tvStaffName.setText("Staff Member");
+                        ivProfilePicture.setImageResource(R.drawable.profile_pic);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("SearchError", "Failed to search rooms: " + e.getMessage());
-                    Toast.makeText(this, "Search failed. Please try again.", Toast.LENGTH_SHORT).show();
+                    tvStaffName.setText("Staff Member");
+                    ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                    Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void showSearchResults(List<RoomModel> rooms) {
-        searchResultsLayout.setVisibility(View.VISIBLE);
-
-        // Clear previous results
-        searchResultsLayout.removeAllViews();
-
-        for (RoomModel room : rooms) {
-            View resultView = getLayoutInflater().inflate(R.layout.item_search_result, null);
-
-            TextView tvRoomNumber = resultView.findViewById(R.id.tvSearchRoomNumber);
-            TextView tvRoomType = resultView.findViewById(R.id.tvSearchRoomType);
-            TextView tvLocation = resultView.findViewById(R.id.tvSearchLocation);
-            TextView tvPrice = resultView.findViewById(R.id.tvSearchPrice);
-            Button btnView = resultView.findViewById(R.id.btnViewRoom);
-
-            tvRoomNumber.setText("Room " + room.getRoomNumber());
-            tvRoomType.setText(room.getRoomType());
-            tvLocation.setText(room.getLocation());
-            tvPrice.setText("RM " + (int)room.getPrice() + "/sem");
-
-            btnView.setOnClickListener(v -> {
-                Intent intent = new Intent(StudentDashboardActivity.this, RoomDetailsActivity.class);
-                intent.putExtra("ROOM_ID", room.getRoomNumber());
-                intent.putExtra("ROOM_TYPE", room.getRoomType());
-                intent.putExtra("ROOM_PRICE", String.valueOf(room.getPrice()));
-                intent.putExtra("ROOM_DESC", getRoomDescription(room.getRoomType()));
-                intent.putExtra("ROOM_STATUS", room.getStatus());
-                startActivity(intent);
-            });
-
-            searchResultsLayout.addView(resultView);
-        }
-    }
-
-    private String getRoomDescription(String roomType) {
-        if (roomType.toLowerCase().contains("single")) {
-            return "Premium private personal space located near the central campus facilities. Complete with a private study desk configuration, high-speed networking access, wardrobe, and continuous window ventilation.";
-        } else if (roomType.toLowerCase().contains("double")) {
-            return "Spacious shared living suite layout optimal for companions or project partners. Features individual workspaces, split multi-tier shelving, and personal storage lockboxes.";
-        } else {
-            return "Affordable and highly social 4-sharing layout variant setup. Equipped with bunk bed systems, private desks per student, individual wardrobes, and communal balcony access points.";
-        }
-    }
-
-    private void startRealtimeUserListener() {
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            userDataListener = db.collection("Users").document(user.getUid())
-                    .addSnapshotListener((snapshot, error) -> {
-                        if (error != null) {
-                            Log.e("DashboardDebug", "Firestore snapshot connection error", error);
-                            return;
-                        }
-
-                        if (isFinishing() || isDestroyed()) return;
-
-                        if (snapshot != null && snapshot.exists()) {
-                            // Update user profile name text
-                            String name = snapshot.getString("name");
-                            if (name != null) {
-                                tvStudentName.setText(name);
-                            }
-
-                            // Extracting the profile picture
-                            String base64String = snapshot.getString("profilePictureBase64");
-
-                            if (base64String != null && !base64String.trim().isEmpty()) {
-                                try {
-                                    byte[] decodedString = Base64.decode(base64String, Base64.DEFAULT);
-                                    Bitmap decodedByteMap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-
-                                    if (decodedByteMap != null) {
-                                        Glide.with(getApplicationContext())
-                                                .load(decodedByteMap)
-                                                .override(200, 200)
-                                                .placeholder(R.drawable.profile_pic)
-                                                .error(R.drawable.profile_pic)
-                                                .centerCrop()
-                                                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                                .skipMemoryCache(true)
-                                                .into(ivProfilePicture);
-                                    } else {
-                                        ivProfilePicture.setImageResource(R.drawable.profile_pic);
-                                    }
-                                } catch (IllegalArgumentException e) {
-                                    Log.e("DashboardDebug", "Base64 decoding error", e);
-                                    ivProfilePicture.setImageResource(R.drawable.profile_pic);
-                                }
-                            } else {
-                                Glide.with(getApplicationContext()).load(R.drawable.profile_pic).centerCrop().into(ivProfilePicture);
-                            }
-                        }
-                    });
+    private void loadProfileImageFromBase64(String base64String) {
+        try {
+            byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+            if (bitmap != null) {
+                ivProfilePicture.setImageBitmap(bitmap);
+            } else {
+                ivProfilePicture.setImageResource(R.drawable.profile_pic);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            ivProfilePicture.setImageResource(R.drawable.profile_pic);
         }
     }
 
     private void setupNavigation() {
-        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        // Set home as default selected
+        bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
+
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            if (id == R.id.nav_home) return true;
-
-            Intent intent = null;
-            if (id == R.id.nav_booking) {
-                intent = new Intent(this, BookingsActivity.class);
-            } else if (id == R.id.nav_history) {
-                intent = new Intent(this, HistoryActivity.class);
+            if (id == R.id.nav_staff_home) {
+                return true;
             } else if (id == R.id.nav_profile) {
-                intent = new Intent(this, ProfileActivity.class);
-            }
-
-            if (intent != null) {
+                Intent intent = new Intent(this, ProfileActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
+            } else if (id == R.id.nav_staff_bookings) {
+                Intent intent = new Intent(this, BookingManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
+            } else if (id == R.id.nav_rooms) {
+                Intent intent = new Intent(this, StaffRoomListActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
                 return true;
@@ -384,38 +149,12 @@ public class StudentDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Refresh staff data when returning to dashboard (in case profile was updated)
+        loadStaffData();
 
-        // Ensure bottom navigation highlights home
+        // Keep home selected in bottom navigation
         if (bottomNavigationView != null) {
-            bottomNavigationView.setSelectedItemId(R.id.nav_home);
-        }
-
-        // Start auto-sliding banner
-        if (sliderRunnable != null) {
-            sliderHandler.postDelayed(sliderRunnable, 3000);
-        }
-
-        // Clear search results when returning to dashboard
-        if (searchResultsLayout != null) {
-            searchResultsLayout.setVisibility(View.GONE);
-        }
-        if (etSearchRoom != null) {
-            etSearchRoom.setText("");
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        sliderHandler.removeCallbacks(sliderRunnable);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        sliderHandler.removeCallbacksAndMessages(null);
-        if (userDataListener != null) {
-            userDataListener.remove();
+            bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
         }
     }
 }
