@@ -134,11 +134,11 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
                     android:text="Room Categories"
                     android:textColor="#1E293B"
                     android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp"/>
+                    android:textStyle="bold" />
 
                 <HorizontalScrollView
                     android:layout_width="match_parent"
@@ -160,15 +160,18 @@
                             android:focusable="true"
                             android:foreground="?android:attr/selectableItemBackground"
                             app:cardCornerRadius="20dp">
+
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:orientation="vertical">
+
                                 <ImageView
                                     android:layout_width="match_parent"
                                     android:layout_height="130dp"
                                     android:scaleType="centerCrop"
                                     android:src="@drawable/single_room" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -176,6 +179,7 @@
                                     android:text="Single Room"
                                     android:textColor="#1E293B"
                                     android:textStyle="bold" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -195,15 +199,18 @@
                             android:focusable="true"
                             android:foreground="?android:attr/selectableItemBackground"
                             app:cardCornerRadius="20dp">
+
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:orientation="vertical">
+
                                 <ImageView
                                     android:layout_width="match_parent"
                                     android:layout_height="130dp"
                                     android:scaleType="centerCrop"
                                     android:src="@drawable/double_room" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -211,6 +218,7 @@
                                     android:text="Double Room"
                                     android:textColor="#1E293B"
                                     android:textStyle="bold" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -230,15 +238,18 @@
                             android:focusable="true"
                             android:foreground="?android:attr/selectableItemBackground"
                             app:cardCornerRadius="20dp">
+
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:orientation="vertical">
+
                                 <ImageView
                                     android:layout_width="match_parent"
                                     android:layout_height="130dp"
                                     android:scaleType="centerCrop"
                                     android:src="@drawable/quad_room" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -246,6 +257,7 @@
                                     android:text="Quad Room"
                                     android:textColor="#1E293B"
                                     android:textStyle="bold" />
+
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
