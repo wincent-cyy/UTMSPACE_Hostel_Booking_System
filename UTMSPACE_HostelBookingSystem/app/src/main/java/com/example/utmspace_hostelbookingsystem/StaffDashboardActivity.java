@@ -52,9 +52,11 @@ public class StaffDashboardActivity extends AppCompatActivity {
             }
 
             else if (id == R.id.nav_rooms) {
-                // These are not ready yet
-                Toast.makeText(this, "Feature coming soon!", Toast.LENGTH_SHORT).show();
-                return false; // Return false so the icon doesn't look "selected"
+                Intent intent = new Intent(this, StaffRoomListActivity.class);
+                // Brings the existing activity state forward safely instead of destroying/recreating it
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+                return true;
             }
 
             return false;

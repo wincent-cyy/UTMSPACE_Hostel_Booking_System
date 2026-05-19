@@ -172,8 +172,7 @@ public class BookingManagementActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_profile) {
                 intent = new Intent(this, ProfileActivity.class);
             } else if (itemId == R.id.nav_rooms) {
-                Toast.makeText(this, "Room Management system coming soon!", Toast.LENGTH_SHORT).show();
-                return false;
+                intent = new Intent(this, StaffRoomListActivity.class);
             }
 
             if (intent != null) {
