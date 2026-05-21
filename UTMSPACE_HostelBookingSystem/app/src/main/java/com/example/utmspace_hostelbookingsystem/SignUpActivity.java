@@ -200,6 +200,7 @@ public class SignUpActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
+                            getSharedPreferences("BioAuthPrefs", MODE_PRIVATE).edit().clear().apply();
                             user.sendEmailVerification().addOnCompleteListener(verifyTask -> {
                                 if (verifyTask.isSuccessful()) {
                                     // Successfully created Auth account, now save details to Firestore

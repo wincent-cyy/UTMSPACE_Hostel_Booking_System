@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
@@ -38,6 +39,11 @@ public class ApplyActivity extends AppCompatActivity {
     private String selectedRoomType;
     private String selectedRoomPrice;
 
+    // 从 Firestore 获取的房间信息
+    private double roomPriceValue;      // 存储价格数值
+    private String roomStatus;          // 存储房间状态
+    private String roomLocation;        // 存储房间位置
+
     // Firebase Integration Components
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -47,24 +53,20 @@ public class ApplyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_apply);
 
-        // Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // 1. Map layout elements to programmatic binders
         initViews();
-
-        // 2. Enforce strict input constraints on entry controls
         applyInputRestrictions();
-
-        // 3. Safely capture data sent down from RoomDetailsActivity
         getIntentData();
-
-        // 4. Initialize custom style spinner options dropdown arrays
         setupSpinnerOptions();
-
-        // 5. Configure operational click callbacks
         setupClickListeners();
+
+        // 加载用户信息并自动填充
+        loadUserInfo();
+
+        // 加载房间详细信息
+        loadRoomInfo();
     }
 
     private void initViews() {
@@ -81,24 +83,55 @@ public class ApplyActivity extends AppCompatActivity {
         etStudentId = findViewById(R.id.etStudentId);
         etPhoneNumber = findViewById(R.id.etPhoneNumber);
         spnDuration = findViewById(R.id.spnDuration);
+
+        // ✅ name 和 phone 可以编辑，但会自动填充初始值
+        etFullName.setFocusable(true);
+        etFullName.setClickable(true);
+        etFullName.setEnabled(true);
+
+        etPhoneNumber.setFocusable(true);
+        etPhoneNumber.setClickable(true);
+        etPhoneNumber.setEnabled(true);
+
+        // ✅ matricNumber 让用户手动输入
+        etStudentId.setFocusable(true);
+        etStudentId.setClickable(true);
+        etStudentId.setEnabled(true);
+
+        // ✅ 设置输入限制
+        setupInputFilters();
+    }
+
+    private void setupInputFilters() {
+        // 1. Name: 只允许字母和空格，禁止数字和特殊字符
+        InputFilter nameFilter = (source, start, end, dest, dstart, dend) -> {
+            for (int i = start; i < end; i++) {
+                char c = source.charAt(i);
+                if (!Character.isLetter(c) && !Character.isSpaceChar(c)) {
+                    return ""; // 拒绝非字母和非空格字符
+                }
+            }
+            return null; // 接受输入
+        };
+        etFullName.setFilters(new InputFilter[]{nameFilter, new InputFilter.LengthFilter(50)});
+
+        // 2. Matric Number: 格式 A24DW0000，最大9字符，自动转大写
+        etStudentId.setFilters(new InputFilter[]{new InputFilter.LengthFilter(9)});
+
+        // 3. Phone: 只允许数字，10-11位
+        InputFilter phoneFilter = (source, start, end, dest, dstart, dend) -> {
+            for (int i = start; i < end; i++) {
+                if (!Character.isDigit(source.charAt(i))) {
+                    return ""; // 拒绝非数字字符
+                }
+            }
+            return null; // 接受输入
+        };
+        etPhoneNumber.setFilters(new InputFilter[]{phoneFilter, new InputFilter.LengthFilter(11)});
     }
 
     private void applyInputRestrictions() {
-        // Enforce etFullName to only accept standard alphabet characters and spaces
-        etFullName.setFilters(new InputFilter[]{(source, start, end, dest, dstart, dend) -> {
-            for (int i = start; i < end; i++) {
-                if (!Character.isLetter(source.charAt(i)) && !Character.isSpaceChar(source.charAt(i))) {
-                    return ""; // Reject character modification stream
-                }
-            }
-            return null; // Accept character input modification
-        }});
-
-        // Constrain Matric Number fields structurally to a maximum character count of 9 length bounds
-        etStudentId.setFilters(new InputFilter[]{new InputFilter.LengthFilter(9)});
-
-        // Constrain Phone Number fields structurally to a maximum character length boundary of 11
-        etPhoneNumber.setFilters(new InputFilter[]{new InputFilter.LengthFilter(11)});
+        // 保留但禁用编辑，所以不需要输入限制
     }
 
     private void getIntentData() {
@@ -108,11 +141,58 @@ public class ApplyActivity extends AppCompatActivity {
             selectedRoomType = intent.getStringExtra("SELECTED_ROOM_TYPE");
             selectedRoomPrice = intent.getStringExtra("SELECTED_ROOM_PRICE");
 
-            // Direct data string binding injection
             if (selectedRoomId != null) tvSummaryRoomId.setText(selectedRoomId);
             if (selectedRoomType != null) tvSummaryRoomType.setText(selectedRoomType);
             if (selectedRoomPrice != null) tvBottomPrice.setText(selectedRoomPrice);
         }
+    }
+
+    // 新增: 从 Users 加载用户信息并自动填充
+    private void loadUserInfo() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) return;
+
+        String uid = currentUser.getUid();
+        db.collection("Users").document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String name = documentSnapshot.getString("name");
+                        String phone = documentSnapshot.getString("phone");
+
+                        // ✅ 只自动填充 name 和 phone
+                        if (name != null) etFullName.setText(name);
+                        if (phone != null) etPhoneNumber.setText(phone);
+
+                        // ✅ 学号不清空，让用户自己填
+                        // 如果用户之前填过，可以保留
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // 新增: 从 Rooms 加载房间详细信息
+    // 新增: 从 Rooms 加载房间详细信息
+    private void loadRoomInfo() {
+        if (selectedRoomId == null) return;
+
+        db.collection("Rooms")
+                .whereEqualTo("roomId", selectedRoomId)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        // ✅ 修正: 使用 DocumentSnapshot 而不是 QueryDocumentSnapshot
+                        DocumentSnapshot doc = queryDocumentSnapshots.getDocuments().get(0);
+                        roomPriceValue = doc.getDouble("price") != null ? doc.getDouble("price") : 0;
+                        roomStatus = doc.getString("status");
+                        roomLocation = doc.getString("location");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load room info", Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void setupSpinnerOptions() {
@@ -123,11 +203,9 @@ public class ApplyActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        // Navigational logic bindings matching previous layout behavior
         btnBack.setOnClickListener(v -> finish());
         btnDetailsBack.setOnClickListener(v -> finish());
 
-        // Launch calendar interface selection window dialog safely
         tvCheckInDate.setOnClickListener(v -> {
             final Calendar c = Calendar.getInstance();
             int year = c.get(Calendar.YEAR);
@@ -140,133 +218,148 @@ public class ApplyActivity extends AppCompatActivity {
                         tvCheckInDate.setText(dateString);
                     }, year, month, day);
 
-            // Constraint past timeline historical selections from processing
             datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
             datePickerDialog.show();
         });
 
-        // Form handling submittal confirmation logic execution routing
         btnSubmitApplication.setOnClickListener(v -> {
             String name = etFullName.getText().toString().trim();
-            String matric = etStudentId.getText().toString().trim().toUpperCase(); // Force uppercase evaluations
+            String matric = etStudentId.getText().toString().trim().toUpperCase();
             String phone = etPhoneNumber.getText().toString().trim();
             String date = tvCheckInDate.getText().toString().trim();
             String duration = spnDuration.getSelectedItem().toString();
 
-            // 1. Structural Checklist Validation Empty Bounds
+            // 验证姓名 - 不能为空
             if (name.isEmpty()) {
-                etFullName.setError("Full name is required");
+                etFullName.setError("Name is required");
                 etFullName.requestFocus();
                 return;
             }
 
+            // 验证学号 - 不能为空
             if (matric.isEmpty()) {
-                etStudentId.setError("Student Matric Number is required");
+                etStudentId.setError("Matric Number is required");
                 etStudentId.requestFocus();
                 return;
             }
 
+            // ✅ 验证学号格式: A24DW0000 (字母 + 2数字 + 2字母 + 4数字)
+            String matricPattern = "^[A-Za-z]\\d{2}[A-Za-z]{2}\\d{4}$";
+            if (!matric.matches(matricPattern)) {
+                etStudentId.setError("Invalid format! Use: A24DW0000 (e.g., A24DW1234)");
+                etStudentId.requestFocus();
+                return;
+            }
+
+            // 验证手机号 - 不能为空
             if (phone.isEmpty()) {
                 etPhoneNumber.setError("Phone number is required");
                 etPhoneNumber.requestFocus();
                 return;
             }
 
+            // ✅ 验证手机号长度: 10-11位
+            if (phone.length() < 10 || phone.length() > 11) {
+                etPhoneNumber.setError("Phone number must be 10-11 digits");
+                etPhoneNumber.requestFocus();
+                return;
+            }
+
+            // 验证日期是否已选择
             if (date.isEmpty() || date.toLowerCase().contains("select")) {
                 Toast.makeText(this, "Please select an intended check-in date.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 2. Verify Matric format satisfies structural condition: "A24DW0000"
-            String matricPattern = "^[A-Z]\\d{2}[A-Z]{2}\\d{4}$";
-            if (!matric.matches(matricPattern)) {
-                etStudentId.setError("Invalid format! Use exact pattern layout (e.g., A24DW0000)");
-                etStudentId.requestFocus();
-                return;
-            }
-
-            // 3. Verify phone data string fits numerical length boundaries
-            if (phone.length() < 10 || phone.length() > 11) {
-                etPhoneNumber.setError("Phone number layout must be between 10 to 11 digits length.");
-                etPhoneNumber.requestFocus();
-                return;
-            }
-
-            // Check if user is authenticated before attempting data push
+            // 验证用户是否已登录
             FirebaseUser currentUser = mAuth.getCurrentUser();
             if (currentUser == null) {
                 Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Disable submit button temporarily to prevent rapid duplicate double-tap submissions
             btnSubmitApplication.setEnabled(false);
-
-            // 4. --- IMPROVED: REJECTION AND DUPLICATE APPLICATION CHECK ---
-            db.collection("Bookings")
-                    .whereEqualTo("userId", currentUser.getUid())
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful() && task.getResult() != null) {
-                            boolean hasActiveApplication = false;
-
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                String status = document.getString("status");
-                                // If they have an application that is NOT rejected, block them
-                                if (status != null && !status.equalsIgnoreCase("Rejected")) {
-                                    hasActiveApplication = true;
-                                    break;
-                                }
-                            }
-
-                            if (hasActiveApplication) {
-                                Toast.makeText(ApplyActivity.this,
-                                        "You already have an active or pending booking application!",
-                                        Toast.LENGTH_LONG).show();
-                                btnSubmitApplication.setEnabled(true); // Re-enable so they can navigate away or fix fields
-                            } else {
-                                // Student has no application or previous ones were rejected; proceed to submit
-                                executeApplicationSubmission(currentUser.getUid(), name, matric, phone, date, duration);
-                            }
-                        } else {
-                            btnSubmitApplication.setEnabled(true);
-                            Toast.makeText(ApplyActivity.this, "Error checking active bookings: " +
-                                            (task.getException() != null ? task.getException().getMessage() : "Unknown error"),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            checkAndSubmitApplication(currentUser.getUid(), name, matric, phone, date, duration);
         });
     }
 
+    private void checkAndSubmitApplication(String uid, String name, String matric, String phone, String date, String duration) {
+        db.collection("Bookings")
+                .whereEqualTo("uid", uid)  // ✅ 改为 uid (与Users.uid一致)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        boolean hasActiveApplication = false;
+
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            String status = document.getString("bookingStatus");  // ✅ 改为 bookingStatus
+                            if (status != null && !status.equalsIgnoreCase("Rejected")) {
+                                hasActiveApplication = true;
+                                break;
+                            }
+                        }
+
+                        if (hasActiveApplication) {
+                            Toast.makeText(ApplyActivity.this,
+                                    "You already have an active or pending booking application!",
+                                    Toast.LENGTH_LONG).show();
+                            btnSubmitApplication.setEnabled(true);
+                        } else {
+                            executeApplicationSubmission(uid, name, matric, phone, date, duration);
+                        }
+                    } else {
+                        btnSubmitApplication.setEnabled(true);
+                        Toast.makeText(ApplyActivity.this, "Error checking active bookings: " +
+                                        (task.getException() != null ? task.getException().getMessage() : "Unknown error"),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
     private void executeApplicationSubmission(String uid, String name, String matric, String phone, String date, String duration) {
-        // Construct Data Model HashMap to transmit collection payload
+        // ✅ 修正: 使用正确的字段名 (与Users和Rooms一致)
         Map<String, Object> bookingData = new HashMap<>();
-        bookingData.put("userId", uid);
-        bookingData.put("studentName", name);
-        bookingData.put("matricNumber", matric);
-        bookingData.put("phoneNumber", phone);
+
+        // Foreign Keys (名字与源Collection完全一致)
+        bookingData.put("uid", uid);                    // ✅ 改为 uid (不是 userId)
+        bookingData.put("roomId", selectedRoomId);       // ✅ 保持 roomId
+
+        // 从 Users 继承的快照数据
+        bookingData.put("name", name);                  // ✅ 改为 name (不是 studentName)
+        bookingData.put("matricNumber", matric);        // ✅ 保持 matricNumber
+        bookingData.put("phone", phone);                // ✅ 改为 phone (不是 phoneNumber)
+
+        // 从 Rooms 继承的快照数据
+        bookingData.put("roomType", selectedRoomType);
+        bookingData.put("price", roomPriceValue);       // ✅ 改为 price (double, 不是 roomPrice)
+        bookingData.put("status", roomStatus);     // ✅ 新增: 预订时的房间状态
+        bookingData.put("location", roomLocation);      // ✅ 新增: 房间位置
+
+        // Booking 特有字段
         bookingData.put("checkInDate", date);
         bookingData.put("leaseDuration", duration);
-        bookingData.put("roomId", selectedRoomId != null ? selectedRoomId : "Unknown Room");
-        bookingData.put("roomType", selectedRoomType != null ? selectedRoomType : "Unknown Type");
-        bookingData.put("roomPrice", selectedRoomPrice != null ? selectedRoomPrice : "Unknown Price");
-        bookingData.put("status", "Pending"); // Automatically sets status to 'Pending'
-        bookingData.put("timestamp", com.google.firebase.Timestamp.now());
+        bookingData.put("bookingStatus", "Pending");    // ✅ 改为 bookingStatus (不是 status)
+        bookingData.put("rejectReason", "");
+        bookingData.put("paymentMethod", "");
+        bookingData.put("paymentTimestamp", 0);
+        bookingData.put("createdAt", System.currentTimeMillis());
 
-        // Submit Document transaction block direct payload assignment
         db.collection("Bookings")
                 .add(bookingData)
                 .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(ApplyActivity.this, "Application submitted successfully! Status: Pending", Toast.LENGTH_LONG).show();
+                    documentReference.update("bookingId", documentReference.getId())
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(ApplyActivity.this, "Application submitted!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ApplyActivity.this, "Application submitted successfully! Status: Pending", Toast.LENGTH_LONG).show();
+                            });
 
-                    // Pass confirmation details back to pipeline stack execution frame
                     Intent intent = new Intent(ApplyActivity.this, StudentDashboardActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                     finish();
                 })
                 .addOnFailureListener(e -> {
-                    btnSubmitApplication.setEnabled(true); // Re-enable interaction components upon error
+                    btnSubmitApplication.setEnabled(true);
                     Toast.makeText(ApplyActivity.this, "Submission failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }

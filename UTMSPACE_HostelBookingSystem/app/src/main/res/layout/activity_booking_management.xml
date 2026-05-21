@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://tools.android.com/tools"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F1F5F9"
-    tools:context=".StaffBookingsActivity">
+    tools:context=".BookingManagementActivity">
 
     <!-- 1. Premium Admin Header Background -->
     <View
@@ -16,7 +16,7 @@
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- 2. Header Content Layer with Back Navigation -->
+    <!-- 2. Header Content Layer -->
     <RelativeLayout
         android:id="@+id/headerTextLayer"
         android:layout_width="match_parent"
@@ -50,13 +50,82 @@
         </LinearLayout>
     </RelativeLayout>
 
+    <!-- Search Architecture Sub-component -->
+    <LinearLayout
+        android:id="@+id/searchCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="24dp"
+        app:layout_constraintTop_toBottomOf="@id/topHeaderBg"
+        app:layout_constraintBottom_toBottomOf="@id/topHeaderBg">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp">
+
+                <ImageView
+                    android:id="@+id/btnSearchIcon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="#6366F1" />
+
+                <!-- ✅ 修正：这里才是 EditText -->
+                <EditText
+                    android:id="@+id/etStaffSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@android:color/transparent"
+                    android:hint="Search Room Number..."
+                    android:imeOptions="actionSearch"
+                    android:inputType="textCapCharacters"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnListFilter"
+            style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="12dp"
+            android:padding="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            app:strokeColor="#80FFFFFF"
+            app:strokeWidth="1dp"
+            app:backgroundTint="#FFFFFF"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_sort_by_size"
+            app:iconTint="#6366F1"
+            app:iconSize="24dp"
+            app:iconGravity="textStart"
+            tools:ignore="SpeakableTextPresentCheck" />
+    </LinearLayout>
+
     <!-- 3. Scrollable Work Area Container -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/topHeaderBg"
+        app:layout_constraintTop_toBottomOf="@id/searchCard"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
 
         <LinearLayout
@@ -66,41 +135,6 @@
             android:paddingHorizontal="20dp"
             android:paddingTop="20dp"
             android:paddingBottom="24dp">
-
-            <!-- Search Architecture Sub-component -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="14dp">
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@android:drawable/ic_menu_search"
-                        app:tint="#94A3B8" />
-                    <EditText
-                        android:id="@+id/etStaffSearch"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@android:color/transparent"
-                        android:hint="Search student name or matric..."
-                        android:textColorHint="#94A3B8"
-                        android:textColor="#1E293B"
-                        android:textSize="14sp"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="4dp"
-                        android:singleLine="true"
-                        android:inputType="text"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
             <!-- Dynamic Header Text Row -->
             <TextView
@@ -146,7 +180,6 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- 4. Bottom Navigation Panel -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         style="@style/BottomNavStyle"

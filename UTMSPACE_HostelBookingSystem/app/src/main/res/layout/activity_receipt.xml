@@ -69,7 +69,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:text="RM 475.00"
+                        android:text="RM 0.00"
                         android:textColor="#1E293B"
                         android:textSize="32sp"
                         android:textStyle="bold" />
@@ -100,30 +100,45 @@
                     android:letterSpacing="0.1"
                     android:textStyle="bold" />
 
+                <!-- Payment Method -->
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Method" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptMethod" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="E-Wallet" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvReceiptMethod" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
+                <!-- Installment Plan (新增) -->
+                <RelativeLayout
+                    android:id="@+id/layoutInstallmentPlan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Payment Plan" android:textColor="#64748B" />
+                    <TextView android:id="@+id/tvInstallmentPlan" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
+                </RelativeLayout>
+
+                <!-- Room ID -->
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Room ID" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptRoom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="A1-101" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvReceiptRoom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
-                <!-- New Matric Row -->
+                <!-- Matric No. -->
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Matric No." android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptMatric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvReceiptMatric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
+                <!-- Date -->
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvReceiptDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="09 May 2026" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvReceiptDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
+                <!-- Reference Number -->
                 <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ref Number" android:textColor="#64748B" />
-                    <TextView android:id="@+id/tvTransactionId" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="UTM-9912388" android:textColor="#1E293B" android:textStyle="bold" />
+                    <TextView android:id="@+id/tvTransactionId" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="N/A" android:textColor="#1E293B" android:textStyle="bold" />
                 </RelativeLayout>
 
             </LinearLayout>

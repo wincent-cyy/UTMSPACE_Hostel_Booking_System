@@ -1,9 +1,14 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,11 +27,13 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.NotificationCompat;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.tabs.TabLayout;
@@ -59,6 +66,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private ListenerRegistration userDataListener;
+    private ListenerRegistration notificationListener;
 
     // News Banner
     private final Handler sliderHandler = new Handler(Looper.getMainLooper());
@@ -68,6 +76,10 @@ public class StudentDashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_dashboard);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
+        }
 
         // Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
@@ -85,6 +97,10 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         // Listen to live profile data updates
         startRealtimeUserListener();
+        setupProfilePictureClick();
+        checkAndShowNotifications();
+        createNotificationChannel();
+        startNotificationListener();
     }
 
     private void initViews() {
@@ -197,15 +213,20 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private void handleRoomSearchExecution(String query) {
         String cleanQuery = query.toLowerCase().trim();
 
-        if (cleanQuery.contains("single")) {
+        // Only allow these 3 search terms
+        if (cleanQuery.equals("single") || cleanQuery.equals("single room")) {
             openRoomList("Single Room");
-        } else if (cleanQuery.contains("double")) {
+        }
+        else if (cleanQuery.equals("double") || cleanQuery.equals("double room")) {
             openRoomList("Double Room");
-        } else if (cleanQuery.contains("quad")) {
+        }
+        else if (cleanQuery.equals("quad") || cleanQuery.equals("quad room")) {
             openRoomList("Quad Room");
-        } else {
-            // fallback to inline search result tracking if looking for numbers or locations
-            searchAvailableRooms(query);
+        }
+        else {
+            // Search other words - do nothing, just clear and show message
+            searchResultsLayout.setVisibility(View.GONE);
+            Toast.makeText(this, "Please search: 'single', 'double', or 'quad' only", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -214,15 +235,121 @@ public class StudentDashboardActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        String[] filterOptions = {"All Rooms", "Single Room", "Double Room", "Quad Room"};
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.dialog_filter_bottom_sheet, null);
+        bottomSheetDialog.setContentView(sheetView);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Filter Rooms")
-                .setItems(filterOptions, (dialog, which) -> {
-                    String filter = filterOptions[which];
-                    applyRoomFilter(filter);
-                })
-                .show();
+        // HIDE Status and Location sections (since Dashboard doesn't need them)
+        View statusSection = sheetView.findViewById(R.id.statusSection);
+        View locationSection = sheetView.findViewById(R.id.locationSection);
+        TextView tvStatusTitle = sheetView.findViewById(R.id.tvStatusTitle);
+        TextView tvLocationTitle = sheetView.findViewById(R.id.tvLocationTitle);
+        View roomTypeSection = sheetView.findViewById(R.id.roomTypeSection);
+
+        // Hide status and location sections
+        if (statusSection != null) statusSection.setVisibility(View.GONE);
+        if (locationSection != null) locationSection.setVisibility(View.GONE);
+        if (tvStatusTitle != null) tvStatusTitle.setVisibility(View.GONE);
+        if (tvLocationTitle != null) tvLocationTitle.setVisibility(View.GONE);
+
+        // Show room type section
+        if (roomTypeSection != null) roomTypeSection.setVisibility(View.VISIBLE);
+
+        // Change main title
+        TextView filterTitle = sheetView.findViewById(R.id.tvFilterTitle);
+        if (filterTitle != null) {
+            filterTitle.setText("Filter Rooms");
+        }
+
+        // Map room type views
+        TextView btnRoomAll = sheetView.findViewById(R.id.btnRoomAll);
+        TextView btnRoomSingle = sheetView.findViewById(R.id.btnRoomSingle);
+        TextView btnRoomDouble = sheetView.findViewById(R.id.btnRoomDouble);
+        TextView btnRoomQuad = sheetView.findViewById(R.id.btnRoomQuad);
+
+        // Map operational button entities
+        MaterialButton btnClearFilters = sheetView.findViewById(R.id.btnClearFilters);
+        MaterialButton btnApplyFilters = sheetView.findViewById(R.id.btnApplyFilters);
+
+        // Track selected room type
+        final String[] selectedRoomType = {"All Rooms"};
+
+        // UI Update function for room type chips
+        Runnable updateUISelectionStates = new Runnable() {
+            @Override
+            public void run() {
+                // Reset all room type chips to unselected
+                btnRoomAll.setBackgroundResource(R.drawable.filter_chip_unselected);
+                btnRoomAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+                btnRoomSingle.setBackgroundResource(R.drawable.filter_chip_unselected);
+                btnRoomSingle.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+                btnRoomDouble.setBackgroundResource(R.drawable.filter_chip_unselected);
+                btnRoomDouble.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+                btnRoomQuad.setBackgroundResource(R.drawable.filter_chip_unselected);
+                btnRoomQuad.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+
+                // Set selected chip style
+                if (selectedRoomType[0].equals("Single Room")) {
+                    btnRoomSingle.setBackgroundResource(R.drawable.filter_chip_selected);
+                    btnRoomSingle.setTextColor(android.graphics.Color.WHITE);
+                } else if (selectedRoomType[0].equals("Double Room")) {
+                    btnRoomDouble.setBackgroundResource(R.drawable.filter_chip_selected);
+                    btnRoomDouble.setTextColor(android.graphics.Color.WHITE);
+                } else if (selectedRoomType[0].equals("Quad Room")) {
+                    btnRoomQuad.setBackgroundResource(R.drawable.filter_chip_selected);
+                    btnRoomQuad.setTextColor(android.graphics.Color.WHITE);
+                } else { // All Rooms
+                    btnRoomAll.setBackgroundResource(R.drawable.filter_chip_selected);
+                    btnRoomAll.setTextColor(android.graphics.Color.WHITE);
+                }
+            }
+        };
+
+        // Execute baseline selection state rendering
+        updateUISelectionStates.run();
+
+        // Register click listeners for Room Type options
+        btnRoomAll.setOnClickListener(v -> {
+            selectedRoomType[0] = "All Rooms";
+            updateUISelectionStates.run();
+        });
+
+        btnRoomSingle.setOnClickListener(v -> {
+            selectedRoomType[0] = "Single Room";
+            updateUISelectionStates.run();
+        });
+
+        btnRoomDouble.setOnClickListener(v -> {
+            selectedRoomType[0] = "Double Room";
+            updateUISelectionStates.run();
+        });
+
+        btnRoomQuad.setOnClickListener(v -> {
+            selectedRoomType[0] = "Quad Room";
+            updateUISelectionStates.run();
+        });
+
+        // Clear button - resets to "All Rooms"
+        btnClearFilters.setOnClickListener(v -> {
+            selectedRoomType[0] = "All Rooms";
+            applyRoomFilter("All Rooms");
+            bottomSheetDialog.dismiss();
+            Toast.makeText(this, "Showing: All Rooms", Toast.LENGTH_SHORT).show();
+        });
+
+        // Apply button - commits the selected filter
+        btnApplyFilters.setOnClickListener(v -> {
+            applyRoomFilter(selectedRoomType[0]);
+            bottomSheetDialog.dismiss();
+        });
+
+        bottomSheetDialog.show();
+    }
+
+    private void resetRoomChipStyles(TextView... chips) {
+        for (TextView chip : chips) {
+            chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        }
     }
 
     private void applyRoomFilter(String filter) {
@@ -263,18 +390,17 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         RoomModel room = document.toObject(RoomModel.class);
 
-                        boolean matchesRoomNumber = room.getRoomNumber() != null && room.getRoomNumber().toLowerCase().contains(cleanQuery);
+                        boolean matchesRoomId = room.getRoomId() != null && room.getRoomId().toLowerCase().contains(cleanQuery);
                         boolean matchesLocation = room.getLocation() != null && room.getLocation().toLowerCase().contains(cleanQuery);
                         boolean matchesRoomType = room.getRoomType() != null && room.getRoomType().toLowerCase().contains(cleanQuery);
 
-                        if (matchesRoomNumber || matchesLocation || matchesRoomType) {
+                        if (matchesRoomId || matchesLocation || matchesRoomType) {
                             room.setDocumentId(document.getId());
                             availableRooms.add(room);
                         }
                     }
 
                     if (!availableRooms.isEmpty()) {
-                        showSearchResults(availableRooms);
                     } else {
                         searchResultsLayout.setVisibility(View.GONE);
                         Toast.makeText(this, "No matching rooms found for '" + query + "'", Toast.LENGTH_SHORT).show();
@@ -284,38 +410,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
                     Log.e("SearchError", "Failed to search rooms: " + e.getMessage());
                     Toast.makeText(this, "Search failed. Please try again.", Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    private void showSearchResults(List<RoomModel> rooms) {
-        searchResultsLayout.setVisibility(View.VISIBLE);
-        searchResultsLayout.removeAllViews();
-
-        for (RoomModel room : rooms) {
-            View resultView = getLayoutInflater().inflate(R.layout.item_search_result, null);
-
-            TextView tvRoomNumber = resultView.findViewById(R.id.tvSearchRoomNumber);
-            TextView tvRoomType = resultView.findViewById(R.id.tvSearchRoomType);
-            TextView tvLocation = resultView.findViewById(R.id.tvSearchLocation);
-            TextView tvPrice = resultView.findViewById(R.id.tvSearchPrice);
-            Button btnView = resultView.findViewById(R.id.btnViewRoom);
-
-            tvRoomNumber.setText("Room " + room.getRoomNumber());
-            tvRoomType.setText(room.getRoomType());
-            tvLocation.setText(room.getLocation());
-            tvPrice.setText("RM " + (int)room.getPrice() + "/sem");
-
-            btnView.setOnClickListener(v -> {
-                Intent intent = new Intent(StudentDashboardActivity.this, RoomDetailsActivity.class);
-                intent.putExtra("ROOM_ID", room.getRoomNumber());
-                intent.putExtra("ROOM_TYPE", room.getRoomType());
-                intent.putExtra("ROOM_PRICE", String.valueOf(room.getPrice()));
-                intent.putExtra("ROOM_DESC", getRoomDescription(room.getRoomType()));
-                intent.putExtra("ROOM_STATUS", room.getStatus());
-                startActivity(intent);
-            });
-
-            searchResultsLayout.addView(resultView);
-        }
     }
 
     private String getRoomDescription(String roomType) {
@@ -378,6 +472,51 @@ public class StudentDashboardActivity extends AppCompatActivity {
         }
     }
 
+    // Add after startRealtimeUserListener() method
+    private void setupProfilePictureClick() {
+        ivProfilePicture.setOnClickListener(v -> {
+            // Get the current profile picture
+            String base64String = null;
+            FirebaseUser user = mAuth.getCurrentUser();
+            if (user != null) {
+                db.collection("Users").document(user.getUid()).get()
+                        .addOnSuccessListener(doc -> {
+                            if (doc.exists()) {
+                                String imgBase64 = doc.getString("profilePictureBase64");
+                                if (imgBase64 != null && !imgBase64.isEmpty()) {
+                                    showFullScreenImage(imgBase64);
+                                } else {
+                                    Toast.makeText(this, "No profile picture set", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+            }
+        });
+    }
+
+    private void showFullScreenImage(String base64String) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.activity_full_image, null);
+        ShapeableImageView fullImageView = dialogView.findViewById(R.id.fullImageView);
+
+        try {
+            byte[] decodedString = Base64.decode(base64String, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+            fullImageView.setImageBitmap(bitmap);
+        } catch (Exception e) {
+            fullImageView.setImageResource(R.drawable.profile_pic);
+        }
+
+        builder.setView(dialogView)
+                .setPositiveButton("Close", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Make image clickable to close
+        fullImageView.setOnClickListener(v -> dialog.dismiss());
+    }
+
     private void setupNavigation() {
         bottomNavigationView.setSelectedItemId(R.id.nav_home);
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -403,6 +542,82 @@ public class StudentDashboardActivity extends AppCompatActivity {
         });
     }
 
+    // 在 StudentDashboardActivity 中添加这个方法
+    private void checkAndShowNotifications() {
+        String uid = mAuth.getCurrentUser().getUid();
+
+        db.collection("Notifications")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("isRead", false)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        String title = doc.getString("title");
+                        String message = doc.getString("message");
+
+                        // 显示弹窗通知
+                        showSystemNotification(title, message);
+
+                        // 标记为已读
+                        doc.getReference().update("isRead", true);
+                    }
+                });
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "utm_channel",
+                    "UTM Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("UTM Booking Notifications");
+
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(channel);
+        }
+    }
+
+    private void showSystemNotification(String title, String message) {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        Intent intent = new Intent(this, StudentDashboardActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "utm_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
+    private void startNotificationListener() {
+        String uid = mAuth.getCurrentUser().getUid();
+
+        notificationListener = db.collection("Notifications")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("isRead", false)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots == null) return;
+
+                    for (var doc : snapshots.getDocuments()) {
+                        String title = doc.getString("title");
+                        String message = doc.getString("message");
+
+                        showSystemNotification(title, message);
+
+                        // mark as read
+                        doc.getReference().update("isRead", true);
+                    }
+                });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -422,6 +637,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
         if (etSearchRoom != null) {
             etSearchRoom.setText("");
         }
+
+        checkAndShowNotifications();
     }
 
     @Override

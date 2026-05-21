@@ -5,7 +5,8 @@
     android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F1F5F9">
+    android:background="#F1F5F9"
+    tools:context=".StaffRoomListActivity">
 
     <!-- Header Background -->
     <View
@@ -15,31 +16,38 @@
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Header Content -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/headerTextLayer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="36dp"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Room Management"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Manage all hostel rooms"
-            android:textColor="#C7D2FE"
-            android:textSize="14sp" />
-    </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Room Management"
+                android:textColor="#FFFFFF"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Manage all hostel rooms"
+                android:textColor="#C7D2FE"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </RelativeLayout>
 
     <!-- Search Bar -->
     <androidx.cardview.widget.CardView
@@ -69,44 +77,76 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@android:color/transparent"
-                android:hint="Search by room number or location..."
+                android:hint="Search by room number..."
                 android:paddingStart="12dp"
                 android:textSize="14sp" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Filter Tabs -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabFilter"
+    <!-- Filter Chips -->
+    <LinearLayout
+        android:id="@+id/filterContainer"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/searchCard"
-        app:tabIndicatorColor="#6366F1"
-        app:tabSelectedTextColor="#6366F1"
-        app:tabTextColor="#64748B">
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        app:layout_constraintTop_toBottomOf="@id/searchCard">
 
-        <com.google.android.material.tabs.TabItem
+        <TextView
+            android:id="@+id/chipAll"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="All" />
+            android:layout_height="36dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/filter_chip_selected"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
+            android:text="All"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
+        <TextView
+            android:id="@+id/chipAvailable"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Available" />
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="18dp"
+            android:text="Available"
+            android:textColor="#475569"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
+        <TextView
+            android:id="@+id/chipFull"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Full" />
+            android:layout_height="36dp"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
+            android:text="Full"
+            android:textColor="#475569"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Maintenance" />
+        <TextView
+            android:id="@+id/chipMaintenance"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="Maintenance"
+            android:textColor="#475569"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-    </com.google.android.material.tabs.TabLayout>
+    </LinearLayout>
 
     <!-- Room Count -->
     <TextView
@@ -114,12 +154,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:text="0 rooms found"
         android:textColor="#64748B"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tabFilter" />
+        app:layout_constraintTop_toBottomOf="@id/filterContainer" />
 
     <!-- Room List -->
     <androidx.recyclerview.widget.RecyclerView
@@ -141,7 +181,7 @@
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintTop_toBottomOf="@id/tabFilter">
+        app:layout_constraintTop_toBottomOf="@id/filterContainer">
 
         <ImageView
             android:layout_width="80dp"

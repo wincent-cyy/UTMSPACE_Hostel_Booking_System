@@ -25,7 +25,7 @@ import java.util.Locale;
 public class ReceiptActivity extends AppCompatActivity {
 
     private MaterialButton btnDownload, btnBackHome;
-    private TextView tvTotalAmount, tvReceiptMethod, tvReceiptRoom, tvReceiptDate, tvTransactionId, tvReceiptMatric;
+    private TextView tvTotalAmount, tvReceiptMethod, tvReceiptRoom, tvReceiptDate, tvTransactionId, tvReceiptMatric, tvInstallmentPlan;
     private View receiptCard;
 
     @Override
@@ -47,7 +47,8 @@ public class ReceiptActivity extends AppCompatActivity {
         tvReceiptRoom = findViewById(R.id.tvReceiptRoom);
         tvReceiptDate = findViewById(R.id.tvReceiptDate);
         tvTransactionId = findViewById(R.id.tvTransactionId);
-        tvReceiptMatric = findViewById(R.id.tvReceiptMatric); // New field
+        tvReceiptMatric = findViewById(R.id.tvReceiptMatric);
+        tvInstallmentPlan = findViewById(R.id.tvInstallmentPlan);  // 新增：分期计划显示
 
         receiptCard = findViewById(R.id.receiptCard);
     }
@@ -55,24 +56,33 @@ public class ReceiptActivity extends AppCompatActivity {
     private void displayData() {
         Intent intent = getIntent();
 
-        // Retrieve data passed from PaymentActivity
+        // 获取数据
         String method = intent.getStringExtra("PAYMENT_METHOD");
         String room = intent.getStringExtra("ROOM_ID");
-        String price = intent.getStringExtra("ROOM_PRICE");
+        double amountPaid = intent.getDoubleExtra("AMOUNT_PAID", 0.0);
         String bookingId = intent.getStringExtra("BOOKING_DOC_ID");
         String matric = intent.getStringExtra("MATRIC_NUMBER");
+        String installmentPlan = intent.getStringExtra("INSTALLMENT_PLAN");  // 获取分期计划
 
-        // Set Text Fields
+        // 设置文本
         tvReceiptMethod.setText(method != null ? method : "N/A");
         tvReceiptRoom.setText(room != null ? room : "N/A");
-        tvTotalAmount.setText(price != null ? "RM " + price : "RM 0.00");
+        tvTotalAmount.setText(String.format("RM %.2f", amountPaid));
         tvReceiptMatric.setText(matric != null ? matric : "N/A");
 
-        // Set Current Date
+        // 设置分期计划显示
+        if (installmentPlan != null && !installmentPlan.equals("Full")) {
+            tvInstallmentPlan.setVisibility(View.VISIBLE);
+            tvInstallmentPlan.setText("Payment Plan: " + installmentPlan);
+        } else {
+            tvInstallmentPlan.setVisibility(View.GONE);
+        }
+
+        // 设置当前日期
         String currentDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
         tvReceiptDate.setText(currentDate);
 
-        // Set Transaction ID (Use booking ID if available, otherwise fallback)
+        // 设置交易ID
         tvTransactionId.setText(bookingId != null ? bookingId : "UTM-" + System.currentTimeMillis() / 1000);
     }
 

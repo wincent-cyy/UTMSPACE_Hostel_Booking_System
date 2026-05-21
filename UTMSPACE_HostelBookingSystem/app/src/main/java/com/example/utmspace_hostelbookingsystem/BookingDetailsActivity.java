@@ -102,13 +102,20 @@ public class BookingDetailsActivity extends AppCompatActivity {
             if (intent.getStringExtra("ROOM_ID") != null) tvRoomId.setText(intent.getStringExtra("ROOM_ID"));
             if (intent.getStringExtra("ROOM_TYPE") != null) tvRoomType.setText(intent.getStringExtra("ROOM_TYPE"));
 
-            // Strip away "/ semester" formatting extensions automatically
-            if (intent.getStringExtra("ROOM_PRICE") != null) {
-                String rawPrice = intent.getStringExtra("ROOM_PRICE");
-                if (rawPrice.contains("/")) {
-                    rawPrice = rawPrice.split("/")[0].trim();
+            // ✅ 修复价格显示 - 格式化为 RM XX.XX
+            String roomPrice = intent.getStringExtra("ROOM_PRICE");
+            if (roomPrice != null && !roomPrice.isEmpty()) {
+                try {
+                    // 如果已经是 RM 格式，直接使用
+                    if (roomPrice.startsWith("RM")) {
+                        tvPrice.setText(roomPrice);
+                    } else {
+                        double price = Double.parseDouble(roomPrice);
+                        tvPrice.setText(String.format("RM %.2f", price));
+                    }
+                } catch (NumberFormatException e) {
+                    tvPrice.setText(roomPrice);
                 }
-                tvPrice.setText(rawPrice);
             }
 
             if (intent.getStringExtra("STUDENT_NAME") != null) tvStudentName.setText(intent.getStringExtra("STUDENT_NAME"));
@@ -158,7 +165,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
 
                 btnCancelBooking.setVisibility(View.GONE);
                 layoutCompletedActions.setVisibility(View.VISIBLE);
-                btnShare.setText("Share Receipt");
+                btnShare.setText("Share Details");
                 btnShare.setBackgroundColor(Color.parseColor("#10B981")); // Match color with state
                 break;
 
@@ -168,7 +175,9 @@ public class BookingDetailsActivity extends AppCompatActivity {
 
                 btnCancelBooking.setVisibility(View.GONE);
                 layoutCompletedActions.setVisibility(View.VISIBLE);
-                btnShare.setText("Share Status");
+                // ✅ 修改按钮文字
+                btnShare.setText("Share Details");
+                btnShare.setBackgroundColor(Color.parseColor("#10B981")); // 匹配红色主题
 
                 if (layoutRejectReason != null && tvRejectReasonContent != null) {
                     layoutRejectReason.setVisibility(View.VISIBLE);
@@ -246,7 +255,6 @@ public class BookingDetailsActivity extends AppCompatActivity {
                 .setTitle("Cancel My Application")
                 .setMessage("Are you absolutely sure you want to retract this hostel accommodation request? This data cannot be recovered.")
                 .setPositiveButton("Confirm Cancellation", (dialog, which) -> {
-
                     btnCancelBooking.setEnabled(false);
                     Toast.makeText(this, "Deleting from Firestore server...", Toast.LENGTH_SHORT).show();
 
@@ -262,7 +270,6 @@ public class BookingDetailsActivity extends AppCompatActivity {
                             })
                             .addOnFailureListener(e -> {
                                 btnCancelBooking.setEnabled(true);
-
                                 new AlertDialog.Builder(BookingDetailsActivity.this)
                                         .setTitle("Firebase Transaction Exception")
                                         .setMessage("Details: " + e.getLocalizedMessage() + "\n\nChecked Collection Key Path: Bookings/" + documentId.trim())

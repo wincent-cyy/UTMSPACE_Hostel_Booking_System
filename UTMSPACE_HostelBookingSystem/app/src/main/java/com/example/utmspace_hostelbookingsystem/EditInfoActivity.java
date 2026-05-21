@@ -106,24 +106,17 @@ public class EditInfoActivity extends AppCompatActivity {
             tvReadOnlyJoinDate.setText(sdf.format(new Date(creationTimestamp)));
         }
 
-        // Check Students Collection First
-        db.collection("Students").document(currentUserId).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
-                        targetedCollection = "Students";
-                        populateFieldsFromDocument(task.getResult());
+        // ✅ 直接查询 Users 集合
+        db.collection("Users").document(currentUserId).get()
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc.exists()) {
+                        targetedCollection = "Users";
+                        populateFieldsFromDocument(userDoc);
                     } else {
-                        // Fallback to Users Collection
-                        db.collection("Users").document(currentUserId).get()
-                                .addOnSuccessListener(userDoc -> {
-                                    if (userDoc.exists()) {
-                                        targetedCollection = "Users";
-                                        populateFieldsFromDocument(userDoc);
-                                    }
-                                })
-                                .addOnFailureListener(e -> Log.e(TAG, "Error fetching from Users", e));
+                        Log.e(TAG, "User document not found in Users collection");
                     }
-                });
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Error fetching from Users", e));
     }
 
     private void populateFieldsFromDocument(DocumentSnapshot doc) {
@@ -138,7 +131,6 @@ public class EditInfoActivity extends AppCompatActivity {
 
         if (doc.contains("emergencyContact")) etEmergencyPhone.setText(doc.getString("emergencyContact"));
         if (doc.contains("gender")) tvGenderValue.setText(doc.getString("gender"));
-        if (doc.contains("studentId")) tvReadOnlyStudentId.setText(doc.getString("studentId"));
     }
 
     private void showGenderSelectionDialog() {

@@ -339,7 +339,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="MONTHLY RENTAL FEE"
+                        android:text="SEMESTER RENTAL FEE"
                         android:textColor="#94A3B8"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -358,15 +358,17 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- 4. Bottom Pin Action Controls Panel Container -->
+    <!-- 4. Bottom Pin Action Controls Panel Container -->
     <LinearLayout
         android:id="@+id/bottomActionPanel"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:elevation="8dp"
+        android:elevation="16dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
+        android:paddingVertical="16dp"
         android:weightSum="2"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -374,27 +376,29 @@
             android:id="@+id/btnRejectBooking"
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="54dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:text="Reject"
             android:backgroundTint="#EF4444"
             android:textColor="#FFFFFF"
+            android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="8dp" />
+            app:cornerRadius="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnApproveBooking"
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="54dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
             android:text="Approve"
             android:backgroundTint="#22C55E"
             android:textColor="#FFFFFF"
+            android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="8dp" />
+            app:cornerRadius="12dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -53,7 +53,7 @@
             android:textStyle="bold" />
     </RelativeLayout>
 
-    <!-- 3. Fixed Selected Accommodation Summary Card (Non-Scrollable Anchor Point) -->
+    <!-- 3. Fixed Selected Accommodation Summary Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/roomSummaryCard"
         android:layout_width="match_parent"
@@ -108,7 +108,6 @@
                     android:layout_marginEnd="110dp"/>
             </LinearLayout>
 
-            <!-- Room Price Floating Tag Overlay -->
             <TextView
                 android:id="@+id/tvBottomPrice"
                 android:layout_width="wrap_content"
@@ -126,7 +125,7 @@
         </FrameLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- 4. Main Scrollable Content Area (Only the form input cards scroll) -->
+    <!-- 4. Main Scrollable Content Area -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -144,7 +143,6 @@
             android:paddingHorizontal="20dp"
             android:paddingBottom="24dp">
 
-            <!-- Card 2: Student Information Form Section -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/studentDetailsCard"
                 android:layout_width="match_parent"
@@ -169,7 +167,6 @@
                         android:textStyle="bold"
                         android:layout_marginBottom="16dp" />
 
-                    <!-- Full Name Field -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -184,16 +181,15 @@
                         android:layout_height="50dp"
                         android:layout_marginTop="6dp"
                         android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#F8FAFC"
+                        android:background="@drawable/input_border"
                         android:hint="Enter your legal full name"
                         android:inputType="textPersonName"
-                        android:paddingHorizontal="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="40dp"
                         android:textColor="#0F172A"
                         android:textColorHint="#94A3B8"
                         android:textSize="14sp" />
 
-                    <!-- Matric ID Number Field -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -208,16 +204,15 @@
                         android:layout_height="50dp"
                         android:layout_marginTop="6dp"
                         android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#F8FAFC"
+                        android:background="@drawable/input_border"
                         android:hint="e.g. A24DW0000"
                         android:inputType="textCapCharacters"
-                        android:paddingHorizontal="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="40dp"
                         android:textColor="#0F172A"
                         android:textColorHint="#94A3B8"
                         android:textSize="14sp" />
 
-                    <!-- Mobile Contact Field -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -231,18 +226,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
                         android:layout_marginTop="6dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#F8FAFC"
+                        android:background="@drawable/input_border"
                         android:hint="e.g. +60123456789"
                         android:inputType="phone"
-                        android:paddingHorizontal="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="40dp"
                         android:textColor="#0F172A"
                         android:textColorHint="#94A3B8"
                         android:textSize="14sp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Card 3: Rental Lease Term Requirements Section -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/leasePreferencesCard"
                 android:layout_width="match_parent"
@@ -267,7 +261,6 @@
                         android:textStyle="bold"
                         android:layout_marginBottom="16dp" />
 
-                    <!-- Intended Arrival Check-in Date Selector -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -276,19 +269,20 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
 
+                    <!-- 1. Date Selector -->
                     <TextView
                         android:id="@+id/tvCheckInDate"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
                         android:layout_marginTop="6dp"
                         android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#F8FAFC"
+                        android:background="@drawable/spinner_with_arrow"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:hint="Select check-in execution date"
-                        android:paddingHorizontal="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="40dp"
                         android:textColor="#0F172A"
                         android:textColorHint="#94A3B8"
                         android:textSize="14sp" />
@@ -302,27 +296,26 @@
                         android:textSize="13sp"
                         android:textStyle="bold" />
 
+                    <!-- 2. Spinner Container -->
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
                         android:layout_marginTop="6dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:backgroundTint="#F8FAFC">
+                        android:background="@drawable/spinner_with_arrow">
 
                         <Spinner
                             android:id="@+id/spnDuration"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@android:color/transparent"
-                            android:paddingHorizontal="14dp" />
+                            android:paddingStart="14dp"
+                            android:paddingEnd="40dp" />
                     </FrameLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- 5. Bottom Sticky Action Navigation Bar View Layout (Fixed at Bottom) -->
     <LinearLayout
         android:id="@+id/bottomActionBar"
         android:layout_width="match_parent"

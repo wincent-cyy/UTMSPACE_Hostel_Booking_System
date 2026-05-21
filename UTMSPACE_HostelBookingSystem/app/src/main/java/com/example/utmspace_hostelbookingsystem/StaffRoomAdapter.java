@@ -36,7 +36,7 @@ public class StaffRoomAdapter extends RecyclerView.Adapter<StaffRoomAdapter.View
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RoomModel room = roomList.get(position);
 
-        holder.tvRoomNumber.setText(room.getRoomNumber());
+        holder.tvRoomNumber.setText(room.getRoomId());
         holder.tvRoomType.setText(room.getRoomType());
         holder.tvLocation.setText(room.getLocation());
         holder.tvStatus.setText(room.getStatus());

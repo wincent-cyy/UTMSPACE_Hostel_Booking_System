@@ -1,8 +1,10 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -91,30 +93,28 @@ public class StaffActionActivity extends AppCompatActivity {
             tvLeaseDuration.setText(getIntent().getStringExtra("LEASE_DURATION"));
             tvRoomPrice.setText(getIntent().getStringExtra("ROOM_PRICE"));
 
-            // IMPROVED: Dynamic badge colors and button visibilities based on status context
+            // Dynamic badge colors and button visibilities based on status context
             if ("Pending".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#FEF3C7")); // Amber
+                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#FEF3C7"));
                 tvStatusBadge.setTextColor(android.graphics.Color.parseColor("#B45309"));
-
                 btnApproveBooking.setVisibility(View.VISIBLE);
                 btnRejectBooking.setVisibility(View.VISIBLE);
             } else if ("Approved".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#D1FAE5")); // Green
+                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#D1FAE5"));
                 tvStatusBadge.setTextColor(android.graphics.Color.parseColor("#065F46"));
-
-                // Safe UI: Hide processing buttons since action is complete
                 btnApproveBooking.setVisibility(View.GONE);
                 btnRejectBooking.setVisibility(View.GONE);
             } else if ("Rejected".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#FEE2E2")); // Red
+                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#FEE2E2"));
                 tvStatusBadge.setTextColor(android.graphics.Color.parseColor("#991B1B"));
-
-                // Safe UI: Hide processing buttons since action is complete
+                btnApproveBooking.setVisibility(View.GONE);
+                btnRejectBooking.setVisibility(View.GONE);
+            } else if ("Paid".equalsIgnoreCase(status)) {  // ✅ 添加 Paid 状态
+                tvStatusBadge.setBackgroundColor(android.graphics.Color.parseColor("#DBEAFE")); // 蓝色
+                tvStatusBadge.setTextColor(android.graphics.Color.parseColor("#1E40AF"));
                 btnApproveBooking.setVisibility(View.GONE);
                 btnRejectBooking.setVisibility(View.GONE);
             }
-        } else {
-            Toast.makeText(this, "Critical Error: No target ID received via Intent!", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -136,7 +136,7 @@ public class StaffActionActivity extends AppCompatActivity {
             }
         });
 
-        btnApproveBooking.setOnClickListener(v -> updateBookingStatus("Approved", null));
+        btnApproveBooking.setOnClickListener(v -> updateBookingStatusOnly("Approved", null));
         btnRejectBooking.setOnClickListener(v -> showRejectionDialog());
     }
 
@@ -159,7 +159,7 @@ public class StaffActionActivity extends AppCompatActivity {
             if (reason.isEmpty()) {
                 Toast.makeText(StaffActionActivity.this, "Rejection reason cannot be empty", Toast.LENGTH_SHORT).show();
             } else {
-                updateBookingStatus("Rejected", reason);
+                updateBookingStatusOnly("Rejected", reason);
             }
         });
 
@@ -167,24 +167,86 @@ public class StaffActionActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void updateBookingStatus(String newStatus, String rejectReason) {
+    // ✅ 简化：只更新预订状态，不修改房间 occupancy
+    private void updateBookingStatusOnly(String newStatus, String rejectReason) {
         if (bookingId == null || bookingId.isEmpty()) {
             Toast.makeText(this, "Cannot update status: Target tracking ID is empty", Toast.LENGTH_SHORT).show();
             return;
         }
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("status", newStatus);
+        updates.put("bookingStatus", newStatus);
         updates.put("rejectReason", rejectReason != null ? rejectReason : "");
 
         db.collection("Bookings").document(bookingId.trim())
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(StaffActionActivity.this, "Booking successfully marked as " + newStatus, Toast.LENGTH_SHORT).show();
+
+                    // ✅ 发送通知给学生
+                    String studentName = tvStudentName.getText().toString();
+                    String title = "Booking " + newStatus;
+                    String message;
+                    if ("Approved".equals(newStatus)) {
+                        message = "Dear " + studentName + ", your room booking has been approved! Please proceed to payment.";
+                    } else {
+                        message = "Dear " + studentName + ", your room booking has been rejected. Reason: " + rejectReason;
+                    }
+                    sendNotificationToUser(studentId, title, message);
+
                     btnBack.performClick();
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(StaffActionActivity.this, "Firestore Error: " + e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    // 发送通知给指定用户
+    private void sendNotificationToUser(String userId, String title, String message) {
+        // 检查用户是否开启了通知
+        SharedPreferences prefs = getSharedPreferences("BioAuthPrefs", MODE_PRIVATE);
+        boolean isNotificationEnabled = prefs.getBoolean("NotificationEnabled_" + userId, true);
+
+        if (!isNotificationEnabled) {
+            return; // 用户关闭了通知，不发送
+        }
+
+        // 发送通知到 Firestore
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("userId", userId);
+        notification.put("title", title);
+        notification.put("message", message);
+        notification.put("timestamp", System.currentTimeMillis());
+        notification.put("isRead", false);
+
+        db.collection("Notifications").add(notification)
+                .addOnSuccessListener(doc -> {
+                    Log.d("NOTI", "SUCCESS: " + doc.getId());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("NOTI", "FAILED", e);
+                });
+    }
+
+    private void sendApprovalNotification(String userId) {
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("userId", userId);
+        notification.put("title", "Application Approved");
+        notification.put("message", "Your hostel application has been approved.");
+        notification.put("timestamp", System.currentTimeMillis());
+        notification.put("isRead", false);
+
+        db.collection("Notifications").add(notification);
+    }
+
+    private void sendRejectionNotification(String userId) {
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("userId", userId);
+        notification.put("title", "Application Rejected");
+        notification.put("message", "Your hostel application has been rejected.");
+        notification.put("timestamp", System.currentTimeMillis());
+        notification.put("isRead", false);
+
+        db.collection("Notifications").add(notification);
     }
 }

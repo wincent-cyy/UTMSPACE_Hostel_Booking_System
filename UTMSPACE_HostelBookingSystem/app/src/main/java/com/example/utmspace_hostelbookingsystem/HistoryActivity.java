@@ -59,11 +59,8 @@ public class HistoryActivity extends AppCompatActivity {
         bottomNavigation = findViewById(R.id.bottomNavigation);
         tabLayout = findViewById(R.id.tabLayout);
         btnClearHistory = findViewById(R.id.btnClearHistory);
-
-        // Connect empty state text reference placeholder node
         tvEmptyState = findViewById(R.id.tvEmptyState);
 
-        // 預設隱藏清除按鈕（因為第一頁是 Ongoing）
         if (btnClearHistory != null) {
             btnClearHistory.setVisibility(View.GONE);
         }
@@ -76,6 +73,7 @@ public class HistoryActivity extends AppCompatActivity {
         if (rvBookingHistory != null) {
             rvBookingHistory.setLayoutManager(new LinearLayoutManager(this));
 
+            // ✅ 修正: 使用新的字段名
             adapter = new BookingAdapter(filteredList, booking -> {
                 Intent intent = new Intent(HistoryActivity.this, BookingDetailsActivity.class);
                 passBookingDataIntent(intent, booking);
@@ -92,37 +90,38 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
+    // ✅ 修正: 使用新的 getter 方法
     private void passBookingDataIntent(Intent intent, Booking booking) {
-        intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
-        intent.putExtra("BOOKING_STATUS", booking.getStatus());
+        intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
+        intent.putExtra("BOOKING_STATUS", booking.getBookingStatus());
         intent.putExtra("ROOM_ID", booking.getRoomId());
         intent.putExtra("ROOM_TYPE", booking.getRoomType());
-        intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
-        intent.putExtra("STUDENT_NAME", booking.getStudentName());
+        intent.putExtra("ROOM_PRICE", String.valueOf(booking.getPrice()));
+        intent.putExtra("STUDENT_NAME", booking.getName());
         intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
-        intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
+        intent.putExtra("PHONE_NUMBER", booking.getPhone());
         intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
         intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
         intent.putExtra("REJECT_REASON", booking.getRejectReason());
     }
 
+    // ✅ 修正: 使用 uid 而不是 userId
     private void fetchHistoryFromFirestore() {
         if (mAuth.getCurrentUser() == null) return;
 
-        String currentUserId = mAuth.getCurrentUser().getUid();
+        String currentUid = mAuth.getCurrentUser().getUid();
 
         db.collection("Bookings")
-                .whereEqualTo("userId", currentUserId)
+                .whereEqualTo("uid", currentUid)  // 使用 uid 外键
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     allBookings.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Booking booking = document.toObject(Booking.class);
-                        booking.setDocumentId(document.getId());
+                        booking.setBookingId(document.getId());
                         allBookings.add(booking);
                     }
 
-                    // 資料載入後，根據目前畫面上亮起的 Tab 進行過濾
                     evaluateCurrentTabState();
                 })
                 .addOnFailureListener(e -> {
@@ -171,11 +170,11 @@ public class HistoryActivity extends AppCompatActivity {
         filterBookingsByTab(currentTabName);
     }
 
+    // ✅ 修正: 使用 getBookingStatus()
     private void filterBookingsByTab(String tabName) {
         if (filteredList == null) filteredList = new ArrayList<>();
         filteredList.clear();
 
-        // FIXED: Button visibility rules now execute reliably based on active layout position tags
         if (btnClearHistory != null) {
             if (tabName.equalsIgnoreCase("History")) {
                 btnClearHistory.setVisibility(View.VISIBLE);
@@ -185,8 +184,8 @@ public class HistoryActivity extends AppCompatActivity {
         }
 
         for (Booking b : allBookings) {
-            if (b.getStatus() != null) {
-                String status = b.getStatus().trim();
+            if (b.getBookingStatus() != null) {
+                String status = b.getBookingStatus().trim();
 
                 if (tabName.equalsIgnoreCase("Ongoing")) {
                     // Ongoing 分頁：只顯示 Approved
@@ -194,7 +193,7 @@ public class HistoryActivity extends AppCompatActivity {
                         filteredList.add(b);
                     }
                 } else if (tabName.equalsIgnoreCase("History")) {
-                    // History 分頁：Paid 和 Rejected 通通放進來！
+                    // History 分頁：Paid 和 Rejected 通通放進來
                     if (status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Rejected")) {
                         filteredList.add(b);
                     }
@@ -202,11 +201,10 @@ public class HistoryActivity extends AppCompatActivity {
             }
         }
 
-        // FIXED: Empty List Verification Layout Visibility Engine Blocks Toggle
         if (tvEmptyState != null) {
             if (filteredList.isEmpty()) {
                 tvEmptyState.setVisibility(View.VISIBLE);
-                rvBookingHistory.setVisibility(View.GONE); // Hide layout recyclerview container for cleanliness
+                rvBookingHistory.setVisibility(View.GONE);
             } else {
                 tvEmptyState.setVisibility(View.GONE);
                 rvBookingHistory.setVisibility(View.VISIBLE);
@@ -218,30 +216,24 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
+    // ✅ 修正: 使用 uid 和 getBookingStatus()
     private void setupListeners() {
         if (btnClearHistory == null) return;
 
         btnClearHistory.setOnClickListener(v -> {
-            if (mAuth.getCurrentUser() == null) return;
-            String currentUserId = mAuth.getCurrentUser().getUid();
+            // 只清空本地显示的列表，不删除 Firestore 中的数据
+            filteredList.clear();
+            adapter.notifyDataSetChanged();
 
-            db.collection("Bookings")
-                    .whereEqualTo("userId", currentUserId)
-                    .get()
-                    .addOnSuccessListener(queryDocumentSnapshots -> {
-                        for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                            String status = document.getString("status");
-                            if (status != null && (status.equalsIgnoreCase("Rejected") || status.equalsIgnoreCase("Paid"))) {
-                                document.getReference().delete();
-                            }
-                        }
-                        allBookings.removeIf(b -> b.getStatus() != null &&
-                                ("Rejected".equalsIgnoreCase(b.getStatus().trim()) || "Paid".equalsIgnoreCase(b.getStatus().trim())));
+            // 显示空状态
+            if (tvEmptyState != null) {
+                tvEmptyState.setVisibility(View.VISIBLE);
+            }
+            if (rvBookingHistory != null) {
+                rvBookingHistory.setVisibility(View.GONE);
+            }
 
-                        // Re-evaluate filters automatically after dataset is purged from memory
-                        filterBookingsByTab("History");
-                        Toast.makeText(HistoryActivity.this, "History cleared.", Toast.LENGTH_SHORT).show();
-                    });
+            Toast.makeText(HistoryActivity.this, "History list cleared", Toast.LENGTH_SHORT).show();
         });
     }
 

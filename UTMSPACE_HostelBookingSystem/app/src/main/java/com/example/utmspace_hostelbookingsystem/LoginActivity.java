@@ -36,6 +36,8 @@ public class LoginActivity extends AppCompatActivity {
     private static final String SHARED_PREFS_NAME = "BioAuthPrefs";
     private static final String KEY_BIOMETRIC_ENABLED = "FingerprintEnabled";
     private static final String KEY_SAVED_UID = "SavedUserUid";
+    private static final String KEY_SAVED_EMAIL = "SavedEmail";
+    private static final String KEY_SAVED_PASSWORD = "SavedPassword";
 
     private EditText etEmail, etPassword;
     private Button btnLogin;
@@ -92,24 +94,29 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void checkAndTriggerBiometricAuth() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        String targetUid = null;
+        // ✅ 不检查当前登录用户，直接检查保存的凭据
+        String savedUid = sharedPreferences.getString(KEY_SAVED_UID, null);
+        String savedEmail = sharedPreferences.getString("SavedEmail", "");
+        String savedPassword = sharedPreferences.getString("SavedPassword", "");
 
-        if (currentUser != null) {
-            targetUid = currentUser.getUid();
-        } else {
-            targetUid = sharedPreferences.getString(KEY_SAVED_UID, null);
-        }
-
-        if (targetUid != null) {
-            boolean isBioEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + targetUid, false);
+        if (savedUid != null && !savedEmail.isEmpty() && !savedPassword.isEmpty()) {
+            boolean isBioEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + savedUid, false);
             if (isBioEnabled) {
                 BiometricManager biometricManager = BiometricManager.from(this);
                 if (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS) {
-                    showBiometricPrompt(targetUid);
+                    showBiometricPrompt(savedUid);
                 }
             }
         }
+    }
+
+    private void saveLoginCredentials(String email, String password, String uid) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(KEY_SAVED_EMAIL, email);
+        editor.putString(KEY_SAVED_PASSWORD, password);
+        editor.putString(KEY_SAVED_UID, uid);
+        editor.apply();
+        Log.d(TAG, "Login credentials saved for user: " + uid);
     }
 
     private void showBiometricPrompt(String uid) {
@@ -128,13 +135,29 @@ public class LoginActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed()) return;
                 progressDialog.show();
 
-                // If user is validated locally but active network state drops, it signs in token natively
-                FirebaseUser currentUser = mAuth.getCurrentUser();
-                if (currentUser != null && currentUser.getUid().equals(uid)) {
-                    checkUserRole(currentUser.getUid());
+                // ✅ 使用保存的凭据登录
+                String savedEmail = sharedPreferences.getString(KEY_SAVED_EMAIL, "");
+                String savedPassword = sharedPreferences.getString(KEY_SAVED_PASSWORD, "");
+
+                if (!savedEmail.isEmpty() && !savedPassword.isEmpty()) {
+                    // 使用保存的凭据登录
+                    mAuth.signInWithEmailAndPassword(savedEmail, savedPassword)
+                            .addOnCompleteListener(task -> {
+                                progressDialog.dismiss();
+                                if (task.isSuccessful()) {
+                                    FirebaseUser user = mAuth.getCurrentUser();
+                                    if (user != null) {
+                                        checkUserRole(user.getUid());
+                                    }
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Auto login failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                                    // 清除失效的指纹设置
+                                    sharedPreferences.edit().putBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, false).apply();
+                                }
+                            });
                 } else {
-                    // Fallback to manual checking using verified hardware profile reference
-                    checkUserRole(uid);
+                    progressDialog.dismiss();
+                    Toast.makeText(LoginActivity.this, "No saved credentials. Please login manually.", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -203,6 +226,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null && user.isEmailVerified()) {
+                            saveLoginCredentials(email, password, user.getUid());
                             sharedPreferences.edit()
                                     .putString(KEY_SAVED_UID, user.getUid())
                                     .apply();

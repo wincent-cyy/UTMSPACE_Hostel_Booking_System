@@ -79,6 +79,7 @@
                     android:src="@android:drawable/ic_menu_search"
                     app:tint="#6366F1" />
                 <EditText
+                    android:id="@+id/etSearchRoom"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Find a room ..."
@@ -263,11 +264,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Occupied"
+                        android:text="Full"
                         android:textColor="#2563EB"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvOccupiedRooms"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="240 Rooms"
@@ -292,11 +294,12 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Vacant"
+                        android:text="Available"
                         android:textColor="#16A34A"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvVacantRooms"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="15 Rooms"

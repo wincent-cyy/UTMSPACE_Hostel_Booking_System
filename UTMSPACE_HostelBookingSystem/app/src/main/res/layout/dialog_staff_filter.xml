@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <!-- Top Drag Handle indicator -->
+    <!-- Top Drag Handle -->
     <View
         android:layout_width="40dp"
         android:layout_height="4dp"
@@ -19,30 +19,28 @@
         android:id="@+id/tvFilterTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Filter Requirements"
+        android:text="Filter Applications"
         android:textColor="#0F172A"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
 
-    <!-- Category 1: Status Filter Title -->
+    <!-- Status Filter -->
     <TextView
-        android:id="@+id/tvStatusTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Availability Status"
+        android:text="Application Status"
         android:textColor="#475569"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Status Row Selection Chips -->
+    <!-- 第一行：All, Pending, Approved -->
     <LinearLayout
-        android:id="@+id/statusSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="12dp">
 
         <TextView
             android:id="@+id/btnStatusAll"
@@ -60,14 +58,14 @@
             android:focusable="true"/>
 
         <TextView
-            android:id="@+id/btnStatusAvailable"
+            android:id="@+id/btnStatusPending"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginHorizontal="3dp"
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
-            android:text="Available"
+            android:text="Pending"
             android:textColor="#475569"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -75,14 +73,14 @@
             android:focusable="true"/>
 
         <TextView
-            android:id="@+id/btnStatusFull"
+            android:id="@+id/btnStatusApproved"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
-            android:text="Full"
+            android:text="Approved"
             android:textColor="#475569"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -90,34 +88,22 @@
             android:focusable="true"/>
     </LinearLayout>
 
-    <!-- Category 2: Location/Block Filter Title (Replaced Price Sort) -->
-    <TextView
-        android:id="@+id/tvLocationTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hostel Block / Location"
-        android:textColor="#475569"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp"/>
-
-    <!-- Location Block Row Selection Chips -->
+    <!-- 第二行：Rejected, Paid -->
     <LinearLayout
-        android:id="@+id/locationSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="32dp">
+        android:layout_marginBottom="24dp">
 
         <TextView
-            android:id="@+id/btnBlockAll"
+            android:id="@+id/btnStatusRejected"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginEnd="6dp"
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
-            android:text="All Blocks"
+            android:text="Rejected"
             android:textColor="#475569"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -125,29 +111,14 @@
             android:focusable="true"/>
 
         <TextView
-            android:id="@+id/btnBlockA"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:text="Block A"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"/>
-
-        <TextView
-            android:id="@+id/btnBlockB"
+            android:id="@+id/btnStatusPaid"
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
             android:layout_marginStart="6dp"
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
-            android:text="Block B"
+            android:text="Paid"
             android:textColor="#475569"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -155,92 +126,86 @@
             android:focusable="true"/>
     </LinearLayout>
 
-    <!-- Category 3: Room Type Filter (For Dashboard) -->
+    <!-- Room Type Filter -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Room Type"
+        android:textColor="#475569"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"/>
+
     <LinearLayout
-        android:id="@+id/roomTypeSection"
+        android:id="@+id/roomTypeContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:orientation="horizontal"
+        android:layout_marginBottom="24dp">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Room Type"
+            android:id="@+id/btnRoomAll"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:text="All"
             android:textColor="#475569"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:layout_marginBottom="12dp"/>
+            android:clickable="true"
+            android:focusable="true"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="32dp">
+        <TextView
+            android:id="@+id/btnRoomSingle"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:text="Single"
+            android:textColor="#475569"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"/>
 
-            <TextView
-                android:id="@+id/btnRoomAll"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                android:background="@drawable/filter_chip_unselected"
-                android:gravity="center"
-                android:text="All Rooms"
-                android:textColor="#475569"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:clickable="true"
-                android:focusable="true"/>
+        <TextView
+            android:id="@+id/btnRoomDouble"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:text="Double"
+            android:textColor="#475569"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"/>
 
-            <TextView
-                android:id="@+id/btnRoomSingle"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="3dp"
-                android:background="@drawable/filter_chip_unselected"
-                android:gravity="center"
-                android:text="Single"
-                android:textColor="#475569"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <TextView
-                android:id="@+id/btnRoomDouble"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="3dp"
-                android:background="@drawable/filter_chip_unselected"
-                android:gravity="center"
-                android:text="Double"
-                android:textColor="#475569"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <TextView
-                android:id="@+id/btnRoomQuad"
-                android:layout_width="0dp"
-                android:layout_height="44dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/filter_chip_unselected"
-                android:gravity="center"
-                android:text="Quad"
-                android:textColor="#475569"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:clickable="true"
-                android:focusable="true"/>
-        </LinearLayout>
+        <TextView
+            android:id="@+id/btnRoomQuad"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:text="Quad"
+            android:textColor="#475569"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"/>
     </LinearLayout>
 
-    <!-- Buttons Row Section -->
+    <!-- Buttons Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -267,7 +232,7 @@
             android:layout_height="54dp"
             android:layout_weight="1.5"
             android:layout_marginStart="8dp"
-            android:text="Confirm"
+            android:text="Apply"
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             android:textStyle="bold"

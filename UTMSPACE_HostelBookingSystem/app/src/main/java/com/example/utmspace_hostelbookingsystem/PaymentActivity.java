@@ -1,33 +1,49 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+
 import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class PaymentActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
     private Button btnPayNow;
-    private TextView tvTotalMain, tvDisplayName, tvDisplayMatric, tvDisplayPhone;
+    private TextView tvTotalMain, tvInstallmentDetail, tvDisplayName, tvDisplayMatric, tvDisplayPhone;
+    private TextView tvFullPaymentAmount, tvInstallment3Amount, tvInstallment6Amount;
+
+    private RadioGroup radioGroupPayment, radioGroupInstallment;
+    private RadioButton rbCard, rbBank, rbWallet;
+    private RadioButton rbFullPayment, rbInstallment3, rbInstallment6;
 
     private MaterialCardView cardDebit, cardBank, cardWallet;
-    private RadioButton rbDebit, rbBank, rbWallet;
 
-    private String bookingDocId, roomType, roomPrice;
+    private String bookingDocId, roomId, roomType;
     private String selectedMethod = "";
+    private String selectedInstallment = "Full";
+    private double originalPrice = 0;
+    private double finalPrice = 0;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
@@ -43,26 +59,89 @@ public class PaymentActivity extends AppCompatActivity {
         initViews();
         getIntentData();
         fetchUserInfo();
-        fetchBookingDetails();
         setupListeners();
+        setupInstallmentOptions();
+        setupCardClickListeners();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btnBack);
         btnPayNow = findViewById(R.id.btnPayNow);
         tvTotalMain = findViewById(R.id.tvTotalMain);
+        tvInstallmentDetail = findViewById(R.id.tvInstallmentDetail);
 
         tvDisplayName = findViewById(R.id.tvDisplayName);
         tvDisplayMatric = findViewById(R.id.tvDisplayMatric);
         tvDisplayPhone = findViewById(R.id.tvDisplayPhone);
 
-        rbDebit = findViewById(R.id.rbCard);
+        tvFullPaymentAmount = findViewById(R.id.tvFullPaymentAmount);
+        tvInstallment3Amount = findViewById(R.id.tvInstallment3Amount);
+        tvInstallment6Amount = findViewById(R.id.tvInstallment6Amount);
+
+        radioGroupPayment = findViewById(R.id.radioGroupPayment);
+        radioGroupInstallment = findViewById(R.id.radioGroupInstallment);
+
+        rbCard = findViewById(R.id.rbCard);
         rbBank = findViewById(R.id.rbBank);
         rbWallet = findViewById(R.id.rbWallet);
 
-        cardDebit = (MaterialCardView) rbDebit.getParent().getParent();
-        cardBank = (MaterialCardView) rbBank.getParent().getParent();
-        cardWallet = (MaterialCardView) rbWallet.getParent().getParent();
+        rbFullPayment = findViewById(R.id.rbFullPayment);
+        rbInstallment3 = findViewById(R.id.rbInstallment3);
+        rbInstallment6 = findViewById(R.id.rbInstallment6);
+
+        cardDebit = findViewById(R.id.cardDebit);
+        cardBank = findViewById(R.id.cardBank);
+        cardWallet = findViewById(R.id.cardWallet);
+
+        if (rbFullPayment != null) {
+            rbFullPayment.setChecked(true);
+        }
+    }
+
+    private void setupCardClickListeners() {
+        if (cardDebit != null) cardDebit.setOnClickListener(v -> rbCard.performClick());
+        if (cardBank != null) cardBank.setOnClickListener(v -> rbBank.performClick());
+        if (cardWallet != null) cardWallet.setOnClickListener(v -> rbWallet.performClick());
+    }
+
+    private void setupInstallmentOptions() {
+        if (radioGroupInstallment != null) {
+            radioGroupInstallment.setOnCheckedChangeListener((group, checkedId) -> {
+                if (checkedId == R.id.rbFullPayment) {
+                    selectedInstallment = "Full";
+                    finalPrice = originalPrice;
+                    updatePriceDisplay();
+                } else if (checkedId == R.id.rbInstallment3) {
+                    selectedInstallment = "3 Months";
+                    finalPrice = originalPrice;
+                    updatePriceDisplay();
+                } else if (checkedId == R.id.rbInstallment6) {
+                    selectedInstallment = "6 Months";
+                    finalPrice = originalPrice;
+                    updatePriceDisplay();
+                }
+            });
+        }
+    }
+
+    private void updatePriceDisplay() {
+        // 更新总价显示
+        tvTotalMain.setText(String.format("RM %.2f", finalPrice));
+
+        // 更新分期详情显示
+        if ("Full".equals(selectedInstallment)) {
+            tvInstallmentDetail.setVisibility(View.GONE);
+        } else {
+            int months = Integer.parseInt(selectedInstallment.split(" ")[0]);
+            double monthlyPayment = finalPrice / months;
+            tvInstallmentDetail.setVisibility(View.VISIBLE);
+            tvInstallmentDetail.setText(String.format("(%d months x RM %.2f)", months, monthlyPayment));
+        }
+
+        // 更新选项金额显示
+        tvFullPaymentAmount.setText(String.format("Total: RM %.2f", originalPrice));
+        tvInstallment3Amount.setText(String.format("RM %.2f / month (Total: RM %.2f)", originalPrice / 3, originalPrice));
+        tvInstallment6Amount.setText(String.format("RM %.2f / month (Total: RM %.2f)", originalPrice / 6, originalPrice));
     }
 
     private void fetchUserInfo() {
@@ -70,34 +149,13 @@ public class PaymentActivity extends AppCompatActivity {
             db.collection("Bookings").document(bookingDocId).get().addOnCompleteListener(task -> {
                 if (task.isSuccessful() && task.getResult() != null) {
                     DocumentSnapshot doc = task.getResult();
-                    String name = doc.getString("studentName");
+                    String name = doc.getString("name");
                     String matric = doc.getString("matricNumber");
-                    String phone = doc.getString("phoneNumber");
+                    String phone = doc.getString("phone");
 
-                    if (name != null && !name.isEmpty()) tvDisplayName.setText(name);
-                    if (matric != null && !matric.isEmpty()) tvDisplayMatric.setText(matric);
-                    if (phone != null && !phone.isEmpty()) tvDisplayPhone.setText(phone);
-                } else {
-                    tvDisplayName.setText("Student Name");
-                    tvDisplayMatric.setText("Matric Number");
-                    tvDisplayPhone.setText("Phone Number");
-                }
-            });
-        }
-    }
-
-    private void fetchBookingDetails() {
-        if (bookingDocId != null && !bookingDocId.isEmpty()) {
-            db.collection("Bookings").document(bookingDocId).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful() && task.getResult() != null) {
-                    DocumentSnapshot doc = task.getResult();
-                    String status = doc.getString("status");
-
-                    if (status != null && status.equals("Paid")) {
-                        Toast.makeText(this, "This booking has already been paid!", Toast.LENGTH_LONG).show();
-                        btnPayNow.setEnabled(false);
-                        btnPayNow.setText("Already Paid");
-                    }
+                    if (name != null) tvDisplayName.setText(name);
+                    if (matric != null) tvDisplayMatric.setText(matric);
+                    if (phone != null) tvDisplayPhone.setText(phone);
                 }
             });
         }
@@ -107,58 +165,121 @@ public class PaymentActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent != null) {
             bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
+            roomId = intent.getStringExtra("ROOM_ID");
             roomType = intent.getStringExtra("ROOM_TYPE");
-            roomPrice = intent.getStringExtra("ROOM_PRICE");
+            String priceStr = intent.getStringExtra("ROOM_PRICE");
 
-            if (roomPrice != null && !roomPrice.isEmpty()) {
-                if (roomPrice.contains("/")) {
-                    String[] parts = roomPrice.split("/");
-                    tvTotalMain.setText(parts[0].trim());
-                } else {
-                    tvTotalMain.setText(roomPrice);
+            if (priceStr != null) {
+                String numericPrice = priceStr.replaceAll("[^0-9.]", "");
+                try {
+                    originalPrice = Double.parseDouble(numericPrice);
+                    finalPrice = originalPrice;
+                    tvTotalMain.setText(String.format("RM %.2f", finalPrice));
+                    updatePriceDisplay();
+                } catch (NumberFormatException e) {
+                    tvTotalMain.setText(priceStr);
                 }
             } else {
                 tvTotalMain.setText("RM 0.00");
             }
-
-            // Debug log
-            android.util.Log.d("PaymentActivity", "Booking ID: " + bookingDocId);
         }
     }
 
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
 
-        cardDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
-        cardBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
-        cardWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
+        // 付款方式互斥逻辑
+        rbCard.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedMethod = "Credit / Debit Card";
+                rbBank.setChecked(false);
+                rbWallet.setChecked(false);
+            }
+        });
 
-        rbDebit.setOnClickListener(v -> updateRadioSelection(rbDebit, "Credit / Debit Card"));
-        rbBank.setOnClickListener(v -> updateRadioSelection(rbBank, "Online Banking (FPX)"));
-        rbWallet.setOnClickListener(v -> updateRadioSelection(rbWallet, "E-Wallet"));
+        rbBank.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedMethod = "Online Banking (FPX)";
+                rbCard.setChecked(false);
+                rbWallet.setChecked(false);
+            }
+        });
 
-        btnPayNow.setOnClickListener(v -> processPayment());
+        rbWallet.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedMethod = "E-Wallet";
+                rbCard.setChecked(false);
+                rbBank.setChecked(false);
+            }
+        });
+
+        // 分期计划互斥逻辑
+        rbFullPayment.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedInstallment = "Full";
+                finalPrice = originalPrice;
+                updatePriceDisplay();
+                rbInstallment3.setChecked(false);
+                rbInstallment6.setChecked(false);
+            }
+        });
+
+        rbInstallment3.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedInstallment = "3 Months";
+                finalPrice = originalPrice;
+                updatePriceDisplay();
+                rbFullPayment.setChecked(false);
+                rbInstallment6.setChecked(false);
+            }
+        });
+
+        rbInstallment6.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedInstallment = "6 Months";
+                finalPrice = originalPrice;
+                updatePriceDisplay();
+                rbFullPayment.setChecked(false);
+                rbInstallment3.setChecked(false);
+            }
+        });
+
+        btnPayNow.setOnClickListener(v -> {
+            if (selectedMethod.isEmpty()) {
+                Toast.makeText(this, "Please select a payment method.", Toast.LENGTH_SHORT).show();
+            } else if (bookingDocId != null && roomId != null) {
+                showPaymentConfirmationDialog();
+            }
+        });
+    }
+
+    private void showPaymentConfirmationDialog() {
+        String installmentInfo = "";
+        if (!"Full".equals(selectedInstallment)) {
+            int months = Integer.parseInt(selectedInstallment.split(" ")[0]);
+            double monthlyPayment = finalPrice / months;
+            installmentInfo = String.format("\n\nPayment Plan: %s\nMonthly: RM %.2f", selectedInstallment, monthlyPayment);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm Payment")
+                .setMessage(String.format(
+                        "Payment Details:\n" +
+                                "Method: %s\n" +
+                                "Amount: RM %.2f%s\n\n" +
+                                "This is a demo payment. No actual charge will be made.",
+                        selectedMethod, finalPrice, installmentInfo))
+                .setPositiveButton("Confirm Payment", (dialog, which) -> processPayment())
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void processPayment() {
-        // Validation checks
-        if (selectedMethod.isEmpty()) {
-            Toast.makeText(this, "Please select a payment method.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (bookingDocId == null || bookingDocId.isEmpty()) {
-            Toast.makeText(this, "Error: Booking information missing.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Disable button to prevent double click
         btnPayNow.setEnabled(false);
         btnPayNow.setText("Processing...");
 
         DocumentReference bookingRef = db.collection("Bookings").document(bookingDocId);
 
-        // First, get the booking to find the actual room number
         bookingRef.get().addOnSuccessListener(bookingDoc -> {
             if (!bookingDoc.exists()) {
                 resetPayButton();
@@ -166,141 +287,145 @@ public class PaymentActivity extends AppCompatActivity {
                 return;
             }
 
-            String currentStatus = bookingDoc.getString("status");
-            if (currentStatus != null && currentStatus.equals("Paid")) {
-                resetPayButton();
-                Toast.makeText(this, "This booking has already been paid!", Toast.LENGTH_LONG).show();
-                return;
-            }
+            String roomIdFromBooking = bookingDoc.getString("roomId");
 
-            // Get the room number from booking (field is "roomId" in your collection)
-            String roomNumberFromBooking = bookingDoc.getString("roomId");
-            if (roomNumberFromBooking == null || roomNumberFromBooking.isEmpty()) {
-                resetPayButton();
-                Toast.makeText(this, "Error: Room number not found in booking.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Clean the room number: Remove "Room " prefix if present
-            String cleanRoomNumber = roomNumberFromBooking.replace("Room ", "").replace("room ", "").trim();
-
-            android.util.Log.d("PaymentActivity", "Original room number from booking: " + roomNumberFromBooking);
-            android.util.Log.d("PaymentActivity", "Cleaned room number: " + cleanRoomNumber);
-
-            // Find the room in Rooms collection by roomNumber field (using cleaned number)
             db.collection("Rooms")
-                    .whereEqualTo("roomNumber", cleanRoomNumber)
+                    .whereEqualTo("roomId", roomIdFromBooking)
                     .limit(1)
                     .get()
                     .addOnSuccessListener(querySnapshot -> {
                         if (querySnapshot.isEmpty()) {
                             resetPayButton();
-                            Toast.makeText(this, "Error: Room not found. Room number: " + cleanRoomNumber, Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, "Error: Room not found.", Toast.LENGTH_SHORT).show();
                             return;
                         }
 
                         DocumentSnapshot roomDoc = querySnapshot.getDocuments().get(0);
                         String roomDocId = roomDoc.getId();
 
-                        // Get current occupancy and max capacity
                         Long currentOccupancyLong = roomDoc.getLong("currentOccupancy");
                         Long maxCapacityLong = roomDoc.getLong("maxCapacity");
 
                         int currentOccupancy = (currentOccupancyLong != null) ? currentOccupancyLong.intValue() : 0;
-                        int maxCapacity = (maxCapacityLong != null) ? maxCapacityLong.intValue() : 2;
+                        int maxCapacity = (maxCapacityLong != null) ? maxCapacityLong.intValue() : 4;
 
-                        android.util.Log.d("PaymentActivity", "Current occupancy: " + currentOccupancy + ", Max capacity: " + maxCapacity);
-
-                        // Check if room is available
                         if (currentOccupancy >= maxCapacity) {
                             resetPayButton();
-                            Toast.makeText(this, "Sorry, this room is already fully booked! Occupancy: " + currentOccupancy + "/" + maxCapacity, Toast.LENGTH_LONG).show();
+                            Toast.makeText(this, "Sorry, this room is already fully booked!", Toast.LENGTH_LONG).show();
                             return;
                         }
 
                         int newOccupancy = currentOccupancy + 1;
                         String newRoomStatus = (newOccupancy >= maxCapacity) ? "Full" : "Available";
 
-                        // Use WriteBatch for atomic operations
                         WriteBatch batch = db.batch();
 
-                        // Update booking status to Paid
-                        batch.update(bookingRef, "status", "Paid");
+                        batch.update(bookingRef, "bookingStatus", "Paid");
                         batch.update(bookingRef, "paymentMethod", selectedMethod);
+                        batch.update(bookingRef, "installmentPlan", selectedInstallment);
+                        batch.update(bookingRef, "amountPaid", finalPrice);
                         batch.update(bookingRef, "paymentTimestamp", System.currentTimeMillis());
 
-                        // Update room occupancy and status
                         DocumentReference roomRef = db.collection("Rooms").document(roomDocId);
                         batch.update(roomRef, "currentOccupancy", newOccupancy);
                         batch.update(roomRef, "status", newRoomStatus);
 
-                        // Commit the batch
+                        // ✅ 只有一个 batch.commit()
                         batch.commit()
                                 .addOnSuccessListener(aVoid -> {
-                                    // Navigate to receipt activity
-                                    Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
-                                    intent.putExtra("BOOKING_DOC_ID", bookingDocId);
-                                    intent.putExtra("PAYMENT_METHOD", selectedMethod);
-                                    intent.putExtra("ROOM_ID", roomDocId);
-                                    intent.putExtra("ROOM_PRICE", tvTotalMain.getText().toString());
-                                    intent.putExtra("MATRIC_NUMBER", tvDisplayMatric.getText().toString());
-                                    startActivity(intent);
-                                    finish();
+                                    showLocalNotification(bookingDoc.getString("uid"));
+                                    // 发送支付成功通知
+                                    sendPaymentSuccessNotification(bookingDoc.getString("uid"));
+                                    showPaymentSuccessDialog();
                                 })
                                 .addOnFailureListener(e -> {
                                     resetPayButton();
                                     Toast.makeText(PaymentActivity.this,
-                                            "Payment failed: " + getErrorMessage(e), Toast.LENGTH_LONG).show();
-                                    android.util.Log.e("PaymentActivity", "Payment error", e);
+                                            "Payment failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 });
-
                     })
                     .addOnFailureListener(e -> {
                         resetPayButton();
-                        Toast.makeText(this, "Failed to find room: " + getErrorMessage(e), Toast.LENGTH_LONG).show();
-                        android.util.Log.e("PaymentActivity", "Room search error", e);
+                        Toast.makeText(this, "Failed to find room: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
-
         }).addOnFailureListener(e -> {
             resetPayButton();
-            Toast.makeText(this, "Failed to verify booking: " + getErrorMessage(e), Toast.LENGTH_LONG).show();
-            android.util.Log.e("PaymentActivity", "Booking verification error", e);
+            Toast.makeText(this, "Failed to verify booking: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void sendPaymentSuccessNotification(String userId) {
+        // ✅ 添加开关检查
+        SharedPreferences prefs = getSharedPreferences("BioAuthPrefs", MODE_PRIVATE);
+        boolean isNotificationEnabled = prefs.getBoolean("NotificationEnabled_" + userId, false);
+
+        if (!isNotificationEnabled) {
+            return; // 用户关闭了通知，不发送
+        }
+
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("userId", userId);
+        notification.put("title", "Payment Successful");
+        notification.put("message", "Your payment has been processed successfully. Receipt is ready.");
+        notification.put("timestamp", System.currentTimeMillis());
+        notification.put("isRead", false);
+
+        db.collection("Notifications").add(notification);
+    }
+
+    private void showPaymentSuccessDialog() {
+        String installmentInfo = "";
+        if (!"Full".equals(selectedInstallment)) {
+            int months = Integer.parseInt(selectedInstallment.split(" ")[0]);
+            double monthlyPayment = finalPrice / months;
+            installmentInfo = String.format("\nPayment Plan: %s\nMonthly: RM %.2f", selectedInstallment, monthlyPayment);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Payment Successful!")
+                .setMessage(String.format(
+                        "Your payment has been processed successfully.\n\n" +
+                                "Amount: RM %.2f\n" +
+                                "Payment Method: %s%s",
+                        finalPrice, selectedMethod, installmentInfo))
+                .setPositiveButton("View Receipt", (dialog, which) -> {
+                    Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
+                    intent.putExtra("BOOKING_DOC_ID", bookingDocId);
+                    intent.putExtra("PAYMENT_METHOD", selectedMethod);
+                    intent.putExtra("ROOM_ID", roomId);
+                    intent.putExtra("AMOUNT_PAID", finalPrice);
+                    intent.putExtra("INSTALLMENT_PLAN", selectedInstallment);
+                    intent.putExtra("MATRIC_NUMBER", tvDisplayMatric.getText().toString());
+                    startActivity(intent);
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private void showLocalNotification(String userId) {
+        // 检查通知开关
+        SharedPreferences prefs = getSharedPreferences("BioAuthPrefs", MODE_PRIVATE);
+        boolean isNotificationEnabled = prefs.getBoolean("NotificationEnabled_" + userId, false);
+
+        if (!isNotificationEnabled) {
+            return; // 用户关闭了通知，不弹出
+        }
+
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "utm_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("Payment Successful")
+                .setContentText("Your payment has been completed successfully.")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        manager.notify(1001, builder.build());
     }
 
     private void resetPayButton() {
         btnPayNow.setEnabled(true);
-        btnPayNow.setText("Pay Now");
-    }
-
-    private String getErrorMessage(Exception e) {
-        String error = e.getMessage();
-        if (error == null || error.isEmpty()) {
-            return "Network error. Please check your connection.";
-        }
-
-        if (error.contains("already been paid")) {
-            return error;
-        } else if (error.contains("fully booked")) {
-            return error;
-        } else if (error.contains("PERMISSION_DENIED")) {
-            return "Permission denied. Please check your authentication.";
-        } else if (error.contains("NOT_FOUND")) {
-            return "Data not found in database.";
-        } else if (error.contains("UNAVAILABLE")) {
-            return "Service unavailable. Please try again later.";
-        } else if (error.contains("DEADLINE_EXCEEDED")) {
-            return "Request timeout. Please check your internet connection.";
-        }
-
-        return error;
-    }
-
-    private void updateRadioSelection(RadioButton targetRadio, String method) {
-        rbDebit.setChecked(false);
-        rbBank.setChecked(false);
-        rbWallet.setChecked(false);
-        targetRadio.setChecked(true);
-        selectedMethod = method;
+        btnPayNow.setText("Confirm and Pay");
     }
 }

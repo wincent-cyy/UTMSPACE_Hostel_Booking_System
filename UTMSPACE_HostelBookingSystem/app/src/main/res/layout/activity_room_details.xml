@@ -54,6 +54,7 @@
     </RelativeLayout>
 
     <!-- 3. Fixed Room Image Card & Price Tag Container (Non-Scrollable Anchor Point) -->
+    <!-- 3. Fixed Room Image Card & Price Tag Container with Arrows -->
     <androidx.cardview.widget.CardView
         android:id="@+id/roomImageCard"
         android:layout_width="match_parent"
@@ -70,14 +71,36 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <ImageView
-                android:id="@+id/ivRoomPicture"
+            <!-- Change ImageView to ViewPager2 -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerImages"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@android:drawable/ic_menu_gallery"
-                android:background="#E2E8F0"/>
+                android:layout_height="match_parent" />
 
+            <!-- Left Arrow -->
+            <ImageButton
+                android:id="@+id/btnPrevImage"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/broadcast_arrow"
+                android:padding="8dp"
+                android:visibility="gone" />
+
+            <!-- Right Arrow -->
+            <ImageButton
+                android:id="@+id/btnNextImage"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/broadcast_arrow"
+                android:padding="8dp"
+                android:rotation="180"
+                android:visibility="gone" />
+
+            <!-- Price Tag -->
             <TextView
                 android:id="@+id/tvRoomPriceTag"
                 android:layout_width="wrap_content"

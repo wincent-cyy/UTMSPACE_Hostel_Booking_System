@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.SwitchCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -43,12 +44,14 @@ public class ProfileActivity extends AppCompatActivity {
     private static final String SHARED_PREFS_NAME = "BioAuthPrefs";
     private static final String KEY_BIOMETRIC_ENABLED = "FingerprintEnabled";
     private static final String KEY_SAVED_UID = "SavedUserUid";
+    private static final String KEY_NOTIFICATION_ENABLED = "NotificationEnabled";
 
     private MaterialButton btnLogout, btnDeleteAccount;
     private RelativeLayout settingPersonalInfo, settingChangePassword;
     private ShapeableImageView ivProfileLarge, btnEditPicture;
     private TextView tvUserName, tvUserEmail;
     private CompoundButton switchBiometric;
+    private SwitchCompat switchNotifications;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -87,6 +90,7 @@ public class ProfileActivity extends AppCompatActivity {
         initViews();
         fetchUserProfileData();
         loadBiometricToggleStatus();
+        loadNotificationToggleStatus();
         setupListeners();
     }
 
@@ -101,19 +105,28 @@ public class ProfileActivity extends AppCompatActivity {
         tvUserName = findViewById(R.id.tvUserName);
         tvUserEmail = findViewById(R.id.tvUserEmail);
         switchBiometric = findViewById(R.id.switchBiometric);
+        switchNotifications = findViewById(R.id.switchNotifications);
     }
 
     private void loadBiometricToggleStatus() {
-        String uid = mAuth.getCurrentUser() != null
-                ? mAuth.getCurrentUser().getUid()
-                : sharedPreferences.getString(KEY_SAVED_UID, null);
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) return;
 
-        if (uid != null) {
-            boolean isEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, false);
-            isUpdatingUI = true;
-            switchBiometric.setChecked(isEnabled);
-            isUpdatingUI = false;
-        }
+        String uid = currentUser.getUid();
+        boolean isEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, false);
+
+        isUpdatingUI = true;
+        switchBiometric.setChecked(isEnabled);
+        isUpdatingUI = false;
+    }
+
+    private void loadNotificationToggleStatus() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) return;
+
+        String uid = currentUser.getUid();
+        boolean isEnabled = sharedPreferences.getBoolean(KEY_NOTIFICATION_ENABLED + "_" + uid, false);
+        switchNotifications.setChecked(isEnabled);
     }
 
     private void updateSwitchSilently(boolean checked) {
@@ -127,15 +140,14 @@ public class ProfileActivity extends AppCompatActivity {
         switchBiometric.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isUpdatingUI) return;
 
-            String uid = mAuth.getCurrentUser() != null
-                    ? mAuth.getCurrentUser().getUid()
-                    : sharedPreferences.getString(KEY_SAVED_UID, null);
-
-            if (uid == null) {
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser == null) {
                 Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
                 updateSwitchSilently(false);
                 return;
             }
+
+            String uid = currentUser.getUid();
 
             if (isChecked) {
                 BiometricManager manager = BiometricManager.from(this);
@@ -147,6 +159,15 @@ public class ProfileActivity extends AppCompatActivity {
 
                 if (result == BiometricManager.BIOMETRIC_SUCCESS) {
                     authenticateBiometric(uid);
+                } else if (result == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
+                    Toast.makeText(this, "No fingerprint hardware available", Toast.LENGTH_SHORT).show();
+                    updateSwitchSilently(false);
+                } else if (result == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+                    Toast.makeText(this, "Fingerprint hardware not available", Toast.LENGTH_SHORT).show();
+                    updateSwitchSilently(false);
+                } else if (result == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
+                    Toast.makeText(this, "No fingerprint enrolled. Please add fingerprint in device settings.", Toast.LENGTH_LONG).show();
+                    updateSwitchSilently(false);
                 } else {
                     Toast.makeText(this, "Biometric not available", Toast.LENGTH_SHORT).show();
                     updateSwitchSilently(false);
@@ -155,9 +176,20 @@ public class ProfileActivity extends AppCompatActivity {
                 sharedPreferences.edit()
                         .putBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, false)
                         .apply();
-
                 Toast.makeText(this, "Fingerprint disabled", Toast.LENGTH_SHORT).show();
             }
+        });
+
+        switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser == null) return;
+
+            String uid = currentUser.getUid();
+            sharedPreferences.edit()
+                    .putBoolean(KEY_NOTIFICATION_ENABLED + "_" + uid, isChecked)
+                    .apply();
+
+            Toast.makeText(this, isChecked ? "Notifications enabled" : "Notifications disabled", Toast.LENGTH_SHORT).show();
         });
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -283,13 +315,18 @@ public class ProfileActivity extends AppCompatActivity {
                 new BiometricPrompt.AuthenticationCallback() {
                     @Override
                     public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                        sharedPreferences.edit()
-                                .putBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, true)
-                                .putString(KEY_SAVED_UID, uid)
-                                .apply();
+                        // 保存指纹启用状态
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, true);
+                        editor.putString(KEY_SAVED_UID, uid);
+                        editor.apply();
 
-                        updateSwitchSilently(true);
-                        Toast.makeText(ProfileActivity.this, "Fingerprint enabled", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Fingerprint enabled for user: " + uid);
+
+                        runOnUiThread(() -> {
+                            updateSwitchSilently(true);
+                            Toast.makeText(ProfileActivity.this, "Fingerprint enabled successfully", Toast.LENGTH_SHORT).show();
+                        });
                     }
 
                     @Override
@@ -299,16 +336,21 @@ public class ProfileActivity extends AppCompatActivity {
                             Toast.makeText(ProfileActivity.this, "Authentication failed", Toast.LENGTH_SHORT).show();
                         });
                     }
+
+                    @Override
+                    public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                        Log.e(TAG, "Authentication error: " + errorCode + " - " + errString);
+                        runOnUiThread(() -> {
+                            updateSwitchSilently(false);
+                            Toast.makeText(ProfileActivity.this, "Error: " + errString, Toast.LENGTH_SHORT).show();
+                        });
+                    }
                 });
 
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Fingerprint Authentication")
-                .setSubtitle("Verify your identity to enable fingerprint login")
+                .setTitle("Enable Fingerprint Login")
+                .setSubtitle("Verify your identity to enable fingerprint login for future sessions")
                 .setNegativeButtonText("Cancel")
-                .setAllowedAuthenticators(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG
-                                | BiometricManager.Authenticators.DEVICE_CREDENTIAL
-                )
                 .build();
 
         biometricPrompt.authenticate(promptInfo);
@@ -445,6 +487,15 @@ public class ProfileActivity extends AppCompatActivity {
         if (user != null) {
             String uid = user.getUid();
 
+            SharedPreferences bioPrefs = getSharedPreferences("BioAuthPrefs", MODE_PRIVATE);
+            SharedPreferences.Editor editor = bioPrefs.edit();
+            editor.remove(KEY_BIOMETRIC_ENABLED + "_" + uid);  // 清除该用户的指纹状态
+            editor.remove(KEY_NOTIFICATION_ENABLED + "_" + uid);
+            editor.remove(KEY_SAVED_UID);                       // 清除保存的 UID
+            editor.remove("SavedEmail");                        // 清除保存的邮箱
+            editor.remove("SavedPassword");                     // 清除保存的密码
+            editor.apply();
+
             // Delete Firestore document first
             db.collection("Users").document(uid)
                     .delete()
@@ -466,6 +517,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void performLogout() {
+        // 只退出登录，不清除指纹数据
         mAuth.signOut();
         startActivity(new Intent(this, LoginActivity.class));
         finish();

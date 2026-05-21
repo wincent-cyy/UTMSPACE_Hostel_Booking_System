@@ -1,19 +1,24 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
@@ -22,6 +27,10 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private TextView tvBackToLogin;
     private FirebaseAuth mAuth;
     private ProgressDialog progressDialog;
+
+    // Password validation pattern: at least 7 characters, must contain both letters and numbers
+    private static final Pattern PASSWORD_PATTERN =
+            Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{7,}$");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,11 +50,47 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         progressDialog.setMessage("Sending reset link...");
         progressDialog.setCancelable(false);
 
-        // 4. 發送重置郵件按鈕點擊事件
+        // 4. Add auto lowercase for email input
+        setupEmailAutoLowercase();
+
+        // 5. 發送重置郵件按鈕點擊事件
         btnSendResetLink.setOnClickListener(v -> resetPassword());
 
-        // 5. 返回登入頁面：直接調用 finish() 銷毀當前頁面，回到上一個頁面 (Login)
+        // 6. 返回登入頁面：直接調用 finish() 銷毀當前頁面，回到上一個頁面 (Login)
         tvBackToLogin.setOnClickListener(v -> finish());
+    }
+
+    private void setupEmailAutoLowercase() {
+        etResetEmail.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No action needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // No action needed
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Convert to lowercase whenever user types
+                if (s != null) {
+                    String input = s.toString();
+                    String lowerCaseInput = input.toLowerCase(Locale.ROOT);
+
+                    // Only update if text is actually different (avoid infinite loop)
+                    if (!input.equals(lowerCaseInput)) {
+                        // Remove listener temporarily to avoid recursion
+                        etResetEmail.removeTextChangedListener(this);
+                        etResetEmail.setText(lowerCaseInput);
+                        // Move cursor to the end
+                        etResetEmail.setSelection(lowerCaseInput.length());
+                        etResetEmail.addTextChangedListener(this);
+                    }
+                }
+            }
+        });
     }
 
     private void resetPassword() {
@@ -74,9 +119,9 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     progressDialog.dismiss();
                     if (task.isSuccessful()) {
-                        // 提示用戶檢查郵箱
+                        // 提示用戶檢查郵箱，並顯示密碼要求
                         Toast.makeText(ForgotPasswordActivity.this,
-                                "A reset link has been sent to: " + email + ". Please check your inbox.",
+                                "Reset link sent to: " + email + "\n\nNote: New password must be at least 7 characters and contain both letters and numbers",
                                 Toast.LENGTH_LONG).show();
 
                         // 成功發送後，結束當前頁面返回登入頁
@@ -89,5 +134,18 @@ public class ForgotPasswordActivity extends AppCompatActivity {
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    // Public method to validate password (can be called from other activities like ResetPasswordActivity)
+    public static boolean isPasswordValid(String password) {
+        if (TextUtils.isEmpty(password)) {
+            return false;
+        }
+        return PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    // Get password requirements as a string
+    public static String getPasswordRequirements() {
+        return "Password must be at least 7 characters and contain both letters and numbers";
     }
 }

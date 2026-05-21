@@ -38,9 +38,9 @@ public class RoomAdapter extends RecyclerView.Adapter<RoomAdapter.RoomViewHolder
 
         // --- Keep your original UI logic completely intact ---
         // 1. Basic Info
-        holder.tvRoomNumber.setText("Room " + room.getRoomNumber());
+        holder.tvRoomNumber.setText(room.getRoomId() != null ? room.getRoomId() : "N/A");
         holder.tvLocation.setText(room.getLocation());
-        holder.tvPrice.setText("RM " + (int)room.getPrice());
+        holder.tvPrice.setText("RM " + String.format("%.2f", room.getPrice()));
 
         // 2. Capacity Logic (e.g., Beds: 1/2)
         String capacityText = "Beds: " + room.getCurrentOccupancy() + "/" + room.getMaxCapacity();

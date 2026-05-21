@@ -37,59 +37,57 @@ public class BookingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bookings);
 
-        // 1. Initialize Views matching layout XML IDs
+        // 1. Initialize Views
         rvPendingBookings = findViewById(R.id.rvPendingBookings);
         emptyState = findViewById(R.id.emptyState);
         bottomNavigation = findViewById(R.id.bottomNavigation);
 
-        // 2. Setup RecyclerView Layout Configuration
+        // 2. Setup RecyclerView
         rvPendingBookings.setLayoutManager(new LinearLayoutManager(this));
         bookingList = new ArrayList<>();
 
-        // 3. Initialize Adapter with an OnItemClickListener implementation
+        // 3. Initialize Adapter with OnItemClickListener
         adapter = new BookingAdapter(bookingList, booking -> {
-            // When a pending card item is clicked, pass the payload data to the real details page
             Intent intent = new Intent(BookingsActivity.this, BookingDetailsActivity.class);
 
-            intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
-            intent.putExtra("BOOKING_STATUS", booking.getStatus());
+            intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
+            intent.putExtra("BOOKING_STATUS", booking.getBookingStatus());
             intent.putExtra("REJECT_REASON", booking.getRejectReason());
             intent.putExtra("ROOM_ID", booking.getRoomId());
             intent.putExtra("ROOM_TYPE", booking.getRoomType());
-            intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
 
-            intent.putExtra("STUDENT_NAME", booking.getStudentName());
+            // ✅ 使用 getDisplayPrice() 方法（这个方法在 Booking.java 中定义）
+            intent.putExtra("ROOM_PRICE", booking.getDisplayPrice());
+
+            intent.putExtra("STUDENT_NAME", booking.getName());
             intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
-            intent.putExtra("PHONE_NUMBER", booking.getPhoneNumber());
+            intent.putExtra("PHONE_NUMBER", booking.getPhone());
             intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
             intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
 
             startActivity(intent);
         });
 
-        // FIXED: Bind an empty implementation placeholder for the custom payment click listener
-        // to stay clean and compliant with our upgraded adapter structure.
+        // ✅ Payment click listener - 只写一次
         adapter.setOnPaymentClickListener(booking -> {
-            // Under normal parameters, a "Pending" application won't trigger this text action,
-            // but binding it here prevents null pointer tracking issues.
             Intent intent = new Intent(BookingsActivity.this, PaymentActivity.class);
-            intent.putExtra("BOOKING_DOC_ID", booking.getDocumentId());
+            intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
             intent.putExtra("ROOM_ID", booking.getRoomId());
             intent.putExtra("ROOM_TYPE", booking.getRoomType());
-            intent.putExtra("ROOM_PRICE", booking.getRoomPrice());
+            intent.putExtra("ROOM_PRICE", booking.getDisplayPrice());
             startActivity(intent);
         });
 
         rvPendingBookings.setAdapter(adapter);
 
-        // 4. Initialize Firebase Infrastructure
+        // 4. Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // 5. Configure operational navigation interactions
+        // 5. Setup navigation
         setupBottomNavigation();
 
-        // 6. Query and load Firestore metrics data
+        // 6. Load user bookings
         fetchUserBookings();
     }
 
@@ -99,30 +97,23 @@ public class BookingsActivity extends AppCompatActivity {
             return;
         }
 
-        String currentUserId = mAuth.getCurrentUser().getUid();
+        String currentUid = mAuth.getCurrentUser().getUid();
 
-        // IMPROVED FIXED: Query targeting changed from uppercase "PENDING" to PascalCase "Pending".
-        // This instantly corrects the case-sensitive filter match with the database cluster nodes.
         db.collection("Bookings")
-                .whereEqualTo("userId", currentUserId)
-                .whereEqualTo("status", "Pending")
+                .whereEqualTo("uid", currentUid)
+                .whereEqualTo("bookingStatus", "Pending")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     bookingList.clear();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Booking booking = document.toObject(Booking.class);
-
-                        // Extract the actual Firestore document ID string dynamically
-                        booking.setDocumentId(document.getId());
-
+                        booking.setBookingId(document.getId());
                         bookingList.add(booking);
                     }
 
-                    // Refresh UI items
                     adapter.notifyDataSetChanged();
 
-                    // Dynamic Empty State Conditional Check
                     if (bookingList.isEmpty()) {
                         rvPendingBookings.setVisibility(View.GONE);
                         emptyState.setVisibility(View.VISIBLE);
@@ -170,10 +161,8 @@ public class BookingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh database contents to catch live status modifications smoothly
         fetchUserBookings();
 
-        // Safeguard: Ensure the baseline layout visually highlights the booking icon explicitly
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_booking);
         }

@@ -1,34 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F1F5F9">
+    android:background="#F1F5F9"
+    tools:context=".StaffRoomDetailActivity">
 
-    <!-- Header -->
+    <!-- Header Background -->
     <View
         android:id="@+id/topHeaderBg"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
+        android:layout_height="140dp"
         android:background="@drawable/dashboard_gradient"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Back Button -->
     <ImageButton
         android:id="@+id/btnBack"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_arrow_back"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="#FFFFFF" />
 
+    <!-- Title -->
     <TextView
+        android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Edit Room"
+        android:text="Room Details"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold"
@@ -37,25 +42,67 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/btnBack" />
 
-    <!-- Form Content -->
+    <!-- Room Number Badge -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardRoomNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topHeaderBg">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/dashboard_gradient"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Room "
+                android:textColor="#C7D2FE"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/tvRoomNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="A-101"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Scrollable Content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:paddingTop="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topHeaderBg">
+        app:layout_constraintTop_toBottomOf="@id/cardRoomNumber">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="24dp">
 
+            <!-- Main Info Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -63,115 +110,246 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <!-- Room Number (Read-only) -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Room Number"
-                        android:textColor="#475569"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvRoomNumber"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginBottom="16dp"
-                        android:gravity="center_vertical"
-                        android:text="A-101"
-                        android:textColor="#1E293B"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <!-- Room Type (Read-only) -->
+                    <!-- Room Type -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Room Type"
-                        android:textColor="#475569"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvRoomType"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
-                        android:gravity="center_vertical"
                         android:text="Single Room"
                         android:textColor="#1E293B"
-                        android:textSize="16sp" />
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
 
-                    <!-- Status Spinner -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="8dp"
+                        android:background="#F1F5F9" />
+
+                    <!-- Room Status -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Room Status"
-                        android:textColor="#475569"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <Spinner
                         android:id="@+id/spnStatus"
                         android:layout_width="match_parent"
-                        android:layout_height="54dp"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
                         android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded" />
+                        android:background="@drawable/spinner_with_arrow"
+                        android:padding="12dp" />
 
-                    <!-- Condition Spinner -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="8dp"
+                        android:background="#F1F5F9" />
+
+                    <!-- Room Condition -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Room Condition"
-                        android:textColor="#475569"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
                     <Spinner
                         android:id="@+id/spnCondition"
                         android:layout_width="match_parent"
-                        android:layout_height="54dp"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
                         android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded" />
+                        android:background="@drawable/spinner_with_arrow"
+                        android:padding="12dp" />
 
-                    <!-- Current Occupancy -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="8dp"
+                        android:background="#F1F5F9" />
+
+                    <!-- Occupancy Section -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Current Occupancy"
-                        android:textColor="#475569"
+                        android:text="Occupancy Details"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
-                    <EditText
-                        android:id="@+id/etCurrentOccupancy"
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="54dp"
-                        android:layout_marginBottom="16dp"
-                        android:background="@drawable/input_field_rounded"
-                        android:inputType="number"
-                        android:paddingStart="16dp"
-                        android:hint="Number of occupants" />
-
-                    <!-- Max Capacity Info -->
-                    <TextView
-                        android:id="@+id/tvMaxCapacityHint"
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Max capacity will be enforced"
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp" />
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="8dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Current Occupancy"
+                                android:textColor="#64748B"
+                                android:textSize="12sp" />
+
+                            <EditText
+                                android:id="@+id/etCurrentOccupancy"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:background="@drawable/input_border"
+                                android:inputType="number"
+                                android:paddingStart="12dp"
+                                android:layout_marginTop="8dp"
+                                android:text="0"
+                                android:textColor="#1E293B"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Max Capacity"
+                                android:textColor="#64748B"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvMaxCapacity"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:background="@drawable/input_border"
+                                android:gravity="center_vertical"
+                                android:paddingStart="12dp"
+                                android:layout_marginTop="8dp"
+                                android:text="4"
+                                android:textColor="#6366F1"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Save Button -->
-            <Button
-                android:id="@+id/btnSaveChanges"
+            <!-- Price Card -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Price Information"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Price per Semester"
+                            android:textColor="#475569"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvPrice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RM 1500"
+                            android:textColor="#6366F1"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="* Price is fixed and cannot be edited"
+                        android:textColor="#94A3B8"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginTop="24dp"
-                android:backgroundTint="#6366F1"
-                android:text="Save Changes"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="16dp" />
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/btnRepairRequest"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:backgroundTint="#F59E0B"
+                    android:text="Repair Request"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="14dp" />
+
+                <Button
+                    android:id="@+id/btnSaveChanges"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="#6366F1"
+                    android:text="Save Changes"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="14dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

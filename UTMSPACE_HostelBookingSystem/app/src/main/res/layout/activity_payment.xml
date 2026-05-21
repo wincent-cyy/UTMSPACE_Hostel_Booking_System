@@ -68,10 +68,20 @@
                 android:id="@+id/tvTotalMain"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="RM475.00"
+                android:text="RM 0.00"
                 android:textColor="#FFFFFF"
                 android:textSize="36sp"
                 android:textStyle="bold" />
+
+            <!-- 分期详情显示 -->
+            <TextView
+                android:id="@+id/tvInstallmentDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#C7D2FE"
+                android:textSize="12sp"
+                android:visibility="gone" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -91,6 +101,7 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
+            <!-- 个人信息卡片 -->
             <TextView
                 android:id="@+id/tvDetailLabel"
                 android:layout_width="wrap_content"
@@ -108,30 +119,85 @@
                 android:layout_marginHorizontal="24dp"
                 android:layout_marginTop="12dp"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                        <TextView android:text="Full Name" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <TextView android:id="@+id/tvDisplayName" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    </RelativeLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Full Name"
+                            android:textColor="#64748B" />
+                        <TextView
+                            android:id="@+id/tvDisplayName"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textColor="#1E293B"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
 
-                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
-                        <TextView android:text="Matric No." android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <TextView android:id="@+id/tvDisplayMatric" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    </RelativeLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Matric No."
+                            android:textColor="#64748B" />
+                        <TextView
+                            android:id="@+id/tvDisplayMatric"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textColor="#1E293B"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
 
-                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
-                        <TextView android:text="Phone Number" android:textColor="#64748B" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                        <TextView android:id="@+id/tvDisplayPhone" android:layout_alignParentEnd="true" android:text="Loading..." android:textColor="#1E293B" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-                    </RelativeLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Phone Number"
+                            android:textColor="#64748B" />
+                        <TextView
+                            android:id="@+id/tvDisplayPhone"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Loading..."
+                            android:textColor="#1E293B"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- 付款方式卡片 -->
             <TextView
                 android:id="@+id/tvMethodLabel"
                 android:layout_width="wrap_content"
@@ -151,6 +217,7 @@
                 android:layout_marginTop="12dp">
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardDebit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
@@ -167,6 +234,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBank"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
@@ -183,6 +251,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWallet"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
@@ -199,6 +268,83 @@
                 </com.google.android.material.card.MaterialCardView>
 
             </RadioGroup>
+
+            <!-- 分期付款选项卡片 -->
+            <!-- Payment Plan Header -->
+            <TextView
+                android:id="@+id/tvInstallmentLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="24dp"
+                android:text="Payment Plan"
+                android:textColor="#1E293B"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/radioGroupInstallment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="12dp">
+
+                <!-- Full Payment Option -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFullPayment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="#E2E8F0"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#FFFFFF">
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+                        <TextView android:id="@+id/tvFullTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💰 Full Payment" android:textColor="#1E293B" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvFullPaymentAmount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_below="@id/tvFullTitle" android:text="RM 0.00" android:textColor="#64748B" android:textSize="12sp" />
+                        <RadioButton android:id="@+id/rbFullPayment" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
+                    </RelativeLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 3 Months Option -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardInstallment3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="#E2E8F0"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#FFFFFF">
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+                        <TextView android:id="@+id/tv3MonthTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅 3 Months Installment" android:textColor="#1E293B" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvInstallment3Amount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_below="@id/tv3MonthTitle" android:text="RM 0.00 / month" android:textColor="#64748B" android:textSize="12sp" />
+                        <RadioButton android:id="@+id/rbInstallment3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
+                    </RelativeLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- 6 Months Option -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardInstallment6"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="1dp"
+                    app:strokeColor="#E2E8F0"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#FFFFFF">
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+                        <TextView android:id="@+id/tv6MonthTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅 6 Months Installment" android:textColor="#1E293B" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvInstallment6Amount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_below="@id/tv6MonthTitle" android:text="RM 0.00 / month" android:textColor="#64748B" android:textSize="12sp" />
+                        <RadioButton android:id="@+id/rbInstallment6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:layout_centerVertical="true" />
+                    </RelativeLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </RadioGroup>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

@@ -50,6 +50,7 @@ dependencies {
     implementation("com.github.yalantis:ucrop:2.2.8")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.google.firebase:firebase-messaging:23.4.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

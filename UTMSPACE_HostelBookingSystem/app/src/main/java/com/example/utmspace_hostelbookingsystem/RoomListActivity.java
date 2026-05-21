@@ -103,12 +103,14 @@ public class RoomListActivity extends AppCompatActivity {
             Intent intent = new Intent(RoomListActivity.this, RoomDetailsActivity.class);
 
             // Pass essential intent parameters forward
-            intent.putExtra("ROOM_ID", "Room " + room.getRoomNumber());
+            intent.putExtra("ROOM_ID", room.getRoomId());
             intent.putExtra("ROOM_TYPE", type);
-            intent.putExtra("ROOM_PRICE", "RM " + (int)room.getPrice() + " / Month");
+            intent.putExtra("ROOM_PRICE", "RM " + String.format("%.2f", room.getPrice()) + " / Month");
 
             // Map status text dynamically for UI consistency across cards
-            intent.putExtra("ROOM_STATUS", (room.isFull() || "Occupied".equalsIgnoreCase(room.getStatus())) ? "Full" : room.getStatus());
+            intent.putExtra("ROOM_STATUS",
+                    room.isFull() ? "Full" :
+                            (room.getStatus() != null ? room.getStatus() : "Available"));
 
             // Build structural context descriptions depending safely on room classification flags
             String roomDesc = "Comfortable hostel residential living space perfect for student focus.";
@@ -255,9 +257,9 @@ public class RoomListActivity extends AppCompatActivity {
             boolean matchesBlock = true;
 
             // 1. FIXED SEARCH: Flexible Alphanumeric check. Matches if query is part of the room number (e.g., "101", "A", "A-101")
-            if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty() && room.getRoomNumber() != null) {
+            if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty() && room.getRoomId() != null) {
                 String cleanQuery = currentSearchQuery.trim().toLowerCase();
-                String roomNum = room.getRoomNumber().trim().toLowerCase();
+                String roomNum = room.getRoomId().trim().toLowerCase();
 
                 matchesSearch = roomNum.contains(cleanQuery);
             }
@@ -267,11 +269,11 @@ public class RoomListActivity extends AppCompatActivity {
                 if (selectedStatusCriteria.equalsIgnoreCase("Full")) {
                     // Item matches if boolean is true, status is explicitly "Full", OR status is explicitly "Occupied"
                     matchesStatus = room.isFull() ||
-                            (room.getStatus() != null && (room.getStatus().equalsIgnoreCase("Full") || room.getStatus().equalsIgnoreCase("Occupied")));
+                            (room.getStatus() != null && (room.getStatus().equalsIgnoreCase("Full")));
                 } else if (selectedStatusCriteria.equalsIgnoreCase("Available")) {
                     // Item matches if boolean is false AND status string is neither "Full" nor "Occupied"
                     matchesStatus = !room.isFull() &&
-                            (room.getStatus() == null || (!room.getStatus().equalsIgnoreCase("Full") && !room.getStatus().equalsIgnoreCase("Occupied")));
+                            (room.getStatus() == null || (!room.getStatus().equalsIgnoreCase("Full")));
                 }
             }
 
