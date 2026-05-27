@@ -59,7 +59,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
         // 在 initViews 或 setupClickListeners 中添加
         View btnRepairList = findViewById(R.id.btnRepairList);
         btnRepairList.setOnClickListener(v -> {
-            Intent intent = new Intent(StaffDashboardActivity.this, RepairRequestActivity.class);
+            Intent intent = new Intent(StaffDashboardActivity.this, StaffRepairTrackingActivity.class);
             startActivity(intent);
         });
 

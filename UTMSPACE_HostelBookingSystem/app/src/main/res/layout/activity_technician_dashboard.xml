@@ -256,6 +256,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold"/>
             <TextView
+                android:id="@+id/tvActiveDetails"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/tvActiveRoom"
@@ -263,6 +264,7 @@
                 android:textColor="#94A3B8"
                 android:textSize="12sp"/>
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUpdateActiveJob"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_alignParentEnd="true"

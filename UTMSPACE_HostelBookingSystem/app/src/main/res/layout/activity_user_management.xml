@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F1F5F9"
+    tools:context=".UserManagementActivity">
+
+    <!-- Header Background -->
+    <View
+        android:id="@+id/topHeaderBg"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:background="@drawable/dashboard_gradient"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="User Management"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginTop="50dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Search Bar -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/searchCard"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginHorizontal="20dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:layout_constraintBottom_toBottomOf="@id/topHeaderBg"
+        app:layout_constraintTop_toBottomOf="@id/topHeaderBg">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="#6366F1" />
+
+            <EditText
+                android:id="@+id/etSearchUser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:hint="Search by name, email or matric number..."
+                android:paddingStart="12dp"
+                android:textSize="14sp"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Role Filter Chips -->
+    <LinearLayout
+        android:id="@+id/filterContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="20dp"
+        android:weightSum="4"
+        app:layout_constraintTop_toBottomOf="@id/searchCard">
+
+        <TextView
+            android:id="@+id/chipAll"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/filter_chip_selected"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:text="All"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/chipStudent"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:text="Students"
+            android:textColor="#475569"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/chipStaff"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:text="Staff"
+            android:textColor="#475569"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/chipTechnician"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/filter_chip_unselected"
+            android:gravity="center"
+            android:paddingHorizontal="4dp"
+            android:text="Technician"
+            android:textColor="#475569"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+
+    <!-- User Count -->
+    <TextView
+        android:id="@+id/tvUserCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="12dp"
+        android:text="0 users"
+        android:textColor="#64748B"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/filterContainer" />
+
+    <!-- RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvUserList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintTop_toBottomOf="@id/tvUserCount" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintTop_toBottomOf="@id/filterContainer">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@android:drawable/ic_menu_manage"
+            app:tint="#CBD5E1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="No users found"
+            android:textColor="#94A3B8" />
+    </LinearLayout>
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        style="@style/BottomNavStyle"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        app:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:menu="@menu/admin_nav_menu"
+        tools:ignore="VisualLintBottomNav" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

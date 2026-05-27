@@ -229,15 +229,14 @@ public class ProfileActivity extends AppCompatActivity {
             // =========================
             else if ("technician".equals(userRole)) {
 
-                if (itemId == R.id.nav_home) {
+                if (itemId == R.id.nav_tech_home) {
                     intent = new Intent(this, TechnicianDashboardActivity.class);
 
-                } else if (itemId == R.id.nav_booking) {
-                    Toast.makeText(this, "Coming soon", Toast.LENGTH_SHORT).show();
-                    return false;
-                } else if (itemId == R.id.nav_history) {
-                    Toast.makeText(this, "Coming soon", Toast.LENGTH_SHORT).show();
-                    return false;
+                } else if (itemId == R.id.nav_request) {
+                    intent = new Intent(this, TechnicianRepairRequestActivity.class);
+
+                } else if (itemId == R.id.nav_tech_history) {
+                    intent = new Intent(this, TechnicianHistoryActivity.class);
                 }
             }
 

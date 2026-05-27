@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Room Number -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Room Number (e.g., A-101)"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <EditText
+            android:id="@+id/etRoomId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Location -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Location"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <EditText
+            android:id="@+id/etLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Price -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Price (RM)"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <EditText
+            android:id="@+id/etPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Max Capacity -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Max Capacity"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <EditText
+            android:id="@+id/etMaxCapacity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Current Occupancy -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Current Occupancy"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <EditText
+            android:id="@+id/etCurrentOccupancy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:text="0" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Room Type Spinner -->
+    <Spinner
+        android:id="@+id/spnRoomType"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/spinner_with_arrow"
+        android:layout_marginTop="20dp"
+        android:padding="12dp"
+        android:spinnerMode="dropdown"/>
+
+    <!-- Status Spinner -->
+    <Spinner
+        android:id="@+id/spnStatus"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/spinner_with_arrow"
+        android:layout_marginTop="20dp"
+        android:padding="12dp"
+        android:spinnerMode="dropdown"/>
+
+</LinearLayout>

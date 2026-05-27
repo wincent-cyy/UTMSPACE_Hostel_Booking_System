@@ -7,6 +7,20 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -18,7 +32,34 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
         <activity
-            android:name=".RepairRequestActivity"
+            android:name=".AdminProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RoomManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TechnicianHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TechnicianRepairDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TechnicianRepairRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StaffRepairDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StaffRepairTrackingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StaffRepairRequestActivity"
             android:exported="false" />
 
         <service
@@ -28,6 +69,16 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <activity
             android:name=".FullImageActivity"

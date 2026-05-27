@@ -142,7 +142,7 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         btnRepairRequest.setOnClickListener(v -> {
-            Intent intent = new Intent(StaffRoomDetailActivity.this, RepairRequestActivity.class);
+            Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairRequestActivity.class);
             intent.putExtra("ROOM_ID", tvRoomNumber.getText().toString());
             intent.putExtra("ROOM_DOC_ID", roomDocId);
             startActivity(intent);

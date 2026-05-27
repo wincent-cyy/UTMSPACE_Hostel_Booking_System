@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F1F5F9"
+    tools:context=".TechnicianRepairDetailActivity">
+
+    <!-- Header Background -->
+    <View
+        android:id="@+id/topHeaderBg"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:background="@drawable/dashboard_gradient"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Back Button -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="36dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#FFFFFF" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Repair Details"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/btnBack"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+    <!-- Status Badge -->
+    <TextView
+        android:id="@+id/tvStatusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/status_badge_pending"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="8dp"
+        android:text="Pending"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topHeaderBg" />
+
+    <!-- Scrollable Content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:paddingTop="16dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomButtonContainer"
+        app:layout_constraintTop_toBottomOf="@id/tvStatusBadge">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="24dp">
+
+            <!-- Single Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="3dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Room Information -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Room Information"
+                        android:textColor="#6366F1"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2"
+                        android:layout_marginBottom="12dp"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Room Number"
+                            android:textColor="#64748B"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvRoomNumber"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="A-101"
+                            android:textColor="#1E293B"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2"
+                        android:layout_marginBottom="20dp"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Affected Item"
+                            android:textColor="#64748B"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvItemName"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Air Conditioner"
+                            android:textColor="#1E293B"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F5F9"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Issue Description -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Issue Description"
+                        android:textColor="#6366F1"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="20dp"
+                        android:layout_marginStart="16dp"
+                        android:text="Air conditioner is not cooling properly."
+                        android:textColor="#475569"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="4dp" />
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F5F9"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Additional Information -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Additional Information"
+                        android:textColor="#6366F1"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2"
+                        android:layout_marginBottom="12dp"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Urgency Level"
+                            android:textColor="#64748B"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvUrgency"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="High"
+                            android:textColor="#1E293B"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:gravity="end" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="2"
+                        android:layout_marginStart="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Reported By"
+                            android:textColor="#64748B"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvReportedBy"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Staff Name"
+                            android:textColor="#1E293B"
+                            android:textSize="14sp"
+                            android:gravity="end" />
+                    </LinearLayout>
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F5F9"
+                        android:layout_marginVertical="16dp" />
+
+                    <!-- Proof of Work Section (For In Progress tasks) -->
+                    <TextView
+                        android:id="@+id/tvProofTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="Proof of Work"
+                        android:textColor="#6366F1"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <Button
+                        android:id="@+id/btnUploadPhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Upload Photo"
+                        android:backgroundTint="#6366F1"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:visibility="gone"
+                        app:cornerRadius="12dp" />
+
+                    <ImageView
+                        android:id="@+id/ivProofImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="12dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        android:background="#F1F5F9" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Bottom Button Container -->
+    <LinearLayout
+        android:id="@+id/bottomButtonContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:elevation="16dp"
+        android:orientation="vertical"
+        android:padding="20dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnTakeTask"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#6366F1"
+            android:text="Take This Task"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="14dp" />
+
+        <Button
+            android:id="@+id/btnMarkCompleted"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#10B981"
+            android:text="Mark as Completed"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="14dp" />
+
+        <Button
+            android:id="@+id/btnBackToList"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#64748B"
+            android:text="Back to List"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:cornerRadius="14dp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
