@@ -1,18 +1,22 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,8 +29,10 @@ import java.util.List;
 
 public class StaffRoomListActivity extends AppCompatActivity {
 
+    // UI Elements
     private RecyclerView rvRoomList;
     private EditText etSearchRoom;
+    private ImageView ivClearSearch;
     private LinearLayout emptyState;
     private TextView tvRoomCount;
     private BottomNavigationView bottomNavigation;
@@ -34,14 +40,19 @@ public class StaffRoomListActivity extends AppCompatActivity {
     // Filter chips
     private TextView chipAll, chipAvailable, chipFull, chipMaintenance;
 
+    // Firebase
     private FirebaseFirestore db;
-    private StaffRoomAdapter adapter;
-    private List<RoomModel> masterRoomList;
-    private List<RoomModel> filteredRoomList;
 
+    // Data
+    private List<RoomModel> allRooms = new ArrayList<>();
+    private List<RoomModel> filteredRooms = new ArrayList<>();
+    private StaffRoomAdapter adapter;
+
+    // Filter variables
     private String currentStatusFilter = "All";
     private String currentSearchQuery = "";
 
+    // Search delay
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
 
@@ -50,12 +61,19 @@ public class StaffRoomListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_staff_room_list);
 
+        // 设置软键盘模式 - 防止导航栏上移
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
         db = FirebaseFirestore.getInstance();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
         initViews();
         setupFilterChips();
         setupRecyclerView();
-        setupSearchFilter();
+        setupSearchFunction();
         setupNavigation();
         fetchAllRooms();
     }
@@ -63,15 +81,24 @@ public class StaffRoomListActivity extends AppCompatActivity {
     private void initViews() {
         rvRoomList = findViewById(R.id.rvRoomList);
         etSearchRoom = findViewById(R.id.etSearchRoom);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
         emptyState = findViewById(R.id.emptyState);
         tvRoomCount = findViewById(R.id.tvRoomCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
 
-        // Initialize filter chips
+        // Filter chips
         chipAll = findViewById(R.id.chipAll);
         chipAvailable = findViewById(R.id.chipAvailable);
         chipFull = findViewById(R.id.chipFull);
         chipMaintenance = findViewById(R.id.chipMaintenance);
+
+        // 设置搜索框焦点监听，在键盘弹出时保持布局
+        etSearchRoom.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // 当搜索框获得焦点时，滚动到顶部
+                rvRoomList.postDelayed(() -> rvRoomList.smoothScrollToPosition(0), 100);
+            }
+        });
     }
 
     private void setupFilterChips() {
@@ -102,27 +129,25 @@ public class StaffRoomListActivity extends AppCompatActivity {
 
     private void updateChipStyles(TextView selectedChip) {
         // Reset all chips to unselected
-        chipAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipAvailable.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipAvailable.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipFull.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipFull.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipMaintenance.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipMaintenance.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+        resetChipStyle(chipAll);
+        resetChipStyle(chipAvailable);
+        resetChipStyle(chipFull);
+        resetChipStyle(chipMaintenance);
 
         // Set selected chip style
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
 
+    private void resetChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
+    }
+
     private void setupRecyclerView() {
-        masterRoomList = new ArrayList<>();
-        filteredRoomList = new ArrayList<>();
-
         rvRoomList.setLayoutManager(new LinearLayoutManager(this));
-
-        adapter = new StaffRoomAdapter(filteredRoomList, room -> {
+        adapter = new StaffRoomAdapter(filteredRooms, room -> {
             Intent intent = new Intent(StaffRoomListActivity.this, StaffRoomDetailActivity.class);
             intent.putExtra("ROOM_DOC_ID", room.getDocumentId());
             intent.putExtra("ROOM_ID", room.getRoomId());
@@ -132,10 +157,8 @@ public class StaffRoomListActivity extends AppCompatActivity {
             intent.putExtra("ROOM_PRICE", room.getPrice());
             intent.putExtra("ROOM_MAX_CAPACITY", room.getMaxCapacity());
             intent.putExtra("ROOM_CURRENT_OCCUPANCY", room.getCurrentOccupancy());
-            intent.putExtra("ROOM_CONDITION", room.getCondition());
             startActivity(intent);
         });
-
         rvRoomList.setAdapter(adapter);
     }
 
@@ -143,12 +166,12 @@ public class StaffRoomListActivity extends AppCompatActivity {
         db.collection("Rooms")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    masterRoomList.clear();
+                    allRooms.clear();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         RoomModel room = document.toObject(RoomModel.class);
                         room.setDocumentId(document.getId());
-                        masterRoomList.add(room);
+                        allRooms.add(room);
                     }
 
                     applyFilters();
@@ -158,7 +181,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
                 });
     }
 
-    private void setupSearchFilter() {
+    private void setupSearchFunction() {
         etSearchRoom.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -170,6 +193,12 @@ public class StaffRoomListActivity extends AppCompatActivity {
                 }
 
                 String query = s.toString();
+
+                // Show/hide clear button
+                if (ivClearSearch != null) {
+                    ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+
                 searchRunnable = () -> {
                     currentSearchQuery = query;
                     applyFilters();
@@ -180,13 +209,22 @@ public class StaffRoomListActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // Clear search button
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                etSearchRoom.setText("");
+                currentSearchQuery = "";
+                applyFilters();
+            });
+        }
     }
 
     private void applyFilters() {
-        filteredRoomList.clear();
+        filteredRooms.clear();
 
-        for (RoomModel room : masterRoomList) {
-            // 1. Status filter based on selected chip
+        for (RoomModel room : allRooms) {
+            // 1. Status filter
             boolean matchesStatus = true;
             switch (currentStatusFilter) {
                 case "Available":
@@ -196,8 +234,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
                     matchesStatus = "Full".equalsIgnoreCase(room.getStatus());
                     break;
                 case "Maintenance":
-                    matchesStatus = "Maintenance".equalsIgnoreCase(room.getStatus()) ||
-                            "Under Maintenance".equalsIgnoreCase(room.getCondition());
+                    matchesStatus = "Maintenance".equalsIgnoreCase(room.getStatus());
                     break;
                 case "All":
                 default:
@@ -205,7 +242,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
                     break;
             }
 
-            // 2. Search filter - only search room number
+            // 2. Search filter - by room number only
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
                 String cleanQuery = currentSearchQuery.toLowerCase().trim();
@@ -214,30 +251,43 @@ public class StaffRoomListActivity extends AppCompatActivity {
             }
 
             if (matchesStatus && matchesSearch) {
-                filteredRoomList.add(room);
+                filteredRooms.add(room);
             }
         }
 
-        // Update empty state
-        if (filteredRoomList.isEmpty()) {
-            rvRoomList.setVisibility(View.GONE);
-            emptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvRoomList.setVisibility(View.VISIBLE);
-            emptyState.setVisibility(View.GONE);
-        }
-
+        // Update adapter
         adapter.notifyDataSetChanged();
+
+        // Update room count
         updateRoomCount();
+
+        // Update empty state - 添加 null 检查
+        if (filteredRooms.isEmpty()) {
+            if (rvRoomList != null) {
+                rvRoomList.setVisibility(View.GONE);
+            }
+            if (emptyState != null) {
+                emptyState.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (rvRoomList != null) {
+                rvRoomList.setVisibility(View.VISIBLE);
+            }
+            if (emptyState != null) {
+                emptyState.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void updateRoomCount() {
         if (tvRoomCount != null) {
-            tvRoomCount.setText(filteredRoomList.size() + " rooms found");
+            tvRoomCount.setText(filteredRooms.size() + " rooms");
         }
     }
 
     private void setupNavigation() {
+        if (bottomNavigation == null) return;
+
         bottomNavigation.setSelectedItemId(R.id.nav_rooms);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -246,15 +296,19 @@ public class StaffRoomListActivity extends AppCompatActivity {
             if (id == R.id.nav_rooms) {
                 return true;
             } else if (id == R.id.nav_staff_home) {
-                startActivity(new Intent(this, StaffDashboardActivity.class));
-                finish();
+                Intent intent = new Intent(this, StaffDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_staff_bookings) {
-                startActivity(new Intent(this, BookingManagementActivity.class));
-                finish();
+                Intent intent = new Intent(this, BookingManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_profile) {
-                startActivity(new Intent(this, ProfileActivity.class));
+                Intent intent = new Intent(this, ProfileActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -265,6 +319,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         fetchAllRooms();
+
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_rooms);
         }

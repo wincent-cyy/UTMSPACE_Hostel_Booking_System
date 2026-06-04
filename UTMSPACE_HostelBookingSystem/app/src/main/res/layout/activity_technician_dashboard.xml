@@ -1,292 +1,406 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F1F5F9"
-    tools:context=".TechnicianDashboardActivity">
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
-    <!-- 1. Header Background Layer -->
-    <View
-        android:id="@+id/topHeaderBg"
+    <!-- Scrollable Content -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="240dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
 
-    <!-- 2. Profile Section -->
-    <RelativeLayout
-        android:id="@+id/profileHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="24dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Welcome Technician,"
-                android:textColor="#C7D2FE"
-                android:textSize="14sp" />
-            <TextView
-                android:id="@+id/tvTechnicianName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Service Desk"
-                android:textColor="#FFFFFF"
-                android:textSize="26sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/btnAdminProfile"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_alignParentEnd="true"
-            android:src="@drawable/profile_pic"
-            android:padding="2dp"
-            app:shapeAppearanceOverlay="@style/CircleImage"
-            app:strokeColor="#FFFFFF"
-            app:strokeWidth="2dp" />
-    </RelativeLayout>
-
-    <!-- 3. Search Bar Card -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/searchCard"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginHorizontal="20dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@id/profileHeader">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:paddingStart="20dp">
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@android:drawable/ic_menu_search"
-                app:tint="#6366F1" />
-            <EditText
-                android:id="@+id/etSearchRepair"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Search room or issue..."
-                android:background="@android:color/transparent"
-                android:paddingStart="12dp"
-                android:textSize="15sp"
-                android:textColor="#1E293B"
-                android:inputType="text"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- 4. Main Action Card: Pending Repairs -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/pendingCard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="30dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
-        app:layout_constraintTop_toBottomOf="@id/searchCard">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="20dp">
+
+            <!-- Header Section: Technician Name + Avatar -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="28dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Pending Repairs"
-                    android:textColor="#64748B"
-                    android:textSize="13sp" />
-                <TextView
-                    android:id="@+id/tvPendingCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="08 Rooms"
-                    android:textColor="#1E293B"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome back 👋"
+                        android:textSize="14sp"
+                        android:textColor="#5B6E8C"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvTechnicianName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Technician Name"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#800000"
+                        android:letterSpacing="-0.02"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif" />
+                </LinearLayout>
+
+                <!-- Technician Avatar -->
+                <LinearLayout
+                    android:id="@+id/profileAvatar"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/avatar_background"
+                    android:gravity="center"
+                    android:padding="10dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivProfilePicture"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_account_circle" />
+                </LinearLayout>
             </LinearLayout>
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnViewRequests"
-                android:layout_width="wrap_content"
+
+            <!-- Statistics Overview Title -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Start Job"
-                android:textSize="12sp"
-                android:backgroundTint="#6366F1"
-                android:textColor="#FFFFFF"
-                app:cornerRadius="8dp"
-                android:textAllCaps="false"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Status Overview"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#3C2A24"
+                    android:letterSpacing="-0.02"
+                    android:fontFamily="sans-serif" />
+            </LinearLayout>
+
+            <!-- Statistics Cards Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <!-- Pending Repairs Card -->
+                <LinearLayout
+                    android:id="@+id/cardPendingRepairs"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:elevation="2dp"
+                    android:padding="16dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⏳"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/tvPendingRepairs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#D97706"
+                        android:layout_marginTop="4sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pending"
+                        android:textSize="11sp"
+                        android:textColor="#AA7A6C"
+                        android:layout_marginTop="2sp" />
+                </LinearLayout>
+
+                <!-- In Progress Card -->
+                <LinearLayout
+                    android:id="@+id/cardInProgress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:elevation="2dp"
+                    android:padding="16dp"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔄"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/tvInProgress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#3B82F6"
+                        android:layout_marginTop="4sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="In Progress"
+                        android:textSize="11sp"
+                        android:textColor="#AA7A6C"
+                        android:layout_marginTop="2sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Second Row: Completed Repairs -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp">
+
+                <!-- Completed Repairs Card -->
+                <LinearLayout
+                    android:id="@+id/cardCompleted"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:elevation="2dp"
+                    android:padding="16dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="✅"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/tvCompleted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#10B981"
+                        android:layout_marginTop="4sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Completed"
+                        android:textSize="11sp"
+                        android:textColor="#AA7A6C"
+                        android:layout_marginTop="2sp" />
+                </LinearLayout>
+
+                <!-- Total Repairs Card -->
+                <LinearLayout
+                    android:id="@+id/cardTotalRepairs"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:elevation="2dp"
+                    android:padding="16dp"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📊"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/tvTotalRepairs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#800000"
+                        android:layout_marginTop="4sp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Repairs"
+                        android:textSize="11sp"
+                        android:textColor="#AA7A6C"
+                        android:layout_marginTop="2sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Quick Actions Title -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Quick Actions"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#3C2A24"
+                    android:letterSpacing="-0.02"
+                    android:fontFamily="sans-serif" />
+
+                <View
+                    android:layout_width="40dp"
+                    android:layout_height="3dp"
+                    android:background="#800000" />
+            </LinearLayout>
+
+            <!-- View Repair Requests Button -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/btnViewRepairs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#800000"
+                    android:gravity="center_vertical"
+                    android:padding="20dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔧"
+                        android:textSize="32sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Repair Requests"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View and manage repair requests"
+                            android:textColor="#EEDAD2"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4sp"
+                            android:fontFamily="sans-serif" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_arrow_forward"
+                        app:tint="#FFFFFF" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Recent Activity Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Recent Repair Requests"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#3C2A24"
+                    android:fontFamily="sans-serif" />
+
+            </LinearLayout>
+
+            <!-- Recent Repair Requests List Container -->
+            <LinearLayout
+                android:id="@+id/recentRepairsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp" />
+
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </ScrollView>
 
-    <!-- 5. Status Summary Grid -->
-    <TextView
-        android:id="@+id/tvStatusLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="20dp"
-        android:text="Status Summary"
-        android:textColor="#1E293B"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/pendingCard"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-    <LinearLayout
-        android:id="@+id/statusGrid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tvStatusLabel">
-
-        <androidx.cardview.widget.CardView
-            android:layout_width="0dp"
-            android:layout_height="90dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            app:cardCornerRadius="16dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:background="#FEF3C7"
-                android:orientation="vertical">
-                <TextView
-                    android:id="@+id/tvScheduledCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="03"
-                    android:textColor="#D97706"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Scheduled"
-                    android:textColor="#92400E"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
-            android:layout_width="0dp"
-            android:layout_height="90dp"
-            android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            app:cardCornerRadius="16dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:background="#DCFCE7"
-                android:orientation="vertical">
-                <TextView
-                    android:id="@+id/tvCompletedCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="25"
-                    android:textColor="#16A34A"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Completed"
-                    android:textColor="#166534"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
-
-    <!-- 6. Active Job Card -->
-    <TextView
-        android:id="@+id/tvActiveJobLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="20dp"
-        android:text="Active Job"
-        android:textColor="#1E293B"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/statusGrid"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/activeJobCard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="16dp"
-        app:cardBackgroundColor="#1E293B"
-        app:layout_constraintTop_toBottomOf="@id/tvActiveJobLabel">
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp">
-            <TextView
-                android:id="@+id/tvActiveRoom"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Room B-205"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"/>
-            <TextView
-                android:id="@+id/tvActiveDetails"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/tvActiveRoom"
-                android:text="AC Maintenance • High Priority"
-                android:textColor="#94A3B8"
-                android:textSize="12sp"/>
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnUpdateActiveJob"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:text="Update"
-                android:textSize="11sp"
-                android:backgroundTint="#6366F1"
-                android:paddingHorizontal="12dp"
-                app:cornerRadius="6dp"
-                android:textAllCaps="false"/>
-        </RelativeLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- 7. Bottom Navigation (Fixed) -->
+    <!-- Bottom Navigation Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
-        style="@style/BottomNavStyle"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="@android:color/white"
-        app:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/technician_nav_menu" />
+        android:layout_height="wrap_content"
+        android:background="@drawable/bottom_nav_background"
+        app:menu="@menu/technician_nav_menu"
+        app:itemIconTint="@drawable/nav_item_active"
+        app:itemTextColor="@drawable/nav_item_active"
+        app:itemRippleColor="@android:color/transparent"
+        app:elevation="0dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

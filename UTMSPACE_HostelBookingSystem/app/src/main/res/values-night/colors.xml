@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基本顏色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- 主題主色（保持不變或稍微调亮） -->
+    <color name="primaryColor">#B84C4C</color>
+    <color name="primaryDarkColor">#8B3030</color>
+
+    <!-- 背景顏色 - 改為深色 -->
+    <color name="backgroundColor">#121212</color>
+    <color name="cardBackground">#1E1E1E</color>
+    <color name="darker_red">#8B3030</color>
+
+    <!-- 文字顏色 - 改為淺色/白色 -->
+    <color name="textPrimary">#FFFFFF</color>
+    <color name="textSecondary">#B0B0B0</color>
+    <color name="textHint">#808080</color>
+    <color name="textLabel">#E88070</color>
+    <color name="textLink">#FF6B5A</color>
+    <color name="textDark">#E0E0E0</color>
+    <color name="textLight">#FFFFFF</color>
+    <color name="tabInactiveText">#A0A0A0</color>
+
+    <!-- 邊框與分隔線 - 改為深色 -->
+    <color name="inputBorder">#404040</color>
+    <color name="inputFocusBorder">#E88070</color>
+    <color name="dividerColor">#333333</color>
+
+    <!-- 其他 -->
+    <color name="errorRed">#EF5350</color>
+    <color name="iconTint">#E88070</color>
+
+    <!-- 狀態標籤顏色 - 深色模式調亮 -->
+    <color name="pending_bg">#3D2E1A</color>
+    <color name="pending_text">#FFB74D</color>
+    <color name="approved_bg">#1B3A2A</color>
+    <color name="approved_text">#66BB6A</color>
+    <color name="completed_bg">#1B3A2A</color>
+    <color name="completed_text">#66BB6A</color>
+    <color name="paid_bg">#1A2A4A</color>
+    <color name="paid_text">#64B5F6</color>
+    <color name="rejected_bg">#3D1A1A</color>
+    <color name="rejected_text">#EF5350</color>
+</resources>

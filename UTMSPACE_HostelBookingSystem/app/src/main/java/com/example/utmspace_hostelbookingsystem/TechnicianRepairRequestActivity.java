@@ -1,16 +1,19 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,10 +28,11 @@ import java.util.List;
 public class TechnicianRepairRequestActivity extends AppCompatActivity {
 
     private EditText etSearch;
+    private ImageView ivClearSearch;
     private RecyclerView rvRepairRequests;
     private LinearLayout emptyState;
     private TextView tvRequestCount;
-    private BottomNavigationView bottomNavigation;
+    private BottomNavigationView bottomNavigation;  // 添加底部导航
 
     private FirebaseFirestore db;
     private TechnicianRepairAdapter adapter;
@@ -44,19 +48,24 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
         setupRecyclerView();
         setupSearchFilter();
+        setupBottomNavigation();  // 添加底部导航设置
         loadRepairRequests();
-        setupBottomNavigation();
     }
 
     private void initViews() {
         etSearch = findViewById(R.id.etSearch);
-        rvRepairRequests = findViewById(R.id.rvRepairRequests);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
+        rvRepairRequests = findViewById(R.id.rvRepairList);
         emptyState = findViewById(R.id.emptyState);
         tvRequestCount = findViewById(R.id.tvRequestCount);
-        bottomNavigation = findViewById(R.id.bottomNavigation);
+        bottomNavigation = findViewById(R.id.bottomNavigation);  // 初始化底部导航
     }
 
     private void setupRecyclerView() {
@@ -67,13 +76,17 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         adapter = new TechnicianRepairAdapter(filteredList, request -> {
             Intent intent = new Intent(TechnicianRepairRequestActivity.this, TechnicianRepairDetailActivity.class);
             intent.putExtra("REQUEST_ID", request.getDocumentId());
-            intent.putExtra("ROOM_ID", request.getRoomId());
-            intent.putExtra("ITEM_NAME", request.getItemName());
-            intent.putExtra("URGENCY", request.getUrgency());
-            intent.putExtra("DESCRIPTION", request.getDescription());
-            intent.putExtra("STATUS", request.getStatus());
-            intent.putExtra("STAFF_NAME", request.getStaffName());
-            intent.putExtra("CREATED_AT", request.getCreatedAt());
+            intent.putExtra("roomId", request.getRoomId());
+            intent.putExtra("roomType", request.getRoomType());
+            intent.putExtra("issueType", request.getIssueType());
+            intent.putExtra("priority", request.getPriority());
+            intent.putExtra("description", request.getDescription());
+            intent.putExtra("status", request.getStatus());
+            intent.putExtra("name", request.getName());
+            intent.putExtra("createdAt", request.getCreatedAt());
+            intent.putExtra("availableTime", request.getAvailableTime());
+            intent.putExtra("contactPerson", request.getContactPerson());
+            intent.putExtra("proofImage", request.getProofImage());
             startActivity(intent);
         });
         rvRepairRequests.setAdapter(adapter);
@@ -86,13 +99,28 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                currentSearchQuery = s.toString();
+                currentSearchQuery = s.toString().toLowerCase().trim();
+
+                // Show/hide clear button
+                if (ivClearSearch != null) {
+                    ivClearSearch.setVisibility(currentSearchQuery.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+
                 applyFilters();
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // Clear search button
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                etSearch.setText("");
+                currentSearchQuery = "";
+                applyFilters();
+            });
+        }
     }
 
     private void loadRepairRequests() {
@@ -102,8 +130,20 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     allRequestsList.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        RepairRequest request = document.toObject(RepairRequest.class);
+                        RepairRequest request = new RepairRequest();
                         request.setDocumentId(document.getId());
+                        request.setRoomId(document.getString("roomId"));
+                        request.setRoomType(document.getString("roomType"));
+                        request.setIssueType(document.getString("issueType"));
+                        request.setPriority(document.getString("priority"));
+                        request.setDescription(document.getString("description"));
+                        request.setStatus(document.getString("status"));
+                        request.setName(document.getString("name"));
+                        request.setCreatedAt(document.getLong("createdAt") != null ? document.getLong("createdAt") : 0);
+                        request.setAvailableTime(document.getString("availableTime"));
+                        request.setContactPerson(document.getString("contactPerson"));
+                        request.setProofImage(document.getString("proofImage"));
+
                         allRequestsList.add(request);
                     }
                     applyFilters();
@@ -118,14 +158,13 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
 
         for (RepairRequest request : allRequestsList) {
             String status = request.getStatus();
+            // 只显示 Pending 状态的请求
             boolean matchesStatus = status != null && status.equalsIgnoreCase("Pending");
 
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
-                String cleanQuery = currentSearchQuery.toLowerCase().trim();
                 String roomId = request.getRoomId() != null ? request.getRoomId().toLowerCase() : "";
-                String itemName = request.getItemName() != null ? request.getItemName().toLowerCase() : "";
-                matchesSearch = roomId.contains(cleanQuery) || itemName.contains(cleanQuery);
+                matchesSearch = roomId.contains(currentSearchQuery);
             }
 
             if (matchesStatus && matchesSearch) {
@@ -133,6 +172,13 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
             }
         }
 
+        // Update adapter
+        adapter.updateList(filteredList);
+
+        // Update count
+        tvRequestCount.setText(filteredList.size() + " requests");
+
+        // Update empty state
         if (filteredList.isEmpty()) {
             rvRepairRequests.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
@@ -140,12 +186,12 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
             rvRepairRequests.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);
         }
-
-        tvRequestCount.setText(filteredList.size() + " requests");
-        adapter.notifyDataSetChanged();
     }
 
     private void setupBottomNavigation() {
+        if (bottomNavigation == null) return;
+
+        // 设置当前选中的为 nav_request
         bottomNavigation.setSelectedItemId(R.id.nav_request);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -154,15 +200,21 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
             if (id == R.id.nav_request) {
                 return true;
             } else if (id == R.id.nav_tech_home) {
-                startActivity(new Intent(TechnicianRepairRequestActivity.this, TechnicianDashboardActivity.class));
+                Intent intent = new Intent(TechnicianRepairRequestActivity.this, TechnicianDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_tech_history) {
-                startActivity(new Intent(TechnicianRepairRequestActivity.this, TechnicianHistoryActivity.class));
+                Intent intent = new Intent(TechnicianRepairRequestActivity.this, TechnicianHistoryActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_profile) {
-                startActivity(new Intent(TechnicianRepairRequestActivity.this, ProfileActivity.class));
+                Intent intent = new Intent(TechnicianRepairRequestActivity.this, ProfileActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -173,6 +225,7 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadRepairRequests();
+
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_request);
         }

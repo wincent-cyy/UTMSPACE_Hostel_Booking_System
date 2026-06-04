@@ -1,12 +1,22 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.UTMSPACE_HostelBookingSystem" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <style name="Theme.UTMSPACE.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/white</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.UTMSPACE_HostelBookingSystem</item>
     </style>
 
-    <style name="CircleImage">
-        <item name="cornerSize">50%</item>
+    <style name="Theme.UTMSPACE_HostelBookingSystem"
+        parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- 状态栏 -->
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- 💥 统一背景（关键） -->
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:colorBackground">@android:color/white</item>
+
     </style>
-    <style name="Theme.UTMSPACE_HostelBookingSystem" parent="Base.Theme.UTMSPACE_HostelBookingSystem" />
+
 </resources>

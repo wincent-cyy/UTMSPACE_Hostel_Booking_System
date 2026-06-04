@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Filter Applications"
-        android:textColor="#0F172A"
+        android:textColor="#800000"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
@@ -30,7 +30,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Application Status"
-        android:textColor="#475569"
+        android:textColor="#3C2A24"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
@@ -51,7 +51,7 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="All"
-            android:textColor="#475569"
+            android:textColor="#AA7A6C"
             android:textSize="14sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -66,7 +66,7 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Pending"
-            android:textColor="#475569"
+            android:textColor="#AA7A6C"
             android:textSize="14sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -81,7 +81,7 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Approved"
-            android:textColor="#475569"
+            android:textColor="#AA7A6C"
             android:textSize="14sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -104,7 +104,7 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Rejected"
-            android:textColor="#475569"
+            android:textColor="#AA7A6C"
             android:textSize="14sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -119,7 +119,7 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Paid"
-            android:textColor="#475569"
+            android:textColor="#AA7A6C"
             android:textSize="14sp"
             android:textStyle="bold"
             android:clickable="true"
@@ -131,7 +131,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Room Type"
-        android:textColor="#475569"
+        android:textColor="#3C2A24"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp"
@@ -149,12 +149,12 @@
             android:layout_width="0dp"
             android:layout_height="44dp"
             android:layout_weight="1"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="3dp"
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="All"
-            android:textColor="#475569"
-            android:textSize="14sp"
+            android:textColor="#AA7A6C"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"/>
@@ -168,8 +168,8 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Single"
-            android:textColor="#475569"
-            android:textSize="14sp"
+            android:textColor="#AA7A6C"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"/>
@@ -183,8 +183,8 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Double"
-            android:textColor="#475569"
-            android:textSize="14sp"
+            android:textColor="#AA7A6C"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"/>
@@ -198,46 +198,48 @@
             android:background="@drawable/filter_chip_unselected"
             android:gravity="center"
             android:text="Quad"
-            android:textColor="#475569"
-            android:textSize="14sp"
+            android:textColor="#AA7A6C"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"/>
     </LinearLayout>
 
-    <!-- Buttons Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
-        <com.google.android.material.button.MaterialButton
+        <TextView
             android:id="@+id/btnClearFilters"
-            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
+            android:background="@drawable/filter_button_outline"
+            android:gravity="center"
             android:text="Clear"
-            android:textColor="#64748B"
-            android:textSize="16sp"
+            android:textColor="#800000"
+            android:textSize="15sp"
             android:textStyle="bold"
-            app:strokeColor="#CBD5E1"
-            app:strokeWidth="1.5dp"
-            app:cornerRadius="12dp" />
+            android:clickable="true"
+            android:focusable="true" />
 
-        <com.google.android.material.button.MaterialButton
+        <TextView
             android:id="@+id/btnApplyFilters"
             android:layout_width="0dp"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_weight="1.5"
             android:layout_marginStart="8dp"
+            android:background="@drawable/primary_button_background"
+            android:gravity="center"
             android:text="Apply"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold"
-            app:backgroundTint="#6366F1"
-            app:cornerRadius="12dp" />
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
 </LinearLayout>

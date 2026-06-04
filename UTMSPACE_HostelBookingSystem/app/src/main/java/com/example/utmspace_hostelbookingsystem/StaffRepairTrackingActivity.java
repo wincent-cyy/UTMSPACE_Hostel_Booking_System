@@ -1,20 +1,21 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,22 +28,30 @@ import java.util.List;
 
 public class StaffRepairTrackingActivity extends AppCompatActivity {
 
-    private ImageButton btnBack;
-    private EditText etSearch;
-    private RecyclerView rvRepairRequests;
-    private LinearLayout emptyState;
+    // UI Elements
+    private LinearLayout ivBack;
+    private EditText etSearchRepair;
+    private ImageView ivClearSearch;
+    private RecyclerView rvRepairList;
+    private TextView tvEmptyState;
     private TextView tvRequestCount;
 
-    private TextView chipAll, chipPending, chipScheduled, chipCompleted;
+    // Filter Chips
+    private TextView chipAll, chipPending, chipInProgress, chipCompleted;
 
+    // Firebase
     private FirebaseFirestore db;
-    private RepairRequestAdapter adapter;
-    private List<RepairRequest> allRequestsList;
-    private List<RepairRequest> filteredList;
 
+    // Data
+    private List<RepairRequest> allRequests = new ArrayList<>();
+    private List<RepairRequest> filteredRequests = new ArrayList<>();
+    private RepairRequestAdapter adapter;
+
+    // Filter variables
     private String currentStatusFilter = "All";
     private String currentSearchQuery = "";
 
+    // Search delay
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
 
@@ -53,45 +62,53 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
         setupRecyclerView();
         setupFilterChips();
-        setupSearchFilter();
-        loadRepairRequests();
+        setupSearchFunction();
         setupClickListeners();
+        loadRepairRequests();
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        etSearch = findViewById(R.id.etSearch);
-        rvRepairRequests = findViewById(R.id.rvRepairRequests);
-        emptyState = findViewById(R.id.emptyState);
+        ivBack = findViewById(R.id.ivBack);
+        etSearchRepair = findViewById(R.id.etSearchRepair);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
+        rvRepairList = findViewById(R.id.rvRepairList);
+        tvEmptyState = findViewById(R.id.tvEmptyState);
         tvRequestCount = findViewById(R.id.tvRequestCount);
 
+        // Filter chips
         chipAll = findViewById(R.id.chipAll);
         chipPending = findViewById(R.id.chipPending);
-        chipScheduled = findViewById(R.id.chipScheduled);
+        chipInProgress = findViewById(R.id.chipInProgress);
         chipCompleted = findViewById(R.id.chipCompleted);
     }
 
     private void setupRecyclerView() {
-        allRequestsList = new ArrayList<>();
-        filteredList = new ArrayList<>();
-
-        rvRepairRequests.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new RepairRequestAdapter(filteredList, request -> {
+        rvRepairList.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new RepairRequestAdapter(filteredRequests, request -> {
             Intent intent = new Intent(StaffRepairTrackingActivity.this, StaffRepairDetailActivity.class);
+
+            // 使用统一的 key 名称（全部小写，与 Firestore 一致）
             intent.putExtra("REQUEST_ID", request.getDocumentId());
-            intent.putExtra("ROOM_ID", request.getRoomId());
-            intent.putExtra("ITEM_NAME", request.getItemName());
-            intent.putExtra("URGENCY", request.getUrgency());
-            intent.putExtra("DESCRIPTION", request.getDescription());
-            intent.putExtra("STATUS", request.getStatus());
-            intent.putExtra("STAFF_NAME", request.getStaffName());
-            intent.putExtra("CREATED_AT", request.getCreatedAt());
+            intent.putExtra("roomId", request.getRoomId());
+            intent.putExtra("roomType", request.getRoomType());
+            intent.putExtra("issueType", request.getIssueType());
+            intent.putExtra("priority", request.getPriority());
+            intent.putExtra("description", request.getDescription());
+            intent.putExtra("status", request.getStatus());
+            intent.putExtra("name", request.getName());
+            intent.putExtra("createdAt", request.getCreatedAt());
+            intent.putExtra("availableTime", request.getAvailableTime());  // 改为小写 availableTime
+
             startActivity(intent);
         });
-        rvRepairRequests.setAdapter(adapter);
+        rvRepairList.setAdapter(adapter);
     }
 
     private void setupFilterChips() {
@@ -107,9 +124,9 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
             applyFilters();
         });
 
-        chipScheduled.setOnClickListener(v -> {
-            currentStatusFilter = "Scheduled";
-            updateChipStyles(chipScheduled);
+        chipInProgress.setOnClickListener(v -> {
+            currentStatusFilter = "In Progress";
+            updateChipStyles(chipInProgress);
             applyFilters();
         });
 
@@ -121,41 +138,25 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     }
 
     private void updateChipStyles(TextView selectedChip) {
-        chipAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipPending.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipPending.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipScheduled.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipScheduled.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipCompleted.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipCompleted.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+        // Reset all chips
+        resetChipStyle(chipAll);
+        resetChipStyle(chipPending);
+        resetChipStyle(chipInProgress);
+        resetChipStyle(chipCompleted);
 
+        // Set selected chip style
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
 
-    private void setupSearchFilter() {
-        // 设置回车键为搜索按钮
-        etSearch.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                String query = etSearch.getText().toString().trim();
-                if (!query.isEmpty()) {
-                    currentSearchQuery = query;
-                    applyFilters();
+    private void resetChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
+    }
 
-                    // 检查搜索结果
-                    checkSearchResults();
-                } else {
-                    currentSearchQuery = "";
-                    applyFilters();
-                }
-                return true;
-            }
-            return false;
-        });
-
-        // 实时搜索（可选，保留延迟搜索）
-        etSearch.addTextChangedListener(new TextWatcher() {
+    private void setupSearchFunction() {
+        etSearchRepair.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -165,47 +166,32 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
                     searchHandler.removeCallbacks(searchRunnable);
                 }
 
-                String query = s.toString();
+                final String query = s.toString();
+
+                // Show/hide clear button
+                if (ivClearSearch != null) {
+                    ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+
                 searchRunnable = () -> {
                     currentSearchQuery = query;
                     applyFilters();
-
-                    // 检查搜索结果（只在非空搜索时检查）
-                    if (!query.isEmpty()) {
-                        checkSearchResults();
-                    }
                 };
-                searchHandler.postDelayed(searchRunnable, 500);
+                searchHandler.postDelayed(searchRunnable, 300);
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
-    }
 
-    private void checkSearchResults() {
-        // 延迟一下，等待搜索结果更新
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (filteredList.isEmpty() && !currentSearchQuery.isEmpty()) {
-                String cleanQuery = currentSearchQuery.toLowerCase().trim();
-                // 检查是否有匹配的搜索词
-                boolean hasAnyMatch = false;
-                for (RepairRequest request : allRequestsList) {
-                    String roomId = request.getRoomId() != null ? request.getRoomId().toLowerCase() : "";
-                    String itemName = request.getItemName() != null ? request.getItemName().toLowerCase() : "";
-                    if (roomId.contains(cleanQuery) || itemName.contains(cleanQuery)) {
-                        hasAnyMatch = true;
-                        break;
-                    }
-                }
-
-                if (!hasAnyMatch) {
-                    Toast.makeText(StaffRepairTrackingActivity.this,
-                            "No results found for: " + currentSearchQuery,
-                            Toast.LENGTH_SHORT).show();
-                }
-            }
-        }, 100);
+        // Clear search button
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                etSearchRepair.setText("");
+                currentSearchQuery = "";
+                applyFilters();
+            });
+        }
     }
 
     private void loadRepairRequests() {
@@ -213,12 +199,24 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    allRequestsList.clear();
+                    allRequests.clear();
+
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        // 添加日志查看原始数据
+                        android.util.Log.d("StaffRepairTracking", "=== Document Data ===");
+                        android.util.Log.d("StaffRepairTracking", "createdAt raw: " + document.getLong("createdAt"));
+                        android.util.Log.d("StaffRepairTracking", "availableTime: " + document.getString("availableTime"));
+
                         RepairRequest request = document.toObject(RepairRequest.class);
                         request.setDocumentId(document.getId());
-                        allRequestsList.add(request);
+
+                        // 添加日志查看转换后的数据
+                        android.util.Log.d("StaffRepairTracking", "after toObject - createdAt: " + request.getCreatedAt());
+                        android.util.Log.d("StaffRepairTracking", "after toObject - availableTime: " + request.getAvailableTime());
+
+                        allRequests.add(request);
                     }
+
                     applyFilters();
                 })
                 .addOnFailureListener(e -> {
@@ -227,47 +225,58 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     }
 
     private void applyFilters() {
-        filteredList.clear();
+        filteredRequests.clear();
 
-        for (RepairRequest request : allRequestsList) {
+        for (RepairRequest request : allRequests) {
+            // Status filter
             boolean matchesStatus = true;
-            if (!"All".equals(currentStatusFilter)) {
-                String status = request.getStatus();
-                matchesStatus = status != null && status.equalsIgnoreCase(currentStatusFilter);
+            switch (currentStatusFilter) {
+                case "Pending":
+                    matchesStatus = "Pending".equalsIgnoreCase(request.getStatus());
+                    break;
+                case "In Progress":
+                    matchesStatus = "In Progress".equalsIgnoreCase(request.getStatus());
+                    break;
+                case "Completed":
+                    matchesStatus = "Completed".equalsIgnoreCase(request.getStatus());
+                    break;
+                case "All":
+                default:
+                    matchesStatus = true;
+                    break;
             }
 
+            // Search filter - by room ID
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
                 String cleanQuery = currentSearchQuery.toLowerCase().trim();
                 String roomId = request.getRoomId() != null ? request.getRoomId().toLowerCase() : "";
-                String itemName = request.getItemName() != null ? request.getItemName().toLowerCase() : "";
-                matchesSearch = roomId.contains(cleanQuery) || itemName.contains(cleanQuery);
+                matchesSearch = roomId.contains(cleanQuery);
             }
 
             if (matchesStatus && matchesSearch) {
-                filteredList.add(request);
+                filteredRequests.add(request);
             }
         }
 
-        if (filteredList.isEmpty()) {
-            rvRepairRequests.setVisibility(View.GONE);
-            emptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvRepairRequests.setVisibility(View.VISIBLE);
-            emptyState.setVisibility(View.GONE);
-        }
-
-        tvRequestCount.setText(filteredList.size() + " requests");
+        // Update adapter
         adapter.notifyDataSetChanged();
+
+        // Update count
+        tvRequestCount.setText(filteredRequests.size() + " requests");
+
+        // Update empty state
+        if (filteredRequests.isEmpty()) {
+            rvRepairList.setVisibility(View.GONE);
+            tvEmptyState.setVisibility(View.VISIBLE);
+        } else {
+            rvRepairList.setVisibility(View.VISIBLE);
+            tvEmptyState.setVisibility(View.GONE);
+        }
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> {
-            Intent intent = new Intent(StaffRepairTrackingActivity.this, StaffDashboardActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        });
+        ivBack.setOnClickListener(v -> finish());
     }
 
     @Override

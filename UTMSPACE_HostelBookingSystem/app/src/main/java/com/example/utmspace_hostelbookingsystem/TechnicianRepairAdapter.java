@@ -1,9 +1,11 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -38,84 +40,122 @@ public class TechnicianRepairAdapter extends RecyclerView.Adapter<TechnicianRepa
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        if (requestList == null || position >= requestList.size()) return;
         RepairRequest request = requestList.get(position);
+        if (request == null) return;
 
-        holder.tvRoomNumber.setText("Room " + request.getRoomId());
-        holder.tvItemName.setText(request.getItemName());
+        // 房间号
+        String roomId = request.getRoomId();
+        holder.tvRoomNumber.setText(roomId != null ? roomId : "N/A");
 
-        // Set status background and text
+        // 问题类型 (XML 中是 tvIssueType，不是 tvItemName)
+        String issueType = request.getIssueType();
+        holder.tvIssueType.setText(issueType != null ? issueType : "N/A");
+
+        // 描述 (XML 中有 tvDescription)
+        String description = request.getDescription();
+        if (holder.tvDescription != null) {
+            holder.tvDescription.setText(description != null ? description : "No description");
+        }
+
+        // 状态 (XML 中有 tvStatus)
         String status = request.getStatus();
-        if (status != null) {
-            switch (status) {
-                case "Pending":
+        if (status != null && holder.tvStatus != null) {
+            holder.tvStatus.setText(status);
+            switch (status.toLowerCase()) {
+                case "pending":
                     holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
-                    holder.tvStatus.setText("Pending");
                     break;
-                case "In Progress":
-                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_scheduled);
-                    holder.tvStatus.setText("In Progress");
+                case "in progress":
+                case "in-progress":
+                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_in_progress);
                     break;
-                case "Completed":
+                case "completed":
                     holder.tvStatus.setBackgroundResource(R.drawable.status_badge_completed);
-                    holder.tvStatus.setText("Completed");
                     break;
                 default:
                     holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
-                    holder.tvStatus.setText(status);
                     break;
             }
         }
 
-        // Set urgency color
-        String urgency = request.getUrgency();
-        if (urgency != null) {
-            holder.tvUrgency.setBackgroundResource(R.drawable.urgency_badge);
-            switch (urgency) {
-                case "Low":
-                    holder.tvUrgency.getBackground().setTint(Color.parseColor("#10B981"));
-                    holder.tvUrgency.setText("Low");
+        // 优先级 (XML 中是 tvPriority，不是 tvUrgency)
+        String priority = request.getPriority();
+        if (priority != null && holder.tvPriority != null) {
+            holder.tvPriority.setText(priority);
+            holder.tvPriority.setBackgroundResource(R.drawable.urgency_badge);
+
+            int color;
+            switch (priority.toLowerCase()) {
+                case "low":
+                    color = Color.parseColor("#10B981");
                     break;
-                case "Medium":
-                    holder.tvUrgency.getBackground().setTint(Color.parseColor("#F59E0B"));
-                    holder.tvUrgency.setText("Medium");
+                case "medium":
+                    color = Color.parseColor("#F59E0B");
                     break;
-                case "High":
-                    holder.tvUrgency.getBackground().setTint(Color.parseColor("#EF4444"));
-                    holder.tvUrgency.setText("High");
+                case "high":
+                    color = Color.parseColor("#EF4444");
                     break;
-                case "Emergency":
-                    holder.tvUrgency.getBackground().setTint(Color.parseColor("#7F1D1D"));
-                    holder.tvUrgency.setText("Emergency");
+                case "emergency":
+                    color = Color.parseColor("#7F1D1D");
                     break;
                 default:
-                    holder.tvUrgency.getBackground().setTint(Color.parseColor("#94A3B8"));
-                    holder.tvUrgency.setText(urgency);
+                    color = Color.parseColor("#94A3B8");
                     break;
             }
+            holder.tvPriority.getBackground().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         }
 
-        // Set date
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.ENGLISH);
-        holder.tvDate.setText(sdf.format(new Date(request.getCreatedAt())));
+        // 日期
+        long createdAt = request.getCreatedAt();
+        if (createdAt > 0 && holder.tvDate != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            holder.tvDate.setText(sdf.format(new Date(createdAt)));
+        } else {
+            holder.tvDate.setText("N/A");
+        }
 
-        holder.itemView.setOnClickListener(v -> listener.onItemClick(request));
+        // 只有 Details 按钮可以点击，整个卡片不可点击
+        if (holder.btnStartRepair != null) {
+            holder.btnStartRepair.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(request);
+                }
+            });
+        }
+
+        // 整个卡片不设置点击事件
+        holder.itemView.setClickable(false);
     }
 
     @Override
     public int getItemCount() {
-        return requestList.size();
+        return requestList != null ? requestList.size() : 0;
+    }
+
+    public void updateList(List<RepairRequest> newList) {
+        this.requestList = newList;
+        notifyDataSetChanged();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomNumber, tvStatus, tvItemName, tvUrgency, tvDate;
+        TextView tvRoomNumber;
+        TextView tvIssueType;      // 改为 tvIssueType
+        TextView tvDescription;    // 添加 tvDescription
+        TextView tvStatus;
+        TextView tvPriority;       // 改为 tvPriority
+        TextView tvDate;
+        LinearLayout btnStartRepair;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+            tvIssueType = itemView.findViewById(R.id.tvIssueType);
+            tvDescription = itemView.findViewById(R.id.tvDescription);
             tvStatus = itemView.findViewById(R.id.tvStatus);
-            tvItemName = itemView.findViewById(R.id.tvItemName);
-            tvUrgency = itemView.findViewById(R.id.tvUrgency);
+            tvPriority = itemView.findViewById(R.id.tvPriority);
             tvDate = itemView.findViewById(R.id.tvDate);
+            btnStartRepair = itemView.findViewById(R.id.btnStartRepair);
         }
     }
 }

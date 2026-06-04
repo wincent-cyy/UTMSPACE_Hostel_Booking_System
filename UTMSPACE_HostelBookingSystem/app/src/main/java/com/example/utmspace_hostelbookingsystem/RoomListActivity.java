@@ -1,19 +1,26 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.EditText; // Or androidx.appcompat.widget.SearchView depending on your XML
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -24,106 +31,157 @@ import java.util.List;
 public class RoomListActivity extends AppCompatActivity {
 
     private TextView tvRoomTypeTitle;
+    private TextView tvRoomCount;
     private RecyclerView rvRoomList;
-    private FirebaseFirestore db;
-
-    // UI Layout Search Element Referencer
+    private LinearLayout ivBack;
+    private LinearLayout filterButton;
     private EditText etSearchRoom;
+    private ImageView ivClearSearch;
+    private TextView tvNoResults;
 
-    // Dataset management lists
-    private List<RoomModel> completeRoomList = new ArrayList<>();  // Caches pristine Firebase entries
-    private List<RoomModel> displayedRoomList = new ArrayList<>(); // Feeds directly to the RecyclerView adapter
+    private FirebaseFirestore db;
+    private Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+
+    // Data lists
+    private List<RoomModel> completeRoomList = new ArrayList<>();
+    private List<RoomModel> displayedRoomList = new ArrayList<>();
     private RoomAdapter adapter;
 
-    // Filter tracking criteria states ("None" signifies completely cleared/unselected states)
-    private String selectedStatusCriteria = "None";
-    private String selectedBlockCriteria = "None";
-    private String currentActiveRoomType = "";
+    // Filter criteria
+    private String selectedStatus = "all";     // all, available, full, maintenance
+    private String selectedBlock = "all";      // all, Block A, Block B
     private String currentSearchQuery = "";
+    private String currentActiveRoomType = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room_list);
 
+        // 解决键盘弹出问题
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
         db = FirebaseFirestore.getInstance();
 
-        // 1. Initialize Layout Views
-        tvRoomTypeTitle = findViewById(R.id.tvRoomTypeTitle);
-        rvRoomList = findViewById(R.id.rvRoomList);
-        rvRoomList.setLayoutManager(new LinearLayoutManager(this));
+        initViews();
 
-        // CRITICAL FIX: Bind the actual XML search field component to your Java logic
-        // (Verify that your XML element ID matches R.id.etSearchRoom or update this reference)
-        etSearchRoom = findViewById(R.id.etSearchRoomNumber);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
-        // 2. Setup Data Intent Streams from Dashboard Context
         currentActiveRoomType = getIntent().getStringExtra("ROOM_TYPE");
-        if (currentActiveRoomType != null) {
-            tvRoomTypeTitle.setText(currentActiveRoomType);
+        if (currentActiveRoomType != null && !currentActiveRoomType.isEmpty()) {
+            updateTitleBasedOnRoomType(currentActiveRoomType);
             fetchRoomsFromFirebase(currentActiveRoomType);
+        } else {
+            Toast.makeText(this, "Invalid room type", Toast.LENGTH_SHORT).show();
+            finish();
         }
 
-        // 3. System Navigation Controls
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        setupListeners();
+    }
 
-        // 4. Floating Action / Bottom Sheet Filter Trigger Listener
-        View btnFilter = findViewById(R.id.btnListFilter);
-        if (btnFilter != null) {
-            btnFilter.setOnClickListener(v -> showFilteringBottomSheetDialog());
+    private void initViews() {
+        tvRoomTypeTitle = findViewById(R.id.tvRoomTypeTitle);
+        tvRoomCount = findViewById(R.id.tvRoomCount);
+        rvRoomList = findViewById(R.id.rvRoomList);
+        ivBack = findViewById(R.id.ivBack);
+        filterButton = findViewById(R.id.filterButton);
+        etSearchRoom = findViewById(R.id.etSearchRoomNumber);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
+        tvNoResults = findViewById(R.id.tvNoResults);
+
+        rvRoomList.setLayoutManager(new LinearLayoutManager(this));
+    }
+
+    private void setupListeners() {
+        // Back button
+        if (ivBack != null) {
+            ivBack.setOnClickListener(v -> finish());
         }
 
-        // 5. CRITICAL FIX: The UI Search Bar Event Listener
+        // Filter button
+        if (filterButton != null) {
+            filterButton.setOnClickListener(v -> showFilterBottomSheet());
+        }
+
+        // Clear search
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                if (etSearchRoom != null) {
+                    etSearchRoom.setText("");
+                    currentSearchQuery = "";
+                    applyFilters();
+                    ivClearSearch.setVisibility(View.GONE);
+                }
+            });
+        }
+
+        // Search input with delay
         if (etSearchRoom != null) {
             etSearchRoom.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    // Left blank intentionally
-                }
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    // Dynamically capture the keystroke buffer sequence as it modifies
-                    currentSearchQuery = s.toString();
+                    if (searchRunnable != null) {
+                        searchHandler.removeCallbacks(searchRunnable);
+                    }
 
-                    // Instantly trigger and apply full dataset validation pipeline
-                    applyCombinedFiltersAndSorting();
+                    searchRunnable = () -> {
+                        currentSearchQuery = s.toString().toLowerCase().trim();
+                        applyFilters();
+
+                        if (!currentSearchQuery.isEmpty() && displayedRoomList.isEmpty()) {
+                            showNoSearchResultsDialog(currentSearchQuery);
+                        }
+                    };
+                    searchHandler.postDelayed(searchRunnable, 500);
                 }
 
                 @Override
                 public void afterTextChanged(Editable s) {
-                    // Left blank intentionally
+                    if (ivClearSearch != null) {
+                        ivClearSearch.setVisibility(s.toString().isEmpty() ? View.GONE : View.VISIBLE);
+                    }
                 }
             });
+        }
+    }
+
+    private void showNoSearchResultsDialog(String keyword) {
+        Toast toast = Toast.makeText(this,
+                "🔍 No rooms found matching \"" + keyword + "\"",
+                Toast.LENGTH_LONG);
+        toast.setGravity(android.view.Gravity.BOTTOM, 0, 100);
+        toast.show();
+    }
+
+    private void updateTitleBasedOnRoomType(String roomType) {
+        String displayType = "";
+
+        if (roomType.toLowerCase().contains("single")) {
+            displayType = "Single Rooms";
+        } else if (roomType.toLowerCase().contains("double")) {
+            displayType = "Double Rooms";
+        } else if (roomType.toLowerCase().contains("quad")) {
+            displayType = "Quad Rooms";
+        }
+
+        if (tvRoomTypeTitle != null) {
+            tvRoomTypeTitle.setText(displayType);
         }
     }
 
     private void fetchRoomsFromFirebase(String type) {
         adapter = new RoomAdapter(displayedRoomList, room -> {
             Intent intent = new Intent(RoomListActivity.this, RoomDetailsActivity.class);
-
-            // Pass essential intent parameters forward
-            intent.putExtra("ROOM_ID", room.getRoomId());
-            intent.putExtra("ROOM_TYPE", type);
-            intent.putExtra("ROOM_PRICE", "RM " + String.format("%.2f", room.getPrice()) + " / Month");
-
-            // Map status text dynamically for UI consistency across cards
-            intent.putExtra("ROOM_STATUS",
-                    room.isFull() ? "Full" :
-                            (room.getStatus() != null ? room.getStatus() : "Available"));
-
-            // Build structural context descriptions depending safely on room classification flags
-            String roomDesc = "Comfortable hostel residential living space perfect for student focus.";
-            if (type != null) {
-                if (type.toLowerCase().contains("single")) {
-                    roomDesc = "Premium private personal space located near the central campus facilities. Complete with a private study desk configuration, high-speed networking access, wardrobe, and continuous window ventilation.";
-                } else if (type.toLowerCase().contains("double")) {
-                    roomDesc = "Spacious shared living suite layout optimal for companions or project partners. Features individual workspaces, split multi-tier shelving, and personal storage lockboxes.";
-                } else if (type.toLowerCase().contains("quad")) {
-                    roomDesc = "Affordable and highly social 4-sharing layout variant setup. Equipped with bunk bed systems, private desks per student, individual wardrobes, and communal balcony access points.";
-                }
-            }
-            intent.putExtra("ROOM_DESC", roomDesc);
+            intent.putExtra("room_id", room.getRoomId());  // ← 改为使用 roomId
+            intent.putExtra("room_type", type);
+            intent.putExtra("room_price", "RM " + String.format("%.2f", room.getPrice()) + " / Semester");
+            intent.putExtra("room_status", room.isFull() ? "Full" : (room.getStatus() != null ? room.getStatus() : "Available"));
             startActivity(intent);
         });
 
@@ -137,160 +195,203 @@ public class RoomListActivity extends AppCompatActivity {
                         completeRoomList.clear();
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             RoomModel room = document.toObject(RoomModel.class);
+                            room.setDocumentId(document.getId());
                             completeRoomList.add(room);
                         }
-                        applyCombinedFiltersAndSorting();
+                        applyFilters();
                     } else {
-                        Log.d("FirebaseError", "Error getting documents: ", task.getException());
+                        Log.e("FirebaseError", "Error getting documents: ", task.getException());
+                        Toast.makeText(this, "Failed to load rooms", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    private void showFilteringBottomSheetDialog() {
+    private void showFilterBottomSheet() {
+        View filterView = getLayoutInflater().inflate(R.layout.dialog_filter_bottom_sheet, null);
+
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
-        View sheetView = getLayoutInflater().inflate(R.layout.dialog_filter_bottom_sheet, null);
-        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.setContentView(filterView);
 
-        // Map status view selectors
-        TextView btnStatusAll = sheetView.findViewById(R.id.btnStatusAll);
-        TextView btnStatusAvailable = sheetView.findViewById(R.id.btnStatusAvailable);
-        TextView btnStatusFull = sheetView.findViewById(R.id.btnStatusFull);
+        if (bottomSheetDialog.getWindow() != null) {
+            bottomSheetDialog.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            bottomSheetDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
 
-        // Map building/location block views
-        TextView btnBlockAll = sheetView.findViewById(R.id.btnBlockAll);
-        TextView btnBlockA = sheetView.findViewById(R.id.btnBlockA);
-        TextView btnBlockB = sheetView.findViewById(R.id.btnBlockB);
+        // 初始化筛选控件 - 添加 Maintenance
+        TextView btnStatusAll = filterView.findViewById(R.id.btnStatusAll);
+        TextView btnStatusAvailable = filterView.findViewById(R.id.btnStatusAvailable);
+        TextView btnStatusFull = filterView.findViewById(R.id.btnStatusFull);
+        TextView btnStatusMaintenance = filterView.findViewById(R.id.btnStatusMaintenance);  // 新增
+        TextView btnBlockAll = filterView.findViewById(R.id.btnBlockAll);
+        TextView btnBlockA = filterView.findViewById(R.id.btnBlockA);
+        TextView btnBlockB = filterView.findViewById(R.id.btnBlockB);
+        TextView btnClearFilters = filterView.findViewById(R.id.btnClearFilters);
+        TextView btnApplyFilters = filterView.findViewById(R.id.btnApplyFilters);
 
-        // Map operational button entities
-        MaterialButton btnClearFilters = sheetView.findViewById(R.id.btnClearFilters);
-        MaterialButton btnApplyFilters = sheetView.findViewById(R.id.btnApplyFilters);
+        // 隐藏房间类型选择区域
+        View roomTypeSection = filterView.findViewById(R.id.roomTypeSection);
+        if (roomTypeSection != null) {
+            roomTypeSection.setVisibility(View.GONE);
+        }
 
-        // Temporary local parameters to safely retain changes until confirmation action is executed
-        final String[] tempStatus = {selectedStatusCriteria};
-        final String[] tempBlock = {selectedBlockCriteria};
+        // 临时变量存储当前选择
+        String[] tempStatus = {selectedStatus};
+        String[] tempBlock = {selectedBlock};
 
-        // UI View Updater Lifecycle block (Soft ocean blue / white palette guidelines)
-        Runnable updateUISelectionStates = new Runnable() {
-            @Override
-            public void run() {
-                // 1. Flush and reset structural configurations for Availability Status Row
-                btnStatusAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnStatusAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-                btnStatusAvailable.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnStatusAvailable.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-                btnStatusFull.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnStatusFull.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+        // 更新UI样式 - 传入 Maintenance
+        updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
 
-                if (tempStatus[0].equals("Available")) {
-                    btnStatusAvailable.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnStatusAvailable.setTextColor(android.graphics.Color.WHITE);
-                } else if (tempStatus[0].equals("Full")) {
-                    btnStatusFull.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnStatusFull.setTextColor(android.graphics.Color.WHITE);
-                } else if (tempStatus[0].equals("All")) {
-                    btnStatusAll.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnStatusAll.setTextColor(android.graphics.Color.WHITE);
-                }
-
-                // 2. Flush and reset structural configurations for Hostel Block Location Row
-                btnBlockAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnBlockAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-                btnBlockA.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnBlockA.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-                btnBlockB.setBackgroundResource(R.drawable.filter_chip_unselected);
-                btnBlockB.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-
-                if (tempBlock[0].equalsIgnoreCase("Block A")) {
-                    btnBlockA.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnBlockA.setTextColor(android.graphics.Color.WHITE);
-                } else if (tempBlock[0].equalsIgnoreCase("Block B")) {
-                    btnBlockB.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnBlockB.setTextColor(android.graphics.Color.WHITE);
-                } else if (tempBlock[0].equalsIgnoreCase("All")) {
-                    btnBlockAll.setBackgroundResource(R.drawable.filter_chip_selected);
-                    btnBlockAll.setTextColor(android.graphics.Color.WHITE);
-                }
-            }
-        };
-
-        // Execute baseline selection state rendering on dialog draw
-        updateUISelectionStates.run();
-
-        // Register interactive tracking clicks for Status Options
-        btnStatusAll.setOnClickListener(v -> { tempStatus[0] = "All"; updateUISelectionStates.run(); });
-        btnStatusAvailable.setOnClickListener(v -> { tempStatus[0] = "Available"; updateUISelectionStates.run(); });
-        btnStatusFull.setOnClickListener(v -> { tempStatus[0] = "Full"; updateUISelectionStates.run(); });
-
-        // Register interactive tracking clicks for Location Block Options
-        btnBlockAll.setOnClickListener(v -> { tempBlock[0] = "All"; updateUISelectionStates.run(); });
-        btnBlockA.setOnClickListener(v -> { tempBlock[0] = "Block A"; updateUISelectionStates.run(); });
-        btnBlockB.setOnClickListener(v -> { tempBlock[0] = "Block B"; updateUISelectionStates.run(); });
-
-        // Action Handlers: Clear Requirements Operation Flow (Turns off all selections completely)
-        btnClearFilters.setOnClickListener(v -> {
-            selectedStatusCriteria = "None";
-            selectedBlockCriteria = "None";
-
-            applyCombinedFiltersAndSorting();
-            bottomSheetDialog.dismiss();
-            Toast.makeText(this, "Filters Cleared", Toast.LENGTH_SHORT).show();
+        // 状态点击事件 - 添加 Maintenance
+        btnStatusAll.setOnClickListener(v -> {
+            tempStatus[0] = "all";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
+        btnStatusAvailable.setOnClickListener(v -> {
+            tempStatus[0] = "available";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
+        btnStatusFull.setOnClickListener(v -> {
+            tempStatus[0] = "full";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
+        btnStatusMaintenance.setOnClickListener(v -> {  // 新增
+            tempStatus[0] = "maintenance";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
         });
 
-        // Action Handlers: Commit and Apply Operational Flow
-        btnApplyFilters.setOnClickListener(v -> {
-            selectedStatusCriteria = tempStatus[0];
-            selectedBlockCriteria = tempBlock[0];
+        // 楼栋点击事件
+        btnBlockAll.setOnClickListener(v -> {
+            tempBlock[0] = "all";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
+        btnBlockA.setOnClickListener(v -> {
+            tempBlock[0] = "Block A";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
+        btnBlockB.setOnClickListener(v -> {
+            tempBlock[0] = "Block B";
+            updateFilterUI(btnStatusAll, btnStatusAvailable, btnStatusFull, btnStatusMaintenance,
+                    btnBlockAll, btnBlockA, btnBlockB, tempStatus[0], tempBlock[0]);
+        });
 
-            applyCombinedFiltersAndSorting();
+        // 清除按钮
+        btnClearFilters.setOnClickListener(v -> {
+            selectedStatus = "all";
+            selectedBlock = "all";
+            applyFilters();
             bottomSheetDialog.dismiss();
+            Toast.makeText(this, "Filters cleared", Toast.LENGTH_SHORT).show();
+        });
+
+        // 应用按钮
+        btnApplyFilters.setOnClickListener(v -> {
+            selectedStatus = tempStatus[0];
+            selectedBlock = tempBlock[0];
+            applyFilters();
+            bottomSheetDialog.dismiss();
+            Toast.makeText(this, "Filters applied", Toast.LENGTH_SHORT).show();
         });
 
         bottomSheetDialog.show();
     }
 
-    private void applyCombinedFiltersAndSorting() {
-        List<RoomModel> filteredStageList = new ArrayList<>();
+    private void updateFilterUI(TextView btnStatusAll, TextView btnStatusAvailable, TextView btnStatusFull,
+                                TextView btnStatusMaintenance, TextView btnBlockAll, TextView btnBlockA,
+                                TextView btnBlockB, String status, String block) {
+        // 更新状态 chips - 添加 Maintenance
+        updateChipStyle(btnStatusAll, status.equals("all"));
+        updateChipStyle(btnStatusAvailable, status.equals("available"));
+        updateChipStyle(btnStatusFull, status.equals("full"));
+        updateChipStyle(btnStatusMaintenance, status.equals("maintenance"));
+
+        // 更新楼栋 chips
+        updateChipStyle(btnBlockAll, block.equals("all"));
+        updateChipStyle(btnBlockA, block.equals("Block A"));
+        updateChipStyle(btnBlockB, block.equals("Block B"));
+    }
+
+    private void updateChipStyle(TextView chip, boolean isSelected) {
+        if (chip == null) return;
+        if (isSelected) {
+            chip.setBackgroundResource(R.drawable.filter_chip_selected);
+            chip.setTextColor(getColor(android.R.color.white));
+        } else {
+            chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+            chip.setTextColor(getColor(R.color.tabInactiveText));
+        }
+    }
+
+    private void applyFilters() {
+        displayedRoomList.clear();
+
+        if (completeRoomList.isEmpty()) {
+            updateUIAndCount();
+            return;
+        }
 
         for (RoomModel room : completeRoomList) {
             boolean matchesSearch = true;
             boolean matchesStatus = true;
             boolean matchesBlock = true;
 
-            // 1. FIXED SEARCH: Flexible Alphanumeric check. Matches if query is part of the room number (e.g., "101", "A", "A-101")
-            if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty() && room.getRoomId() != null) {
-                String cleanQuery = currentSearchQuery.trim().toLowerCase();
-                String roomNum = room.getRoomId().trim().toLowerCase();
-
-                matchesSearch = roomNum.contains(cleanQuery);
+            // 搜索匹配：房间号
+            if (!currentSearchQuery.isEmpty()) {
+                String roomId = room.getRoomId() != null ? room.getRoomId().toLowerCase() : "";
+                matchesSearch = roomId.contains(currentSearchQuery);
             }
 
-            // 2. STATUS FILTER FIX: Maps database status string value "Occupied" safely to filter choice "Full"
-            if (!selectedStatusCriteria.equals("None") && !selectedStatusCriteria.equals("All")) {
-                if (selectedStatusCriteria.equalsIgnoreCase("Full")) {
-                    // Item matches if boolean is true, status is explicitly "Full", OR status is explicitly "Occupied"
-                    matchesStatus = room.isFull() ||
-                            (room.getStatus() != null && (room.getStatus().equalsIgnoreCase("Full")));
-                } else if (selectedStatusCriteria.equalsIgnoreCase("Available")) {
-                    // Item matches if boolean is false AND status string is neither "Full" nor "Occupied"
-                    matchesStatus = !room.isFull() &&
-                            (room.getStatus() == null || (!room.getStatus().equalsIgnoreCase("Full")));
+            // 状态筛选 - 添加 Maintenance 支持
+            if (!selectedStatus.equals("all")) {
+                String status = room.getStatus() != null ? room.getStatus().toLowerCase() : "";
+                if (selectedStatus.equals("available")) {
+                    matchesStatus = status.equals("available");
+                } else if (selectedStatus.equals("full")) {
+                    matchesStatus = status.equals("full");
+                } else if (selectedStatus.equals("maintenance")) {
+                    matchesStatus = status.equals("maintenance");
                 }
             }
 
-            // 3. Verify Block Location Constraints (Skip constraint check if cleared via "None")
-            if (!selectedBlockCriteria.equals("None") && !selectedBlockCriteria.equals("All") && room.getLocation() != null) {
-                matchesBlock = room.getLocation().toLowerCase().contains(selectedBlockCriteria.toLowerCase());
+            // 楼栋筛选
+            if (!selectedBlock.equals("all")) {
+                String location = room.getLocation() != null ? room.getLocation() : "";
+                matchesBlock = location.contains(selectedBlock);
             }
 
-            // Append item to display collection if all constraints match
             if (matchesSearch && matchesStatus && matchesBlock) {
-                filteredStageList.add(room);
+                displayedRoomList.add(room);
             }
         }
 
-        // Swap list context safely and update presentation interface layer
-        displayedRoomList.clear();
-        displayedRoomList.addAll(filteredStageList);
-        adapter.notifyDataSetChanged();
+        updateUIAndCount();
+    }
+
+    private void updateUIAndCount() {
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+
+        // 更新房间数量 - 格式 "0 rooms" 而不是 "0 rooms available"
+        if (tvRoomCount != null) {
+            tvRoomCount.setText(displayedRoomList.size() + " rooms");
+        }
+
+        // 更新空状态显示
+        if (tvNoResults != null) {
+            if (displayedRoomList.isEmpty()) {
+                tvNoResults.setVisibility(View.VISIBLE);
+                rvRoomList.setVisibility(View.GONE);
+            } else {
+                tvNoResults.setVisibility(View.GONE);
+                rvRoomList.setVisibility(View.VISIBLE);
+            }
+        }
     }
 }

@@ -1,24 +1,29 @@
 package com.example.utmspace_hostelbookingsystem;
 
-import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -27,35 +32,25 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 public class TechnicianDashboardActivity extends AppCompatActivity {
 
     // UI Elements
-    private TextView tvTechnicianName;
+    private LinearLayout profileAvatar;
     private ShapeableImageView ivProfilePicture;
-    private EditText etSearchRepair;
-    private TextView tvPendingCount, tvScheduledCount, tvCompletedCount;
-    private TextView tvActiveRoom, tvActiveDetails;
-    // 在类顶部添加
-    private String activeJobRoomId;
-    private String activeJobItemName;
-    private String activeJobUrgency;
-    private String activeJobDescription;
-    private MaterialButton btnViewRequests, btnUpdateActiveJob;
+    private TextView tvTechnicianName;
+    private TextView tvPendingRepairs, tvInProgress, tvCompleted, tvTotalRepairs;
+    private LinearLayout recentRepairsContainer;
     private BottomNavigationView bottomNavigation;
-    private android.view.View activeJobCard;
+    private CardView btnViewRepairs;  // 移除 btnMySchedule
 
     // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
-
-    private Handler searchHandler = new Handler(Looper.getMainLooper());
-    private Runnable searchRunnable;
-
-    private String activeJobId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,70 +61,60 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         currentUser = mAuth.getCurrentUser();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
         setupProfileClick();
-        loadTechnicianData();
-        loadDashboardStats();
-        loadActiveJob();
-        setupSearchFilter();
         setupClickListeners();
         setupBottomNavigation();
+        loadTechnicianData();
+        loadDashboardStats();
+        loadRecentRepairs();
     }
 
     private void initViews() {
+        profileAvatar = findViewById(R.id.profileAvatar);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvTechnicianName = findViewById(R.id.tvTechnicianName);
-        ivProfilePicture = findViewById(R.id.btnAdminProfile);
-        etSearchRepair = findViewById(R.id.etSearchRepair);
-        tvPendingCount = findViewById(R.id.tvPendingCount);
-        tvScheduledCount = findViewById(R.id.tvScheduledCount);
-        tvCompletedCount = findViewById(R.id.tvCompletedCount);
-        tvActiveRoom = findViewById(R.id.tvActiveRoom);
-        tvActiveDetails = findViewById(R.id.tvActiveDetails);
-        btnViewRequests = findViewById(R.id.btnViewRequests);
-        btnUpdateActiveJob = findViewById(R.id.btnUpdateActiveJob);
+
+        // Statistics cards
+        tvPendingRepairs = findViewById(R.id.tvPendingRepairs);
+        tvInProgress = findViewById(R.id.tvInProgress);
+        tvCompleted = findViewById(R.id.tvCompleted);
+        tvTotalRepairs = findViewById(R.id.tvTotalRepairs);
+
+        // Recent repairs container
+        recentRepairsContainer = findViewById(R.id.recentRepairsContainer);
+
+        // Action buttons
+        btnViewRepairs = findViewById(R.id.btnViewRepairs);
+        // btnMySchedule 已移除
+
+        // Bottom navigation
         bottomNavigation = findViewById(R.id.bottomNavigation);
-        activeJobCard = findViewById(R.id.activeJobCard);
     }
 
     private void setupProfileClick() {
-        ivProfilePicture.setOnClickListener(v -> {
-            if (currentUser == null) return;
-            db.collection("Users").document(currentUser.getUid()).get()
-                    .addOnSuccessListener(doc -> {
-                        String imgBase64 = doc.getString("profilePictureBase64");
-                        if (imgBase64 != null && !imgBase64.isEmpty()) {
-                            showFullScreenImage(imgBase64);
-                        } else {
-                            Toast.makeText(this, "No profile picture set", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        });
+        if (profileAvatar != null) {
+            profileAvatar.setOnClickListener(v -> goToProfile());
+        }
+        if (ivProfilePicture != null) {
+            ivProfilePicture.setOnClickListener(v -> goToProfile());
+        }
     }
 
-    private void showFullScreenImage(String base64String) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.activity_full_image, null);
-        ShapeableImageView fullImageView = dialogView.findViewById(R.id.fullImageView);
-
-        try {
-            byte[] decodedString = Base64.decode(base64String, Base64.DEFAULT);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
-            fullImageView.setImageBitmap(bitmap);
-        } catch (Exception e) {
-            fullImageView.setImageResource(R.drawable.profile_pic);
-        }
-
-        builder.setView(dialogView)
-                .setPositiveButton("Close", (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-        fullImageView.setOnClickListener(v -> dialog.dismiss());
+    private void goToProfile() {
+        Intent intent = new Intent(TechnicianDashboardActivity.this, ProfileActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(intent);
     }
 
     private void loadTechnicianData() {
         if (currentUser == null) {
             tvTechnicianName.setText("Technician");
+            setDefaultAvatar();
             return;
         }
 
@@ -137,24 +122,34 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String name = documentSnapshot.getString("name");
-                        if (name != null && !name.isEmpty()) {
-                            tvTechnicianName.setText(name);
-                        } else {
-                            tvTechnicianName.setText("Technician");
-                        }
+                        tvTechnicianName.setText(name != null && !name.isEmpty() ? name : "Technician");
 
-                        String profilePictureBase64 = documentSnapshot.getString("profilePictureBase64");
-                        if (profilePictureBase64 != null && !profilePictureBase64.isEmpty()) {
-                            loadProfileImageFromBase64(profilePictureBase64);
+                        String profileImageBase64 = documentSnapshot.getString("profileImageBase64");
+                        if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
+                            loadProfileImageFromBase64(profileImageBase64);
+                        } else {
+                            setDefaultAvatar();
                         }
                     } else {
                         tvTechnicianName.setText("Technician");
+                        setDefaultAvatar();
                     }
                 })
                 .addOnFailureListener(e -> {
                     tvTechnicianName.setText("Technician");
-                    Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
+                    setDefaultAvatar();
                 });
+    }
+
+    private void setDefaultAvatar() {
+        Glide.with(this)
+                .load(R.drawable.ic_account_circle)
+                .circleCrop()
+                .into(ivProfilePicture);
+        ivProfilePicture.setVisibility(View.VISIBLE);
+        if (profileAvatar != null) {
+            profileAvatar.setBackgroundResource(R.drawable.avatar_background);
+        }
     }
 
     private void loadProfileImageFromBase64(String base64String) {
@@ -162,10 +157,18 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
             byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
             if (bitmap != null) {
-                ivProfilePicture.setImageBitmap(bitmap);
+                Glide.with(this)
+                        .load(bitmap)
+                        .circleCrop()
+                        .into(ivProfilePicture);
+                if (profileAvatar != null) {
+                    profileAvatar.setBackground(null);
+                }
+            } else {
+                setDefaultAvatar();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            setDefaultAvatar();
         }
     }
 
@@ -174,138 +177,208 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         db.collection("RepairRequests")
                 .whereEqualTo("status", "Pending")
                 .get()
-                .addOnSuccessListener(query -> tvPendingCount.setText(query.size() + " Rooms"));
+                .addOnSuccessListener(query -> {
+                    int count = query.size();
+                    tvPendingRepairs.setText(String.valueOf(count));
+                })
+                .addOnFailureListener(e -> tvPendingRepairs.setText("0"));
 
-        // Count Scheduled/In Progress repairs
+        // Count In Progress repairs
         db.collection("RepairRequests")
                 .whereEqualTo("status", "In Progress")
                 .get()
-                .addOnSuccessListener(query -> tvScheduledCount.setText(String.valueOf(query.size())));
+                .addOnSuccessListener(query -> {
+                    int count = query.size();
+                    tvInProgress.setText(String.valueOf(count));
+                })
+                .addOnFailureListener(e -> tvInProgress.setText("0"));
 
         // Count Completed repairs
         db.collection("RepairRequests")
                 .whereEqualTo("status", "Completed")
                 .get()
-                .addOnSuccessListener(query -> tvCompletedCount.setText(String.valueOf(query.size())));
-    }
+                .addOnSuccessListener(query -> {
+                    int count = query.size();
+                    tvCompleted.setText(String.valueOf(count));
+                })
+                .addOnFailureListener(e -> tvCompleted.setText("0"));
 
-    private void loadActiveJob() {
+        // Count Total repairs (all status)
         db.collection("RepairRequests")
-                .whereEqualTo("status", "In Progress")
-                .limit(1)
                 .get()
                 .addOnSuccessListener(query -> {
-                    if (!query.isEmpty()) {
-                        for (QueryDocumentSnapshot doc : query) {
-                            activeJobId = doc.getId();
-                            String roomId = doc.getString("roomId");
-                            String itemName = doc.getString("itemName");
-                            String urgency = doc.getString("urgency");
-                            String description = doc.getString("description");
+                    int count = query.size();
+                    tvTotalRepairs.setText(String.valueOf(count));
+                })
+                .addOnFailureListener(e -> tvTotalRepairs.setText("0"));
+    }
 
-                            tvActiveRoom.setText("Room " + roomId);
+    private void loadRecentRepairs() {
+        // Calculate date 2 days ago
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, -2);
+        Date twoDaysAgo = calendar.getTime();
+        long twoDaysAgoTimestamp = twoDaysAgo.getTime();
 
-                            // 设置详细信息
-                            if (tvActiveDetails != null) {
-                                tvActiveDetails.setText(itemName + " • " + urgency);
-                            }
+        db.collection("RepairRequests")
+                .whereGreaterThanOrEqualTo("createdAt", twoDaysAgoTimestamp)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    recentRepairsContainer.removeAllViews();
 
-                            // 存储完整信息用于跳转
-                            activeJobRoomId = roomId;
-                            activeJobItemName = itemName;
-                            activeJobUrgency = urgency;
-                            activeJobDescription = description;
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        addEmptyStateView("No recent repair requests");
+                        return;
+                    }
 
-                            activeJobCard.setVisibility(View.VISIBLE);
-                            break;
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        View repairView = createRecentRepairView(document, sdf);
+                        if (repairView != null) {
+                            recentRepairsContainer.addView(repairView);
                         }
-                    } else {
-                        activeJobCard.setVisibility(View.GONE);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    activeJobCard.setVisibility(View.GONE);
+                    recentRepairsContainer.removeAllViews();
+                    addEmptyStateView("Failed to load recent repairs");
                 });
     }
 
-    private void setupSearchFilter() {
-        etSearchRepair.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+    private View createRecentRepairView(QueryDocumentSnapshot document, SimpleDateFormat sdf) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_technician_repair, null);
+        if (itemView == null) return null;
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (searchRunnable != null) {
-                    searchHandler.removeCallbacks(searchRunnable);
-                }
+        // 添加底部边距
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.bottomMargin = 12;
+        itemView.setLayoutParams(params);
 
-                String query = s.toString();
-                searchRunnable = () -> {
-                    if (!query.isEmpty()) {
-                        String cleanQuery = query.toLowerCase().trim();
+        TextView tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+        TextView tvIssueType = itemView.findViewById(R.id.tvIssueType);
+        TextView tvDescription = itemView.findViewById(R.id.tvDescription);
+        TextView tvPriority = itemView.findViewById(R.id.tvPriority);
+        TextView tvStatus = itemView.findViewById(R.id.tvStatus);
+        TextView tvDate = itemView.findViewById(R.id.tvDate);
+        LinearLayout btnStartRepair = itemView.findViewById(R.id.btnStartRepair);
 
-                        // 检查是否是有效的房间号格式
-                        boolean isValidRoomFormat = cleanQuery.matches("^[A-Za-z]-?\\d+$") ||
-                                cleanQuery.matches("^[A-Za-z]\\d+$");
+        String roomId = document.getString("roomId");
+        String issueType = document.getString("issueType");
+        String description = document.getString("description");
+        String priority = document.getString("priority");
+        String status = document.getString("status");
+        Long createdAt = document.getLong("createdAt");
+        final String documentId = document.getId();
 
-                        // 如果不是房间号，检查是否是 itemName（非数字开头）
-                        boolean isItemName = !isValidRoomFormat && !cleanQuery.matches("^\\d+$");
+        tvRoomNumber.setText(roomId != null ? roomId : "N/A");
+        tvIssueType.setText(issueType != null ? issueType : "N/A");
+        tvDescription.setText(description != null ? description : "No description");
 
-                        if (isValidRoomFormat || isItemName) {
-                            Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairRequestActivity.class);
-                            intent.putExtra("SEARCH_ROOM", cleanQuery);
-                            startActivity(intent);
-                        } else {
-                            Toast.makeText(TechnicianDashboardActivity.this,
-                                    "Please enter a valid Room Number (e.g., A-101, A101) or item name",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                };
-                searchHandler.postDelayed(searchRunnable, 500);
+        // 设置状态标签
+        if (status != null && tvStatus != null) {
+            tvStatus.setText(status);
+            switch (status.toLowerCase()) {
+                case "pending":
+                    tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    break;
+                case "in progress":
+                case "in-progress":
+                    tvStatus.setBackgroundResource(R.drawable.status_badge_in_progress);
+                    break;
+                case "completed":
+                    tvStatus.setBackgroundResource(R.drawable.status_badge_completed);
+                    break;
+                default:
+                    tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    break;
+            }
+        }
+
+        // 设置优先级颜色
+        if (priority != null) {
+            tvPriority.setText(priority);
+            switch (priority.toLowerCase()) {
+                case "high":
+                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_high);
+                    break;
+                case "medium":
+                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_medium);
+                    break;
+                case "low":
+                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_low);
+                    break;
+                case "emergency":
+                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_emergency);
+                    break;
+                default:
+                    tvPriority.setBackgroundResource(R.drawable.urgency_badge);
+            }
+        }
+
+        if (createdAt != null && createdAt > 0) {
+            tvDate.setText(sdf.format(new Date(createdAt)));
+        } else {
+            tvDate.setText("N/A");
+        }
+
+        // 按钮点击始终跳转到详情页
+        if (btnStartRepair != null) {
+            TextView btnText = (TextView) btnStartRepair.getChildAt(0);
+            if (btnText != null) {
+                btnText.setText("Details");
             }
 
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+            btnStartRepair.setOnClickListener(v -> {
+                Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairDetailActivity.class);
+                intent.putExtra("REQUEST_ID", documentId);
+                intent.putExtra("roomId", roomId);
+                intent.putExtra("roomType", document.getString("roomType"));
+                intent.putExtra("issueType", issueType);
+                intent.putExtra("priority", priority);
+                intent.putExtra("description", description);
+                intent.putExtra("status", status);
+                intent.putExtra("name", document.getString("name"));
+                intent.putExtra("createdAt", createdAt);
+                intent.putExtra("availableTime", document.getString("availableTime"));
+                intent.putExtra("contactPerson", document.getString("contactPerson"));
+                startActivity(intent);
+            });
+        }
+
+        return itemView;
+    }
+
+    private void addEmptyStateView(String message) {
+        TextView emptyText = new TextView(this);
+        emptyText.setText(message);
+        emptyText.setTextSize(13);
+        emptyText.setTextColor(getColor(R.color.tabInactiveText));
+        emptyText.setPadding(16, 24, 16, 24);
+        emptyText.setGravity(android.view.Gravity.CENTER);
+        recentRepairsContainer.addView(emptyText);
     }
 
     private void setupClickListeners() {
-        btnViewRequests.setOnClickListener(v -> {
-            Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairRequestActivity.class);
-            startActivity(intent);
-        });
+        // View Repair Requests button
+        if (btnViewRepairs != null) {
+            btnViewRepairs.setOnClickListener(v -> {
+                Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairRequestActivity.class);
+                startActivity(intent);
+            });
+        }
 
-        btnUpdateActiveJob.setOnClickListener(v -> {
-            if (activeJobId != null) {
-                // 先从 Firestore 获取最新数据
-                db.collection("RepairRequests").document(activeJobId).get()
-                        .addOnSuccessListener(doc -> {
-                            if (doc.exists()) {
-                                Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairDetailActivity.class);
-                                intent.putExtra("REQUEST_ID", activeJobId);
-                                intent.putExtra("ROOM_ID", doc.getString("roomId"));
-                                intent.putExtra("ITEM_NAME", doc.getString("itemName"));
-                                intent.putExtra("URGENCY", doc.getString("urgency"));
-                                intent.putExtra("DESCRIPTION", doc.getString("description"));
-                                intent.putExtra("STATUS", doc.getString("status"));
-                                intent.putExtra("STAFF_NAME", doc.getString("staffName"));
-                                intent.putExtra("CREATED_AT", doc.getLong("createdAt"));
-                                startActivity(intent);
-                            } else {
-                                Toast.makeText(this, "Job not found", Toast.LENGTH_SHORT).show();
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(this, "Failed to load job details", Toast.LENGTH_SHORT).show();
-                        });
-            } else {
-                Toast.makeText(this, "No active job found", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // btnMySchedule 已移除
     }
 
     private void setupBottomNavigation() {
+        if (bottomNavigation == null) return;
+
         bottomNavigation.setSelectedItemId(R.id.nav_tech_home);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -314,15 +387,19 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
             if (id == R.id.nav_tech_home) {
                 return true;
             } else if (id == R.id.nav_request) {
-                startActivity(new Intent(this, TechnicianRepairRequestActivity.class));
-                finish();
+                Intent intent = new Intent(this, TechnicianRepairRequestActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_tech_history) {
-                startActivity(new Intent(this, TechnicianHistoryActivity.class));
-                finish();
+                Intent intent = new Intent(this, TechnicianHistoryActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             } else if (id == R.id.nav_profile) {
-                startActivity(new Intent(this, ProfileActivity.class));
+                Intent intent = new Intent(this, ProfileActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 return true;
             }
             return false;
@@ -334,7 +411,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         super.onResume();
         loadTechnicianData();
         loadDashboardStats();
-        loadActiveJob();
+        loadRecentRepairs();
 
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_tech_home);

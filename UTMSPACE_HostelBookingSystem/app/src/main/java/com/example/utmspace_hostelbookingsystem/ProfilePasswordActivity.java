@@ -1,138 +1,188 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Patterns;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class ProfilePasswordActivity extends AppCompatActivity {
 
-    // View Component Bindings
-    private FrameLayout btnBack;
-    private EditText etResetEmail;
-    private Button btnSendResetLink;
+    // View Component Bindings - Updated for new XML
+    private LinearLayout ivBack;
+    private TextInputEditText etCurrentPassword;
+    private TextInputEditText etNewPassword;
+    private TextInputEditText etConfirmPassword;
+    private TextView btnUpdatePassword;
+    private TextView backToProfile;
 
     // Firebase Authentication Configuration
     private FirebaseAuth mAuth;
 
+    // Password validation pattern: at least 7 characters, must contain both letters and numbers
+    private static final Pattern PASSWORD_PATTERN =
+            Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{7,}$");
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        try {
-            setContentView(R.layout.activity_profile_password);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Layout Inflation Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
+        setContentView(R.layout.activity_profile_password);
 
         mAuth = FirebaseAuth.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
-        setupEmailAutoLowercase();  // ✅ 添加自动转小写
         setupClickListeners();
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        etResetEmail = findViewById(R.id.etResetEmail);
-        btnSendResetLink = findViewById(R.id.btnSendResetLink);
-    }
-
-    // ✅ 添加：自动将邮箱转换为小写
-    private void setupEmailAutoLowercase() {
-        if (etResetEmail == null) return;
-
-        etResetEmail.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (s != null) {
-                    String input = s.toString();
-                    String lowerCaseInput = input.toLowerCase(Locale.ROOT);
-                    if (!input.equals(lowerCaseInput)) {
-                        etResetEmail.removeTextChangedListener(this);
-                        etResetEmail.setText(lowerCaseInput);
-                        etResetEmail.setSelection(lowerCaseInput.length());
-                        etResetEmail.addTextChangedListener(this);
-                    }
-                }
-            }
-        });
+        ivBack = findViewById(R.id.ivBack);
+        etCurrentPassword = findViewById(R.id.etCurrentPassword);
+        etNewPassword = findViewById(R.id.etNewPassword);
+        etConfirmPassword = findViewById(R.id.etConfirmPassword);
+        btnUpdatePassword = findViewById(R.id.btnUpdatePassword);
     }
 
     private void setupClickListeners() {
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
-        }
+        // Back button
+        ivBack.setOnClickListener(v -> finish());
 
-        if (btnSendResetLink != null) {
-            btnSendResetLink.setOnClickListener(v -> handlePasswordReset());
-        }
+        // Update Password button
+        btnUpdatePassword.setOnClickListener(v -> handlePasswordUpdate());
     }
 
-    private void handlePasswordReset() {
-        if (etResetEmail == null || btnSendResetLink == null) {
-            Toast.makeText(this, "Views are not properly initialized.", Toast.LENGTH_SHORT).show();
+    private void handlePasswordUpdate() {
+        String currentPassword = etCurrentPassword.getText().toString().trim();
+        String newPassword = etNewPassword.getText().toString().trim();
+        String confirmPassword = etConfirmPassword.getText().toString().trim();
+
+        // 1. Validate current password
+        if (TextUtils.isEmpty(currentPassword)) {
+            etCurrentPassword.setError("Current password is required");
+            etCurrentPassword.requestFocus();
             return;
         }
 
-        String email = etResetEmail.getText().toString().trim().toLowerCase(Locale.ROOT);
-
-        // 1. Form Validation Checks
-        if (email.isEmpty()) {
-            etResetEmail.setError("Email address is required");
-            etResetEmail.requestFocus();
+        // 2. Validate new password
+        if (TextUtils.isEmpty(newPassword)) {
+            etNewPassword.setError("New password is required");
+            etNewPassword.requestFocus();
             return;
         }
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            etResetEmail.setError("Please enter a valid email address");
-            etResetEmail.requestFocus();
+        if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
+            etNewPassword.setError("Password must be at least 7 characters and contain both letters and numbers");
+            etNewPassword.requestFocus();
             return;
         }
 
-        // Disable button temporarily to prevent duplicate network requests
-        btnSendResetLink.setEnabled(false);
+        // 3. Validate confirm password
+        if (TextUtils.isEmpty(confirmPassword)) {
+            etConfirmPassword.setError("Please confirm your new password");
+            etConfirmPassword.requestFocus();
+            return;
+        }
 
-        // 2. Trigger Firebase Auth Password Recovery Routine
-        mAuth.sendPasswordResetEmail(email)
-                .addOnCompleteListener(task -> {
-                    // Re-enable the button once the network response finishes safely
-                    if (btnSendResetLink != null) {
-                        btnSendResetLink.setEnabled(true);
-                    }
+        if (!newPassword.equals(confirmPassword)) {
+            etConfirmPassword.setError("Passwords do not match");
+            etConfirmPassword.requestFocus();
+            return;
+        }
 
-                    if (task.isSuccessful()) {
-                        // ✅ 添加密码要求提示
-                        Toast.makeText(ProfilePasswordActivity.this,
-                                "Reset link sent! Please check your email inbox.\n\nNote: New password must be at least 7 characters and contain both letters and numbers",
-                                Toast.LENGTH_LONG).show();
+        // 4. Check if new password is same as current password
+        if (currentPassword.equals(newPassword)) {
+            Toast.makeText(this, "New password cannot be the same as current password", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-                        finish();
+        // Disable button temporarily to prevent duplicate requests
+        btnUpdatePassword.setEnabled(false);
+        btnUpdatePassword.setText("Updating...");
+
+        // 5. Re-authenticate and update password
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            btnUpdatePassword.setEnabled(true);
+            btnUpdatePassword.setText("Update Password");
+            return;
+        }
+
+        // Re-authenticate user before changing password
+        com.google.firebase.auth.AuthCredential credential =
+                com.google.firebase.auth.EmailAuthProvider.getCredential(user.getEmail(), currentPassword);
+
+        user.reauthenticate(credential)
+                .addOnCompleteListener(reAuthTask -> {
+                    if (reAuthTask.isSuccessful()) {
+                        // Re-authentication successful, update password
+                        user.updatePassword(newPassword)
+                                .addOnCompleteListener(updateTask -> {
+                                    btnUpdatePassword.setEnabled(true);
+                                    btnUpdatePassword.setText("Update Password");
+
+                                    if (updateTask.isSuccessful()) {
+                                        Toast.makeText(ProfilePasswordActivity.this,
+                                                "Password updated successfully!\nPlease login again with your new password.",
+                                                Toast.LENGTH_LONG).show();
+
+                                        // Sign out and redirect to login page
+                                        mAuth.signOut();
+                                        finish();
+                                    } else {
+                                        String error = updateTask.getException() != null ?
+                                                updateTask.getException().getMessage() : "Unknown error";
+                                        Toast.makeText(ProfilePasswordActivity.this,
+                                                "Failed to update password: " + error,
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                     } else {
-                        String errorMessage = task.getException() != null ? task.getException().getMessage() : "Unknown error occurred.";
-                        Toast.makeText(ProfilePasswordActivity.this,
-                                "Error: " + errorMessage,
-                                Toast.LENGTH_LONG).show();
+                        btnUpdatePassword.setEnabled(true);
+                        btnUpdatePassword.setText("Update Password");
+
+                        String error = reAuthTask.getException() != null ?
+                                reAuthTask.getException().getMessage() : "Unknown error";
+
+                        if (error.contains("password") || error.contains("auth/wrong-password")) {
+                            etCurrentPassword.setError("Current password is incorrect");
+                            etCurrentPassword.requestFocus();
+                        } else {
+                            Toast.makeText(ProfilePasswordActivity.this,
+                                    "Authentication failed: " + error,
+                                    Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
+    }
+
+    // Public static method to validate password (can be used by other activities)
+    public static boolean isPasswordValid(String password) {
+        if (TextUtils.isEmpty(password)) {
+            return false;
+        }
+        return PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    // Get password requirements as a string
+    public static String getPasswordRequirements() {
+        return "Password must be at least 7 characters and contain both letters and numbers";
     }
 }

@@ -1,41 +1,53 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.os.Handler;
+import android.util.Base64;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 public class AdminDashboardActivity extends AppCompatActivity {
 
     // UI Elements
+    private LinearLayout profileAvatar;
+    private ShapeableImageView ivProfilePicture;
     private TextView tvAdminName;
-    private ShapeableImageView btnAdminProfile;
-    private EditText etAdminSearch;
 
     // Statistics TextViews
-    private TextView tvTotalUsers, tvTotalRooms, tvTotalBookings, tvRepairRooms;
+    private TextView tvTotalUsers;
+    private TextView tvTotalBookings;
+    private TextView tvTotalRooms;
+    private TextView tvRepairRooms;
 
-    // Quick Action Cards
-    private CardView cardDeleteUser, cardAddRoom, cardDeleteBookings;
+    // Management Buttons
+    private CardView btnUserManagement;
+    private CardView btnBookingManagement;
+    private CardView btnRoomManagement;
+
+    // 内部的 LinearLayout
+    private LinearLayout layoutUserManagement;
+    private LinearLayout layoutBookingManagement;
+    private LinearLayout layoutRoomManagement;
 
     // Bottom Navigation
     private BottomNavigationView bottomNavigation;
@@ -43,9 +55,9 @@ public class AdminDashboardActivity extends AppCompatActivity {
     // Firebase
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private String currentUserId;
 
-    // Current Admin Name
-    private String adminName = "Administrator";
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,237 +67,189 @@ public class AdminDashboardActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
+        if (mAuth.getCurrentUser() != null) {
+            currentUserId = mAuth.getCurrentUser().getUid();
+        }
+
         initViews();
-        setupBottomNavigation();
-        loadAdminName();
-        loadStatistics();
-        setupSearchFunction();
-        setupQuickActions();
         setupProfileClick();
+        setupClickListeners();
+        setupBottomNavigation();
+        loadAdminData();
+        loadDashboardStats();
     }
 
     private void initViews() {
+        profileAvatar = findViewById(R.id.profileAvatar);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvAdminName = findViewById(R.id.tvAdminName);
-        btnAdminProfile = findViewById(R.id.btnAdminProfile);
-        etAdminSearch = findViewById(R.id.etAdminSearch);
 
-        // Statistics Views
+        // Statistics
         tvTotalUsers = findViewById(R.id.tvTotalUsers);
-        tvTotalRooms = findViewById(R.id.tvTotalRooms);
         tvTotalBookings = findViewById(R.id.tvTotalBookings);
-        tvRepairRooms = findViewById(R.id.tvRepairRooms);
+        tvTotalRooms = findViewById(R.id.tvPendingApprovals);
+        tvRepairRooms = findViewById(R.id.tvActiveRepairs);
 
-        // Quick Action Cards
-        cardDeleteUser = findViewById(R.id.cardDeleteUser);
-        cardAddRoom = findViewById(R.id.cardAddRoom);
-        cardDeleteBookings = findViewById(R.id.cardDeleteBookings);
+        // Management Buttons - CardView
+        btnUserManagement = findViewById(R.id.btnUserManagement);
+        btnBookingManagement = findViewById(R.id.btnBookingManagement);
+        btnRoomManagement = findViewById(R.id.btnRoomManagement);
+
+        // 获取 CardView 内部的 LinearLayout
+        if (btnUserManagement != null && btnUserManagement.getChildCount() > 0) {
+            layoutUserManagement = (LinearLayout) btnUserManagement.getChildAt(0);
+        }
+        if (btnBookingManagement != null && btnBookingManagement.getChildCount() > 0) {
+            layoutBookingManagement = (LinearLayout) btnBookingManagement.getChildAt(0);
+        }
+        if (btnRoomManagement != null && btnRoomManagement.getChildCount() > 0) {
+            layoutRoomManagement = (LinearLayout) btnRoomManagement.getChildAt(0);
+        }
 
         // Bottom Navigation
         bottomNavigation = findViewById(R.id.bottomNavigation);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 1 && resultCode == RESULT_OK && data != null) {
-            String updatedName = data.getStringExtra("updatedName");
-            String updatedImageBase64 = data.getStringExtra("updatedImageBase64");
-
-            if (updatedName != null) {
-                tvAdminName.setText(updatedName);
-            }
-
-            if (updatedImageBase64 != null && !updatedImageBase64.isEmpty()) {
-                try {
-                    byte[] imageBytes = android.util.Base64.decode(updatedImageBase64, android.util.Base64.DEFAULT);
-                    Glide.with(this)
-                            .load(imageBytes)
-                            .circleCrop()
-                            .placeholder(R.drawable.profile_pic)
-                            .error(R.drawable.profile_pic)
-                            .into(btnAdminProfile);
-                } catch (Exception e) {
-                    btnAdminProfile.setImageResource(R.drawable.profile_pic);
-                }
-            }
+    private void setupProfileClick() {
+        if (profileAvatar != null) {
+            profileAvatar.setOnClickListener(v -> goToAdminProfile());
+        }
+        if (ivProfilePicture != null) {
+            ivProfilePicture.setOnClickListener(v -> goToAdminProfile());
         }
     }
 
-    private void loadAdminName() {
-        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+    private void goToAdminProfile() {
+        Intent intent = new Intent(AdminDashboardActivity.this, AdminProfileActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(intent);
+    }
 
-        if (userId != null) {
-            db.collection("Users").document(userId)
-                    .get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            String name = documentSnapshot.getString("name");
-                            // 改成 profilePictureBase64
-                            String profilePictureBase64 = documentSnapshot.getString("profilePictureBase64");
+    private void loadAdminData() {
+        if (currentUserId == null) {
+            tvAdminName.setText("Admin");
+            setDefaultAvatar();
+            return;
+        }
 
-                            if (name != null && !name.isEmpty()) {
-                                adminName = name;
-                                tvAdminName.setText(name);
-                            } else {
-                                tvAdminName.setText("Administrator");
-                            }
+        db.collection("Users").document(currentUserId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String name = documentSnapshot.getString("name");
+                        tvAdminName.setText(name != null && !name.isEmpty() ? name : "Admin");
 
-                            // 加载图片 - 改成 profilePictureBase64
-                            if (profilePictureBase64 != null && !profilePictureBase64.isEmpty()) {
-                                try {
-                                    byte[] imageBytes = android.util.Base64.decode(profilePictureBase64, android.util.Base64.DEFAULT);
-                                    Glide.with(this)
-                                            .load(imageBytes)
-                                            .circleCrop()
-                                            .placeholder(R.drawable.profile_pic)
-                                            .error(R.drawable.profile_pic)
-                                            .into(btnAdminProfile);
-                                } catch (Exception e) {
-                                    btnAdminProfile.setImageResource(R.drawable.profile_pic);
-                                }
-                            } else {
-                                btnAdminProfile.setImageResource(R.drawable.profile_pic);
-                            }
+                        String profileImageBase64 = documentSnapshot.getString("profileImageBase64");
+                        if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
+                            loadProfileImageFromBase64(profileImageBase64);
+                        } else {
+                            setDefaultAvatar();
                         }
-                    });
+                    } else {
+                        tvAdminName.setText("Admin");
+                        setDefaultAvatar();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    tvAdminName.setText("Admin");
+                    setDefaultAvatar();
+                });
+    }
+
+    private void setDefaultAvatar() {
+        Glide.with(this)
+                .load(R.drawable.ic_account_circle)
+                .apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                .into(ivProfilePicture);
+        ivProfilePicture.setVisibility(View.VISIBLE);
+        if (profileAvatar != null) {
+            profileAvatar.setBackgroundResource(R.drawable.avatar_background);
         }
     }
 
-    private void loadStatistics() {
-        // Load Total Users
+    private void loadProfileImageFromBase64(String base64String) {
+        try {
+            byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+            if (bitmap != null) {
+                Glide.with(this)
+                        .load(bitmap)
+                        .apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                        .into(ivProfilePicture);
+                if (profileAvatar != null) {
+                    profileAvatar.setBackground(null);
+                }
+            } else {
+                setDefaultAvatar();
+            }
+        } catch (Exception e) {
+            setDefaultAvatar();
+        }
+    }
+
+    private void loadDashboardStats() {
         db.collection("Users")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int totalUsers = queryDocumentSnapshots.size();
-                    tvTotalUsers.setText(formatNumber(totalUsers));
-                })
-                .addOnFailureListener(e -> {
-                    tvTotalUsers.setText("0");
-                });
+                .addOnSuccessListener(query -> tvTotalUsers.setText(formatNumber(query.size())))
+                .addOnFailureListener(e -> tvTotalUsers.setText("0"));
 
-        // Load Total Rooms
-        db.collection("Rooms")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int totalRooms = queryDocumentSnapshots.size();
-                    tvTotalRooms.setText(formatNumber(totalRooms));
-                })
-                .addOnFailureListener(e -> {
-                    tvTotalRooms.setText("0");
-                });
-
-        // Load Total Bookings
         db.collection("Bookings")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int totalBookings = queryDocumentSnapshots.size();
-                    tvTotalBookings.setText(formatNumber(totalBookings));
-                })
-                .addOnFailureListener(e -> {
-                    tvTotalBookings.setText("0");
-                });
+                .addOnSuccessListener(query -> tvTotalBookings.setText(formatNumber(query.size())))
+                .addOnFailureListener(e -> tvTotalBookings.setText("0"));
 
-        // Load Repair Rooms (Rooms with status "Maintenance" or repair requests pending)
+        db.collection("Rooms")
+                .get()
+                .addOnSuccessListener(query -> tvTotalRooms.setText(formatNumber(query.size())))
+                .addOnFailureListener(e -> tvTotalRooms.setText("0"));
+
         db.collection("Rooms")
                 .whereEqualTo("status", "Maintenance")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int repairRooms = queryDocumentSnapshots.size();
-                    tvRepairRooms.setText(formatNumber(repairRooms));
-                })
-                .addOnFailureListener(e -> {
-                    // Also check RepairRequests collection
-                    db.collection("RepairRequests")
-                            .whereEqualTo("status", "Pending")
-                            .get()
-                            .addOnSuccessListener(task -> {
-                                tvRepairRooms.setText(formatNumber(task.size()));
-                            })
-                            .addOnFailureListener(err -> {
-                                tvRepairRooms.setText("0");
-                            });
-                });
+                .addOnSuccessListener(query -> tvRepairRooms.setText(formatNumber(query.size())))
+                .addOnFailureListener(e -> tvRepairRooms.setText("0"));
     }
 
-    private void setupSearchFunction() {
-        etAdminSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                if (query.isEmpty()) return;
-
-                // Search for room number
-                if (query.matches(".*[A-Za-z].*") || query.matches(".*\\d.*")) {
-                    // Check if it looks like a room number
-                    db.collection("Rooms")
-                            .whereEqualTo("roomId", query)
-                            .get()
-                            .addOnSuccessListener(task -> {
-                                if (!task.isEmpty()) {
-                                    // Found room, go to Room Management
-                                    Intent intent = new Intent(AdminDashboardActivity.this, RoomManagementActivity.class);
-                                    intent.putExtra("searchQuery", query);
-                                    startActivity(intent);
-                                    etAdminSearch.setText("");
-                                }
-                            });
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
+    private void setupClickListeners() {
+        btnUserManagement.setOnClickListener(v -> {
+            flashCardLayout(layoutUserManagement);
+            startActivity(new Intent(AdminDashboardActivity.this, UserManagementActivity.class));
         });
 
-        // Search on submit
-        etAdminSearch.setOnEditorActionListener((v, actionId, event) -> {
-            String query = etAdminSearch.getText().toString().trim();
-            if (!query.isEmpty()) {
-                // Go to User Management with search query
-                Intent intent = new Intent(AdminDashboardActivity.this, UserManagementActivity.class);
-                intent.putExtra("searchQuery", query);
-                startActivity(intent);
-                etAdminSearch.setText("");
-            }
-            return true;
+        btnBookingManagement.setOnClickListener(v -> {
+            flashCardLayout(layoutBookingManagement);
+            startActivity(new Intent(AdminDashboardActivity.this, ManagementActivity.class));
+        });
+
+        btnRoomManagement.setOnClickListener(v -> {
+            flashCardLayout(layoutRoomManagement);
+            startActivity(new Intent(AdminDashboardActivity.this, RoomManagementActivity.class));
         });
     }
 
-    private void setupQuickActions() {
-        // Delete User - Go to User Management
-        cardDeleteUser.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminDashboardActivity.this, UserManagementActivity.class);
-            intent.putExtra("action", "delete");
-            startActivity(intent);
-        });
+    /**
+     * 让卡片内部的 LinearLayout 闪烁暗红色效果
+     * 所有卡片都是白色背景，点击时变成暗红色
+     */
+    private void flashCardLayout(LinearLayout layout) {
+        if (layout == null) return;
 
-        // Add Room - Go to Room Management with add mode
-        cardAddRoom.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminDashboardActivity.this, RoomManagementActivity.class);
-            intent.putExtra("action", "add");
-            startActivity(intent);
-        });
+        // 改变为暗红色
+        layout.setBackgroundColor(getColor(R.color.primaryColor));
 
-        // Delete Bookings - Go to Management (Bookings tab)
-        cardDeleteBookings.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminDashboardActivity.this, ManagementActivity.class);
-            intent.putExtra("action", "delete");
-            intent.putExtra("tab", "Bookings");
-            startActivity(intent);
-        });
-    }
-
-    private void setupProfileClick() {
-        btnAdminProfile.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminDashboardActivity.this, AdminProfileActivity.class);
-            startActivityForResult(intent, 1);
-        });
+        // 150ms 后恢复白色
+        handler.postDelayed(() -> {
+            layout.setBackgroundColor(getColor(android.R.color.white));
+        }, 150);
     }
 
     private void setupBottomNavigation() {
+        if (bottomNavigation == null) return;
+
         bottomNavigation.setSelectedItemId(R.id.nav_home);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -294,16 +258,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
             if (id == R.id.nav_home) {
                 return true;
             } else if (id == R.id.nav_users) {
-                startActivity(new Intent(this, UserManagementActivity.class));
-                finish();
+                startActivity(new Intent(AdminDashboardActivity.this, UserManagementActivity.class));
                 return true;
             } else if (id == R.id.nav_rooms) {
-                startActivity(new Intent(this, RoomManagementActivity.class));
-                finish();
+                startActivity(new Intent(AdminDashboardActivity.this, RoomManagementActivity.class));
                 return true;
             } else if (id == R.id.nav_management) {
-                startActivity(new Intent(this, ManagementActivity.class));
-                finish();
+                startActivity(new Intent(AdminDashboardActivity.this, ManagementActivity.class));
                 return true;
             }
             return false;
@@ -317,17 +278,25 @@ public class AdminDashboardActivity extends AppCompatActivity {
         return String.valueOf(number);
     }
 
-    private String formatDate(long timestamp) {
-        if (timestamp <= 0) return "N/A";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        return sdf.format(new Date(timestamp));
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        loadStatistics();
-        loadAdminName();
-        bottomNavigation.setSelectedItemId(R.id.nav_home);
+        loadAdminData();
+        loadDashboardStats();
+
+        // 确保返回时所有卡片背景恢复白色
+        if (layoutUserManagement != null) {
+            layoutUserManagement.setBackgroundColor(getColor(android.R.color.white));
+        }
+        if (layoutBookingManagement != null) {
+            layoutBookingManagement.setBackgroundColor(getColor(android.R.color.white));
+        }
+        if (layoutRoomManagement != null) {
+            layoutRoomManagement.setBackgroundColor(getColor(android.R.color.white));
+        }
+
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_home);
+        }
     }
 }

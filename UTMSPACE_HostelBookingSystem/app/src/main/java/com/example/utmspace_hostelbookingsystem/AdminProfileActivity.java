@@ -2,48 +2,97 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.InputFilter;
+import android.text.Spanned;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
-import com.google.android.material.imageview.ShapeableImageView;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class AdminProfileActivity extends AppCompatActivity {
 
-    private ShapeableImageView ivProfileImage;
-    private TextView tvAdminName, tvAdminEmail, tvAdminRole, tvMemberSince;
-    private TextView tvTotalBookings, tvTotalRooms, tvTotalUsers;
-    private EditText etAdminName, etAdminEmail;
-    private Button btnEditProfile, btnSaveChanges, btnChangePassword, btnLogout, btnChangePicture;
-    private ImageButton btnBack;
-    private ProgressBar progressBar;
+    private static final String TAG = "AdminProfileActivity";
+    private static final String SHARED_PREFS_NAME = "HostelHub";
+    private static final String KEY_PROFILE_IMAGE = "profile_image_base64";
 
+    // Header
+    private LinearLayout ivBack;
+
+    // Profile Picture
+    private LinearLayout btnChangePhoto;
+    private ImageView ivProfilePicture;
+
+    // Basic Information (Read Only)
+    private TextInputEditText etFullName;
+    private TextInputEditText etPhoneNumber;
+    private TextInputEditText etEmail;
+
+    // Admin Information (Editable)
+    private TextInputEditText etAdminId;
+    private TextInputEditText etRole;
+    private TextInputEditText etDepartment;
+
+    // Buttons
+    private LinearLayout btnChangePassword;
+    private LinearLayout btnLogout;
+    private LinearLayout btnDeleteAccount;
+    private LinearLayout btnSaveChanges;
+
+    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private String currentUserId;
 
-    private boolean isEditMode = false;
+    // Profile image
+    private String currentProfileImageBase64 = "";
+    private Uri gallerySelectedUri = null;
 
-    private static final int PICK_IMAGE_REQUEST = 1;
+    // Gallery launcher
+    private ActivityResultLauncher<Intent> galleryLauncher;
+
+    // Crop launcher
+    private ActivityResultLauncher<Intent> cropLauncher;
+
+    // Validation patterns
+    private static final Pattern ADMIN_ID_PATTERN = Pattern.compile("^[A-Z]\\d{2}[A-Z]{2}\\d{4}$");
+    private static final Pattern DEPARTMENT_PATTERN = Pattern.compile("^[A-Za-z\\s]+$");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,297 +102,547 @@ public class AdminProfileActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
+        if (mAuth.getCurrentUser() != null) {
+            currentUserId = mAuth.getCurrentUser().getUid();
+        } else {
+            finish();
+            return;
+        }
+
         initViews();
-        loadAdminData();
-        loadUserStats();
+        setupInputFilters();
+        setupImageLaunchers();
         setupClickListeners();
+        loadAdminData();
+        setupTextWatchers();
     }
 
     private void initViews() {
-        ivProfileImage = findViewById(R.id.ivProfileImage);
-        tvAdminName = findViewById(R.id.tvAdminName);
-        tvAdminEmail = findViewById(R.id.tvAdminEmail);
-        tvAdminRole = findViewById(R.id.tvAdminRole);
-        tvMemberSince = findViewById(R.id.tvMemberSince);
-        tvTotalBookings = findViewById(R.id.tvTotalBookings);
-        tvTotalRooms = findViewById(R.id.tvTotalRooms);
-        tvTotalUsers = findViewById(R.id.tvTotalUsers);
-        etAdminName = findViewById(R.id.etAdminName);
-        etAdminEmail = findViewById(R.id.etAdminEmail);
-        btnEditProfile = findViewById(R.id.btnEditProfile);
-        btnSaveChanges = findViewById(R.id.btnSaveChanges);
+        ivBack = findViewById(R.id.ivBack);
+        btnChangePhoto = findViewById(R.id.btnChangePhoto);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
+        etFullName = findViewById(R.id.etFullName);
+        etPhoneNumber = findViewById(R.id.etPhoneNumber);
+        etEmail = findViewById(R.id.etEmail);
+        etAdminId = findViewById(R.id.etAdminId);
+        etRole = findViewById(R.id.etRole);
+        etDepartment = findViewById(R.id.etDepartment);
         btnChangePassword = findViewById(R.id.btnChangePassword);
         btnLogout = findViewById(R.id.btnLogout);
-        btnBack = findViewById(R.id.btnBack);
-        btnChangePicture = findViewById(R.id.btnChangePicture);
-        progressBar = findViewById(R.id.progressBar);
+        btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
+        btnSaveChanges = findViewById(R.id.btnSaveChanges);
+
+        if (btnSaveChanges != null) {
+            btnSaveChanges.setVisibility(View.GONE);
+        }
     }
 
-    private void loadAdminData() {
-        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+    private void setupInputFilters() {
+        // Admin ID filter - auto uppercase, max 9 chars, only alphanumeric
+        InputFilter adminIdFilter = new InputFilter() {
+            @Override
+            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+                // Get current text + new input
+                String currentText = dest.toString();
+                String newText = currentText.substring(0, dstart) + source.toString() + currentText.substring(dend);
 
-        if (userId != null) {
-            progressBar.setVisibility(View.VISIBLE);
+                // Limit to 9 characters
+                if (newText.length() > 9) {
+                    return "";
+                }
 
-            db.collection("Users").document(userId)
-                    .get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        progressBar.setVisibility(View.GONE);
+                // Only allow letters and numbers
+                Pattern pattern = Pattern.compile("[A-Za-z0-9]*");
+                if (!pattern.matcher(source).matches()) {
+                    return "";
+                }
 
-                        if (documentSnapshot.exists()) {
-                            String name = documentSnapshot.getString("name");
-                            String email = documentSnapshot.getString("email");
-                            String role = documentSnapshot.getString("role");
-                            Long createdAt = documentSnapshot.getLong("createdAt");
-                            String profilePictureBase64 = documentSnapshot.getString("profilePictureBase64");
+                // Convert to uppercase
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < source.length(); i++) {
+                    char c = source.charAt(i);
+                    result.append(Character.toUpperCase(c));
+                }
+                return result.toString();
+            }
+        };
 
-                            if (name != null) {
-                                tvAdminName.setText(name);
-                                etAdminName.setText(name);
-                            }
-                            if (email != null) {
-                                tvAdminEmail.setText(email);
-                                etAdminEmail.setText(email);
-                            }
-                            tvAdminRole.setText(role != null ? role : "Administrator");
-                            if (createdAt != null) {
-                                tvMemberSince.setText("Member since: " + formatDate(createdAt));
-                            }
+        if (etAdminId != null) {
+            etAdminId.setFilters(new InputFilter[]{adminIdFilter, new InputFilter.LengthFilter(9)});
+        }
 
-                            // Load profile image from Base64
-                            loadImageFromBase64(profilePictureBase64);
+        // Department filter - only letters and spaces
+        InputFilter departmentFilter = new InputFilter() {
+            @Override
+            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+                Pattern pattern = Pattern.compile("[A-Za-z\\s]*");
+                if (!pattern.matcher(source).matches()) {
+                    return "";
+                }
+                // Convert to uppercase
+                StringBuilder result = new StringBuilder();
+                for (int i = 0; i < source.length(); i++) {
+                    char c = source.charAt(i);
+                    result.append(Character.toUpperCase(c));
+                }
+                return result.toString();
+            }
+        };
+
+        if (etDepartment != null) {
+            etDepartment.setFilters(new InputFilter[]{departmentFilter, new InputFilter.LengthFilter(50)});
+        }
+    }
+
+    private void setupTextWatchers() {
+        if (etAdminId != null) {
+            etAdminId.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(android.text.Editable s) {
+                    if (btnSaveChanges != null) {
+                        btnSaveChanges.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        }
+
+        if (etDepartment != null) {
+            etDepartment.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(android.text.Editable s) {
+                    if (btnSaveChanges != null) {
+                        btnSaveChanges.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        }
+
+        if (etRole != null) {
+            etRole.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(android.text.Editable s) {
+                    if (btnSaveChanges != null) {
+                        btnSaveChanges.setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        }
+    }
+
+    private void setupImageLaunchers() {
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        if (imageUri != null) {
+                            gallerySelectedUri = imageUri;
+                            startCrop(imageUri);
                         }
-                    })
-                    .addOnFailureListener(e -> {
-                        progressBar.setVisibility(View.GONE);
-                        Toast.makeText(this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+                    }
+                }
+        );
+
+        cropLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri resultUri = UCrop.getOutput(result.getData());
+                        if (resultUri != null) {
+                            try {
+                                // Load bitmap from URI
+                                BitmapFactory.Options options = new BitmapFactory.Options();
+                                options.inPreferredConfig = Bitmap.Config.RGB_565;
+                                Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(resultUri), null, options);
+
+                                if (bitmap != null) {
+                                    // Create a new bitmap for encoding
+                                    Bitmap encodedBitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, true);
+
+                                    // Display the image (circular using Glide)
+                                    displayProfileImageCircular(resultUri);
+
+                                    // Encode to Base64
+                                    currentProfileImageBase64 = bitmapToShortBase64(encodedBitmap);
+
+                                    Toast.makeText(this, "Photo updated! Remember to save.", Toast.LENGTH_SHORT).show();
+
+                                    // Recycle bitmaps
+                                    bitmap.recycle();
+                                    encodedBitmap.recycle();
+                                }
+                            } catch (IOException e) {
+                                Log.e(TAG, "Error loading cropped image: " + e.getMessage());
+                                Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    } else if (result.getResultCode() == UCrop.RESULT_ERROR) {
+                        Throwable error = UCrop.getError(result.getData());
+                        if (error != null) {
+                            Log.e(TAG, "Crop error: " + error.getMessage());
+                            Toast.makeText(this, "Crop failed: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    // Clean up temp file
+                    if (gallerySelectedUri != null && gallerySelectedUri.getPath() != null) {
+                        new File(gallerySelectedUri.getPath()).delete();
+                    }
+                }
+        );
+    }
+
+    private void startCrop(Uri sourceUri) {
+        try {
+            String destinationFileName = "cropped_" + System.currentTimeMillis() + ".jpg";
+            File destinationFile = new File(getCacheDir(), destinationFileName);
+            Uri destinationUri = Uri.fromFile(destinationFile);
+
+            UCrop uCrop = UCrop.of(sourceUri, destinationUri);
+            uCrop = uCrop.withAspectRatio(1, 1);
+            uCrop = uCrop.withMaxResultSize(200, 200);
+            uCrop = uCrop.withOptions(getUCropOptions());
+
+            cropLauncher.launch(uCrop.getIntent(this));
+        } catch (Exception e) {
+            Log.e(TAG, "Crop error: " + e.getMessage());
+            Toast.makeText(this, "Cannot crop image", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void loadImageFromBase64(String base64String) {
-        if (base64String != null && !base64String.isEmpty()) {
-            try {
-                byte[] imageBytes = Base64.decode(base64String, Base64.DEFAULT);
-                Glide.with(this)
-                        .load(imageBytes)
-                        .circleCrop()
-                        .placeholder(R.drawable.profile_pic)
-                        .error(R.drawable.profile_pic)
-                        .into(ivProfileImage);
-            } catch (Exception e) {
-                ivProfileImage.setImageResource(R.drawable.profile_pic);
+    private UCrop.Options getUCropOptions() {
+        UCrop.Options options = new UCrop.Options();
+        options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
+        options.setCompressionQuality(50);
+        options.setFreeStyleCropEnabled(false);
+        options.setHideBottomControls(false);
+        options.setToolbarTitle("Crop Image");
+        options.setCircleDimmedLayer(true); // Enable circular cropping guide
+
+        int maroonColor = 0xFF800000;
+        options.setToolbarColor(maroonColor);
+        options.setStatusBarColor(maroonColor);
+        options.setToolbarWidgetColor(0xFFFFFFFF);
+
+        return options;
+    }
+
+    private void displayProfileImageCircular(Uri imageUri) {
+        // Load image with Glide for circular display
+        Glide.with(this)
+                .load(imageUri)
+                .circleCrop()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                            btnChangePhoto.setBackground(resource);
+                        } else {
+                            btnChangePhoto.setBackgroundDrawable(resource);
+                        }
+                        ivProfilePicture.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                    }
+                });
+    }
+
+    private void displayProfileImageFromBase64(String base64String) {
+        try {
+            byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+            if (bitmap != null && !bitmap.isRecycled()) {
+                // Convert bitmap to URI for Glide
+                // Store in cache and load with Glide for circular display
+                displayProfileImageWithBitmap(bitmap);
+            } else {
+                resetToDefaultAvatar();
             }
-        } else {
-            ivProfileImage.setImageResource(R.drawable.profile_pic);
+        } catch (Exception e) {
+            resetToDefaultAvatar();
         }
     }
 
-    private void loadUserStats() {
-        db.collection("Bookings").get().addOnSuccessListener(task -> tvTotalBookings.setText(String.valueOf(task.size())));
-        db.collection("Rooms").get().addOnSuccessListener(task -> tvTotalRooms.setText(String.valueOf(task.size())));
-        db.collection("Users").get().addOnSuccessListener(task -> tvTotalUsers.setText(String.valueOf(task.size())));
+    private void displayProfileImageWithBitmap(Bitmap bitmap) {
+        // Load with Glide for circular display
+        Glide.with(this)
+                .load(bitmap)
+                .circleCrop()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(new CustomTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                            btnChangePhoto.setBackground(resource);
+                        } else {
+                            btnChangePhoto.setBackgroundDrawable(resource);
+                        }
+                        ivProfilePicture.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+                    }
+                });
     }
 
-    private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
+    private String bitmapToShortBase64(Bitmap bitmap) {
+        if (bitmap == null || bitmap.isRecycled()) {
+            return "";
+        }
 
-        // 点击图片直接选择并自动保存
-        btnChangePicture.setOnClickListener(v -> showImagePickerDialog());
-        ivProfileImage.setOnClickListener(v -> showImagePickerDialog());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 40, baos);
+        byte[] imageBytes = baos.toByteArray();
+        String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
 
-        btnEditProfile.setOnClickListener(v -> {
-            isEditMode = true;
-            tvAdminName.setVisibility(View.GONE);
-            tvAdminEmail.setVisibility(View.GONE);
-            etAdminName.setVisibility(View.VISIBLE);
-            etAdminEmail.setVisibility(View.VISIBLE);
-            btnChangePicture.setVisibility(View.VISIBLE);
-            btnEditProfile.setVisibility(View.GONE);
-            btnSaveChanges.setVisibility(View.VISIBLE);
-            btnChangePassword.setVisibility(View.GONE);
-        });
-
-        btnSaveChanges.setOnClickListener(v -> saveNameAndEmail()); // 只保存名字和邮箱
-
-        btnChangePassword.setOnClickListener(v -> {
-            String email = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getEmail() : "";
-            if (!email.isEmpty()) {
-                mAuth.sendPasswordResetEmail(email)
-                        .addOnSuccessListener(aVoid -> Toast.makeText(this, "Password reset email sent to " + email, Toast.LENGTH_LONG).show())
-                        .addOnFailureListener(e -> Toast.makeText(this, "Failed to send reset email", Toast.LENGTH_SHORT).show());
-            }
-        });
-
-        btnLogout.setOnClickListener(v -> {
-            mAuth.signOut();
-            Intent intent = new Intent(this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
+        Log.d(TAG, "Base64 length: " + base64.length() + " characters");
+        return base64;
     }
 
     private void showImagePickerDialog() {
         String[] options = {"Choose from Gallery", "Cancel"};
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Change Profile Picture")
+        new AlertDialog.Builder(this)
+                .setTitle("Select Profile Picture")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        Intent intent = new Intent();
-                        intent.setType("image/*");
-                        intent.setAction(Intent.ACTION_GET_CONTENT);
-                        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+                        openGallery();
                     }
                 })
                 .show();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (resultCode == RESULT_OK && data != null && requestCode == PICK_IMAGE_REQUEST) {
-            Uri imageUri = data.getData();
-            if (imageUri != null) {
-                // 直接转换并自动保存到 Firestore
-                uploadAndSaveImageToFirestore(imageUri);
-            }
-        }
+    private void openGallery() {
+        Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        galleryLauncher.launch(pickIntent);
     }
 
-    // 自动上传并保存图片到 Firestore
-    private void uploadAndSaveImageToFirestore(Uri imageUri) {
-        progressBar.setVisibility(View.VISIBLE);
+    private void loadAdminData() {
+        db.collection("Users").document(currentUserId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String name = documentSnapshot.getString("name");
+                        String phone = documentSnapshot.getString("phone");
+                        String email = documentSnapshot.getString("email");
 
-        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
-        if (userId == null) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
+                        etFullName.setText(name != null ? name : "");
+                        etPhoneNumber.setText(phone != null ? phone : "");
+                        etEmail.setText(email != null ? email : "");
 
-        // 转换图片为 Base64
-        String base64Image = convertUriToBase64(imageUri);
-        if (base64Image == null) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
-            return;
-        }
+                        // Make basic info read-only
+                        etFullName.setFocusable(false);
+                        etFullName.setEnabled(false);
+                        etPhoneNumber.setFocusable(false);
+                        etPhoneNumber.setEnabled(false);
+                        etEmail.setFocusable(false);
+                        etEmail.setEnabled(false);
 
-        // 显示图片
-        loadImageFromBase64(base64Image);
+                        String role = documentSnapshot.getString("role");
+                        String adminId = documentSnapshot.getString("adminId");
+                        String department = documentSnapshot.getString("department");
 
-        // 自动保存到 Firestore
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("profilePictureBase64", base64Image);
-        updates.put("lastUpdated", System.currentTimeMillis());
+                        etAdminId.setText(adminId != null ? adminId : "");
+                        etRole.setText(role != null ? role : "Administrator");
+                        etDepartment.setText(department != null ? department : "");
 
-        db.collection("Users").document(userId)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
-                    Log.d("AdminProfile", "Image saved to Firestore automatically");
+                        // Make admin info editable
+                        etAdminId.setFocusable(true);
+                        etAdminId.setEnabled(true);
+                        etRole.setFocusable(true);
+                        etRole.setEnabled(true);
+                        etDepartment.setFocusable(true);
+                        etDepartment.setEnabled(true);
 
-                    // 更新 Dashboard 的图片
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("updatedImageBase64", base64Image);
-                    setResult(RESULT_OK, resultIntent);
+                        String profileImageBase64 = documentSnapshot.getString("profileImageBase64");
+                        if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
+                            currentProfileImageBase64 = profileImageBase64;
+                            displayProfileImageFromBase64(profileImageBase64);
+                        } else {
+                            resetToDefaultAvatar();
+                        }
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    progressBar.setVisibility(View.GONE);
-                    Log.e("AdminProfile", "Failed to save image", e);
-                    Toast.makeText(this, "Failed to save image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    // 只保存名字和邮箱
-    private void saveNameAndEmail() {
-        String newName = etAdminName.getText().toString().trim();
-        String newEmail = etAdminEmail.getText().toString().trim();
+    private void resetToDefaultAvatar() {
+        btnChangePhoto.setBackgroundResource(R.drawable.avatar_background);
+        ivProfilePicture.setVisibility(View.VISIBLE);
+        ivProfilePicture.setImageResource(R.drawable.ic_account_circle);
+    }
 
-        if (newName.isEmpty()) {
-            etAdminName.setError("Name cannot be empty");
+    private boolean validateAdminInfo() {
+        boolean isValid = true;
+
+        String adminId = etAdminId.getText().toString().trim().toUpperCase();
+        if (adminId.isEmpty()) {
+            etAdminId.setError("Admin ID is required");
+            etAdminId.requestFocus();
+            isValid = false;
+        } else if (adminId.length() != 9) {
+            etAdminId.setError("Admin ID must be exactly 9 characters");
+            isValid = false;
+        } else if (!ADMIN_ID_PATTERN.matcher(adminId).matches()) {
+            etAdminId.setError("Format: A12AB1234 (1 Letter + 2 Numbers + 2 Letters + 4 Numbers)");
+            isValid = false;
+        } else {
+            etAdminId.setError(null);
+        }
+
+        String role = etRole.getText().toString().trim();
+        if (role.isEmpty()) {
+            etRole.setError("Role is required");
+            etRole.requestFocus();
+            isValid = false;
+        } else {
+            etRole.setError(null);
+        }
+
+        String department = etDepartment.getText().toString().trim().toUpperCase();
+        if (department.isEmpty()) {
+            etDepartment.setError("Department is required");
+            etDepartment.requestFocus();
+            isValid = false;
+        } else if (!DEPARTMENT_PATTERN.matcher(department).matches()) {
+            etDepartment.setError("Department can only contain letters and spaces");
+            isValid = false;
+        } else {
+            etDepartment.setError(null);
+        }
+
+        return isValid;
+    }
+
+    private void saveAdminInfo() {
+        if (!validateAdminInfo()) {
+            Toast.makeText(this, "Please fix the errors above", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String userId = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
-        if (userId != null) {
-            progressBar.setVisibility(View.VISIBLE);
+        btnSaveChanges.setEnabled(false);
+        btnSaveChanges.setAlpha(0.5f);
 
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("name", newName);
-            updates.put("email", newEmail);
-            updates.put("lastUpdated", System.currentTimeMillis());
+        String adminId = etAdminId.getText().toString().trim().toUpperCase();
+        String role = etRole.getText().toString().trim();
+        String department = etDepartment.getText().toString().trim().toUpperCase();
 
-            db.collection("Users").document(userId)
-                    .update(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        progressBar.setVisibility(View.GONE);
-                        Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("adminId", adminId);
+        updates.put("role", role);
+        updates.put("department", department);
+        updates.put("lastUpdated", System.currentTimeMillis());
 
-                        Intent resultIntent = new Intent();
-                        resultIntent.putExtra("updatedName", newName);
-                        setResult(RESULT_OK, resultIntent);
+        if (currentProfileImageBase64 != null && !currentProfileImageBase64.isEmpty()) {
+            updates.put("profileImageBase64", currentProfileImageBase64);
+            SharedPreferences prefs = getSharedPreferences(SHARED_PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putString(KEY_PROFILE_IMAGE, currentProfileImageBase64).apply();
+        }
 
-                        isEditMode = false;
-                        tvAdminName.setText(newName);
-                        tvAdminEmail.setText(newEmail);
-                        tvAdminName.setVisibility(View.VISIBLE);
-                        tvAdminEmail.setVisibility(View.VISIBLE);
-                        etAdminName.setVisibility(View.GONE);
-                        etAdminEmail.setVisibility(View.GONE);
-                        btnChangePicture.setVisibility(View.GONE);
-                        btnEditProfile.setVisibility(View.VISIBLE);
+        db.collection("Users").document(currentUserId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Admin information updated successfully", Toast.LENGTH_SHORT).show();
+                    if (btnSaveChanges != null) {
                         btnSaveChanges.setVisibility(View.GONE);
-                        btnChangePassword.setVisibility(View.VISIBLE);
-                    })
-                    .addOnFailureListener(e -> {
-                        progressBar.setVisibility(View.GONE);
-                        Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-        }
+                    }
+                    btnSaveChanges.setEnabled(true);
+                    btnSaveChanges.setAlpha(1f);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnSaveChanges.setEnabled(true);
+                    btnSaveChanges.setAlpha(1f);
+                });
     }
 
-    private String convertUriToBase64(Uri uri) {
-        try {
-            InputStream inputStream = getContentResolver().openInputStream(uri);
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                byteArrayOutputStream.write(buffer, 0, bytesRead);
+    private void showDeleteDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Account")
+                .setMessage("Are you sure you want to delete your admin account? This action cannot be undone.")
+                .setPositiveButton("Yes, Delete", (d, w) -> deleteAccount())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteAccount() {
+        if (mAuth.getCurrentUser() == null) return;
+
+        String uid = currentUserId;
+
+        db.collection("Users").document(uid)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    mAuth.getCurrentUser().delete()
+                            .addOnSuccessListener(aVoid2 -> {
+                                Toast.makeText(this, "Account deleted", Toast.LENGTH_SHORT).show();
+                                performLogout();
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to delete auth: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to delete user data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void performLogout() {
+        mAuth.signOut();
+        Intent intent = new Intent(this, LoginAndSignupActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void setupClickListeners() {
+        ivBack.setOnClickListener(v -> finish());
+        btnChangePhoto.setOnClickListener(v -> showImagePickerDialog());
+        ivProfilePicture.setOnClickListener(v -> showImagePickerDialog());
+
+        btnChangePassword.setOnClickListener(v -> {
+            String email = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getEmail() : "";
+            if (!email.isEmpty()) {
+                mAuth.sendPasswordResetEmail(email)
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(this, "Password reset email sent to " + email, Toast.LENGTH_LONG).show();
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(this, "Failed to send reset email", Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                Toast.makeText(this, "No email found", Toast.LENGTH_SHORT).show();
             }
-            byte[] imageBytes = byteArrayOutputStream.toByteArray();
-            inputStream.close();
+        });
 
-            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        btnLogout.setOnClickListener(v -> performLogout());
+        btnDeleteAccount.setOnClickListener(v -> showDeleteDialog());
 
-            int maxSize = 300;
-            int width = bitmap.getWidth();
-            int height = bitmap.getHeight();
-            float scale = Math.min((float) maxSize / width, (float) maxSize / height);
-
-            int newWidth = Math.round(width * scale);
-            int newHeight = Math.round(height * scale);
-
-            android.graphics.Bitmap resizedBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
-
-            ByteArrayOutputStream compressedStream = new ByteArrayOutputStream();
-            resizedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, compressedStream);
-            byte[] compressedBytes = compressedStream.toByteArray();
-
-            return Base64.encodeToString(compressedBytes, Base64.DEFAULT);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        if (btnSaveChanges != null) {
+            btnSaveChanges.setOnClickListener(v -> saveAdminInfo());
         }
-    }
-
-    private String formatDate(long timestamp) {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
-        return sdf.format(new java.util.Date(timestamp));
     }
 }

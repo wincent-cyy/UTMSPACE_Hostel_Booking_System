@@ -1,44 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Main Bottom Navigation Style -->
-    <style name="BottomNavStyle" parent="Widget.Material3.BottomNavigationView">
-        <!-- Set the bar background color -->
-        <item name="backgroundTint">@color/white</item>
-
-        <!-- Apply the color state list for icons and text (Active vs Inactive) -->
-        <item name="itemIconTint">@color/nav_item_colors</item>
-        <item name="itemTextColor">@color/nav_item_colors</item>
-
-        <!-- Style for the 'pill' shape behind the active icon -->
-        <item name="itemActiveIndicatorStyle">@style/App.ActiveIndicator</item>
-
-        <!-- Forces labels to always show under the icons -->
-        <item name="labelVisibilityMode">labeled</item>
-
-        <!-- Custom text appearances for Active and Inactive states -->
-        <item name="itemTextAppearanceActive">@style/BottomNavText.Active</item>
-        <item name="itemTextAppearanceInactive">@style/BottomNavText.Inactive</item>
+    <style name="RoomCardStyle">
+        <item name="android:layout_width">140dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:elevation">2dp</item>
     </style>
 
-    <!-- Style for the selection indicator (the oval background) -->
-    <style name="App.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <!-- Very light indigo/blue for the background highlight -->
-        <item name="android:color">#EEF2FF</item>
-        <!-- Width of the highlight oval -->
-        <item name="android:width">48dp</item>
-    </style>
-
-    <!-- Text style when a menu item is SELECTED -->
-    <style name="BottomNavText.Active" parent="TextAppearance.Material3.LabelMedium">
+    <style name="RoomCardTitleStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">4dp</item>
     </style>
 
-    <!-- Text style when a menu item is NOT selected -->
-    <style name="BottomNavText.Inactive" parent="TextAppearance.Material3.LabelMedium">
-        <item name="android:textStyle">normal</item>
-        <item name="android:textSize">12sp</item>
+    <style name="RoomCardPriceStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:padding">4dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:layout_marginTop">6dp</item>
+    </style>
+
+    <style name="circleImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
     </style>
 
 </resources>

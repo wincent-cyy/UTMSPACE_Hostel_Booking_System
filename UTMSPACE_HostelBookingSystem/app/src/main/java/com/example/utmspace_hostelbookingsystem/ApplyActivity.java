@@ -2,18 +2,20 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.Spinner;
+import android.util.Log;
+import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -22,17 +24,29 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class ApplyActivity extends AppCompatActivity {
 
     // View Element Declarations
-    private ImageButton btnBack;
-    private Button btnDetailsBack, btnSubmitApplication;
-    private TextView tvSummaryRoomId, tvSummaryRoomType, tvBottomPrice, tvCheckInDate;
-    private EditText etFullName, etStudentId, etPhoneNumber;
-    private Spinner spnDuration;
+    private LinearLayout ivBack;
+    private LinearLayout btnSubmitApplication;
+    private TextView tvRoomName;
+    private TextView tvRoomPrice;
+    private TextView tvRoomInfo;
+
+    private TextInputEditText etStudentName;
+    private TextInputEditText etStudentId;
+    private TextInputEditText etPhoneNumber;
+    private TextInputEditText etEmail;
+    private TextInputEditText etProgramme;
+    private TextInputEditText etSemester;
+    private TextInputEditText etCheckInDate;
+    private TextInputEditText etCheckOutDate;
+
+    private TextView chip1Semester;
+    private TextView chip2Semester;
 
     // Incoming intent variable captures
     private String selectedRoomId;
@@ -40,13 +54,15 @@ public class ApplyActivity extends AppCompatActivity {
     private String selectedRoomPrice;
 
     // 从 Firestore 获取的房间信息
-    private double roomPriceValue;      // 存储价格数值
-    private String roomStatus;          // 存储房间状态
-    private String roomLocation;        // 存储房间位置
+    private double roomPriceValue;
+    private String roomStatus;
+    private String roomLocation;
 
     // Firebase Integration Components
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+
+    private int selectedDuration = 1; // 1 or 2 semesters
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,82 +72,97 @@ public class ApplyActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
-        applyInputRestrictions();
+        setupInputFilters();
         getIntentData();
-        setupSpinnerOptions();
+        setupChipListeners();
         setupClickListeners();
 
-        // 加载用户信息并自动填充
         loadUserInfo();
-
-        // 加载房间详细信息
         loadRoomInfo();
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        btnDetailsBack = findViewById(R.id.btnDetailsBack);
-        btnSubmitApplication = findViewById(R.id.btnSubmitApplication);
+        ivBack = findViewById(R.id.ivBack);
+        tvRoomName = findViewById(R.id.tvRoomName);
+        tvRoomPrice = findViewById(R.id.tvRoomPrice);
+        tvRoomInfo = findViewById(R.id.tvRoomInfo);
 
-        tvSummaryRoomId = findViewById(R.id.tvSummaryRoomId);
-        tvSummaryRoomType = findViewById(R.id.tvSummaryRoomType);
-        tvBottomPrice = findViewById(R.id.tvBottomPrice);
-        tvCheckInDate = findViewById(R.id.tvCheckInDate);
-
-        etFullName = findViewById(R.id.etFullName);
+        etStudentName = findViewById(R.id.etStudentName);
         etStudentId = findViewById(R.id.etStudentId);
         etPhoneNumber = findViewById(R.id.etPhoneNumber);
-        spnDuration = findViewById(R.id.spnDuration);
+        etEmail = findViewById(R.id.etEmail);
+        etProgramme = findViewById(R.id.etProgramme);
+        etSemester = findViewById(R.id.etSemester);
+        etCheckInDate = findViewById(R.id.etCheckInDate);
+        etCheckOutDate = findViewById(R.id.etCheckOutDate);
 
-        // ✅ name 和 phone 可以编辑，但会自动填充初始值
-        etFullName.setFocusable(true);
-        etFullName.setClickable(true);
-        etFullName.setEnabled(true);
-
-        etPhoneNumber.setFocusable(true);
-        etPhoneNumber.setClickable(true);
-        etPhoneNumber.setEnabled(true);
-
-        // ✅ matricNumber 让用户手动输入
-        etStudentId.setFocusable(true);
-        etStudentId.setClickable(true);
-        etStudentId.setEnabled(true);
-
-        // ✅ 设置输入限制
-        setupInputFilters();
+        chip1Semester = findViewById(R.id.chip1Semester);
+        chip2Semester = findViewById(R.id.chip2Semester);
+        btnSubmitApplication = findViewById(R.id.btnSubmitApplication);
     }
 
     private void setupInputFilters() {
-        // 1. Name: 只允许字母和空格，禁止数字和特殊字符
         InputFilter nameFilter = (source, start, end, dest, dstart, dend) -> {
             for (int i = start; i < end; i++) {
                 char c = source.charAt(i);
                 if (!Character.isLetter(c) && !Character.isSpaceChar(c)) {
-                    return ""; // 拒绝非字母和非空格字符
+                    return "";
                 }
             }
-            return null; // 接受输入
+            return null;
         };
-        etFullName.setFilters(new InputFilter[]{nameFilter, new InputFilter.LengthFilter(50)});
+        etStudentName.setFilters(new InputFilter[]{nameFilter, new InputFilter.LengthFilter(50)});
 
-        // 2. Matric Number: 格式 A24DW0000，最大9字符，自动转大写
-        etStudentId.setFilters(new InputFilter[]{new InputFilter.LengthFilter(9)});
-
-        // 3. Phone: 只允许数字，10-11位
         InputFilter phoneFilter = (source, start, end, dest, dstart, dend) -> {
             for (int i = start; i < end; i++) {
                 if (!Character.isDigit(source.charAt(i))) {
-                    return ""; // 拒绝非数字字符
+                    return "";
                 }
             }
-            return null; // 接受输入
+            return null;
         };
         etPhoneNumber.setFilters(new InputFilter[]{phoneFilter, new InputFilter.LengthFilter(11)});
-    }
 
-    private void applyInputRestrictions() {
-        // 保留但禁用编辑，所以不需要输入限制
+        InputFilter programmeFilter = (source, start, end, dest, dstart, dend) -> {
+            for (int i = start; i < end; i++) {
+                char c = source.charAt(i);
+                if (!Character.isLetter(c) && !Character.isSpaceChar(c) && c != '.') {
+                    return "";
+                }
+            }
+            return null;
+        };
+        etProgramme.setFilters(new InputFilter[]{programmeFilter, new InputFilter.LengthFilter(50)});
+
+        InputFilter semesterFilter = (source, start, end, dest, dstart, dend) -> {
+            for (int i = start; i < end; i++) {
+                if (!Character.isDigit(source.charAt(i))) {
+                    return "";
+                }
+            }
+            return null;
+        };
+        etSemester.setFilters(new InputFilter[]{semesterFilter, new InputFilter.LengthFilter(2)});
+
+        // 设置 Student ID 和 Email 为不可编辑
+        etStudentId.setFocusable(false);
+        etStudentId.setClickable(false);
+        etStudentId.setEnabled(false);
+
+        etEmail.setFocusable(false);
+        etEmail.setClickable(false);
+        etEmail.setEnabled(false);
+
+        // 设置日期字段为不可编辑（通过点击选择器）
+        etCheckInDate.setFocusable(false);
+        etCheckInDate.setClickable(true);
+        etCheckOutDate.setFocusable(false);
+        etCheckOutDate.setClickable(true);
     }
 
     private void getIntentData() {
@@ -141,13 +172,70 @@ public class ApplyActivity extends AppCompatActivity {
             selectedRoomType = intent.getStringExtra("SELECTED_ROOM_TYPE");
             selectedRoomPrice = intent.getStringExtra("SELECTED_ROOM_PRICE");
 
-            if (selectedRoomId != null) tvSummaryRoomId.setText(selectedRoomId);
-            if (selectedRoomType != null) tvSummaryRoomType.setText(selectedRoomType);
-            if (selectedRoomPrice != null) tvBottomPrice.setText(selectedRoomPrice);
+            if (selectedRoomType != null) tvRoomName.setText(selectedRoomType);
+            updateRoomInfoText();
         }
     }
 
-    // 新增: 从 Users 加载用户信息并自动填充
+    /**
+     * 根据房间类型更新房间信息显示
+     */
+    private void updateRoomInfoText() {
+        if (selectedRoomType == null) return;
+
+        String lowerType = selectedRoomType.toLowerCase();
+        String roomInfoText = selectedRoomType + " · ";
+
+        if (lowerType.contains("single")) {
+            roomInfoText += "1 Bed · Air Conditioning · Study Desk · Wi-Fi";
+        } else if (lowerType.contains("double")) {
+            roomInfoText += "2 Beds · Air Conditioning · 2 Study Desks · Wi-Fi";
+        } else if (lowerType.contains("quad")) {
+            roomInfoText += "4 Beds · Air Conditioning · 4 Study Desks · Wi-Fi · Balcony";
+        } else {
+            roomInfoText += "Air Conditioning · Study Desk · Wi-Fi";
+        }
+
+        tvRoomInfo.setText(roomInfoText);
+    }
+
+    private void setupChipListeners() {
+        chip1Semester.setOnClickListener(v -> {
+            setSelectedChip(1);
+            selectedDuration = 1;
+            updateTotalPrice();
+        });
+
+        chip2Semester.setOnClickListener(v -> {
+            setSelectedChip(2);
+            selectedDuration = 2;
+            updateTotalPrice();
+        });
+    }
+
+    /**
+     * 根据学期数更新总价格
+     */
+    private void updateTotalPrice() {
+        double totalPrice = roomPriceValue * selectedDuration;
+        String durationText = selectedDuration + " Semester" + (selectedDuration > 1 ? "s" : "");
+        tvRoomPrice.setText("RM " + String.format("%.0f", totalPrice) + " (" + durationText + ")");
+    }
+
+    private void setSelectedChip(int semester) {
+        if (semester == 1) {
+            chip1Semester.setBackgroundResource(R.drawable.chip_selected);
+            chip1Semester.setTextColor(getColor(android.R.color.white));
+            chip2Semester.setBackgroundResource(R.drawable.chip_unselected);
+            chip2Semester.setTextColor(getColor(R.color.primaryColor));
+        } else {
+            chip2Semester.setBackgroundResource(R.drawable.chip_selected);
+            chip2Semester.setTextColor(getColor(android.R.color.white));
+            chip1Semester.setBackgroundResource(R.drawable.chip_unselected);
+            chip1Semester.setTextColor(getColor(R.color.primaryColor));
+        }
+    }
+
     private void loadUserInfo() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) return;
@@ -158,13 +246,17 @@ public class ApplyActivity extends AppCompatActivity {
                     if (documentSnapshot.exists()) {
                         String name = documentSnapshot.getString("name");
                         String phone = documentSnapshot.getString("phone");
+                        String email = documentSnapshot.getString("email");
+                        String programme = documentSnapshot.getString("programme");
+                        String semester = documentSnapshot.getString("semester");
+                        String studentId = documentSnapshot.getString("studentId");
 
-                        // ✅ 只自动填充 name 和 phone
-                        if (name != null) etFullName.setText(name);
+                        if (name != null) etStudentName.setText(name);
+                        if (studentId != null) etStudentId.setText(studentId);
                         if (phone != null) etPhoneNumber.setText(phone);
-
-                        // ✅ 学号不清空，让用户自己填
-                        // 如果用户之前填过，可以保留
+                        if (email != null) etEmail.setText(email);
+                        if (programme != null) etProgramme.setText(programme);
+                        if (semester != null) etSemester.setText(semester);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -172,127 +264,240 @@ public class ApplyActivity extends AppCompatActivity {
                 });
     }
 
-    // 新增: 从 Rooms 加载房间详细信息
-    // 新增: 从 Rooms 加载房间详细信息
     private void loadRoomInfo() {
         if (selectedRoomId == null) return;
 
+        // 方式2：通过 roomId 字段查询，而不是 document ID
         db.collection("Rooms")
-                .whereEqualTo("roomId", selectedRoomId)
-                .limit(1)
+                .whereEqualTo("roomId", selectedRoomId)  // 使用 roomId 字段查询
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!queryDocumentSnapshots.isEmpty()) {
-                        // ✅ 修正: 使用 DocumentSnapshot 而不是 QueryDocumentSnapshot
-                        DocumentSnapshot doc = queryDocumentSnapshots.getDocuments().get(0);
-                        roomPriceValue = doc.getDouble("price") != null ? doc.getDouble("price") : 0;
-                        roomStatus = doc.getString("status");
-                        roomLocation = doc.getString("location");
+                        DocumentSnapshot documentSnapshot = queryDocumentSnapshots.getDocuments().get(0);
+                        roomPriceValue = documentSnapshot.getDouble("price") != null ? documentSnapshot.getDouble("price") : 0;
+                        roomStatus = documentSnapshot.getString("status");
+                        roomLocation = documentSnapshot.getString("location");
+
+                        Log.d("ApplyActivity", "Room loaded - Price: " + roomPriceValue + ", Status: " + roomStatus);
+
+                        updateTotalPrice();
+                        updateRoomInfoText();
+                    } else {
+                        Log.e("ApplyActivity", "Room document not found for roomId: " + selectedRoomId);
+                        Toast.makeText(this, "Room information not found", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load room info", Toast.LENGTH_SHORT).show();
+                    Log.e("ApplyActivity", "Failed to load room info: " + e.getMessage());
+                    Toast.makeText(this, "Failed to load room info: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void setupSpinnerOptions() {
-        String[] leaseDurations = {"1 Semester", "2 Semesters (Full Academic Year)"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, leaseDurations);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spnDuration.setAdapter(adapter);
-    }
-
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
-        btnDetailsBack.setOnClickListener(v -> finish());
+        ivBack.setOnClickListener(v -> finish());
+        btnSubmitApplication.setOnClickListener(v -> validateAndSubmit());
 
-        tvCheckInDate.setOnClickListener(v -> {
-            final Calendar c = Calendar.getInstance();
-            int year = c.get(Calendar.YEAR);
-            int month = c.get(Calendar.MONTH);
-            int day = c.get(Calendar.DAY_OF_MONTH);
-
-            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                    (view, selectedYear, selectedMonth, selectedDay) -> {
-                        String dateString = String.format(Locale.getDefault(), "%02d/%02d/%d", selectedDay, (selectedMonth + 1), selectedYear);
-                        tvCheckInDate.setText(dateString);
-                    }, year, month, day);
-
-            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
-            datePickerDialog.show();
-        });
-
-        btnSubmitApplication.setOnClickListener(v -> {
-            String name = etFullName.getText().toString().trim();
-            String matric = etStudentId.getText().toString().trim().toUpperCase();
-            String phone = etPhoneNumber.getText().toString().trim();
-            String date = tvCheckInDate.getText().toString().trim();
-            String duration = spnDuration.getSelectedItem().toString();
-
-            // 验证姓名 - 不能为空
-            if (name.isEmpty()) {
-                etFullName.setError("Name is required");
-                etFullName.requestFocus();
-                return;
-            }
-
-            // 验证学号 - 不能为空
-            if (matric.isEmpty()) {
-                etStudentId.setError("Matric Number is required");
-                etStudentId.requestFocus();
-                return;
-            }
-
-            // ✅ 验证学号格式: A24DW0000 (字母 + 2数字 + 2字母 + 4数字)
-            String matricPattern = "^[A-Za-z]\\d{2}[A-Za-z]{2}\\d{4}$";
-            if (!matric.matches(matricPattern)) {
-                etStudentId.setError("Invalid format! Use: A24DW0000 (e.g., A24DW1234)");
-                etStudentId.requestFocus();
-                return;
-            }
-
-            // 验证手机号 - 不能为空
-            if (phone.isEmpty()) {
-                etPhoneNumber.setError("Phone number is required");
-                etPhoneNumber.requestFocus();
-                return;
-            }
-
-            // ✅ 验证手机号长度: 10-11位
-            if (phone.length() < 10 || phone.length() > 11) {
-                etPhoneNumber.setError("Phone number must be 10-11 digits");
-                etPhoneNumber.requestFocus();
-                return;
-            }
-
-            // 验证日期是否已选择
-            if (date.isEmpty() || date.toLowerCase().contains("select")) {
-                Toast.makeText(this, "Please select an intended check-in date.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // 验证用户是否已登录
-            FirebaseUser currentUser = mAuth.getCurrentUser();
-            if (currentUser == null) {
-                Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            btnSubmitApplication.setEnabled(false);
-            checkAndSubmitApplication(currentUser.getUid(), name, matric, phone, date, duration);
-        });
+        // Date picker for check-in and check-out
+        etCheckInDate.setOnClickListener(v -> showDatePicker(etCheckInDate, true));
+        etCheckOutDate.setOnClickListener(v -> showDatePicker(etCheckOutDate, false));
     }
 
-    private void checkAndSubmitApplication(String uid, String name, String matric, String phone, String date, String duration) {
+    /**
+     * 解析日期字符串为 Calendar 对象
+     */
+    private Calendar parseDateToCalendar(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return null;
+        try {
+            String[] parts = dateStr.split("/");
+            int day = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]) - 1;
+            int year = Integer.parseInt(parts[2]);
+            Calendar cal = Calendar.getInstance();
+            cal.set(year, month, day, 0, 0, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            return cal;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 检查退房日期是否在入住日期之后
+     */
+    private boolean isCheckOutDateValid(String checkInDate, String checkOutDate) {
+        if (checkInDate == null || checkInDate.isEmpty() || checkOutDate == null || checkOutDate.isEmpty()) {
+            return true; // 如果任一为空，跳过验证（由必填验证处理）
+        }
+
+        Calendar checkInCal = parseDateToCalendar(checkInDate);
+        Calendar checkOutCal = parseDateToCalendar(checkOutDate);
+
+        if (checkInCal == null || checkOutCal == null) {
+            return true;
+        }
+
+        return !checkOutCal.before(checkInCal);
+    }
+
+    /**
+     * 显示日期选择器，并限制不能选择过去的日期
+     */
+    private void showDatePicker(TextInputEditText dateField, boolean isCheckIn) {
+        Calendar calendar = Calendar.getInstance();
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH);
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+
+        Calendar minDate = Calendar.getInstance();
+        minDate.set(Calendar.HOUR_OF_DAY, 0);
+        minDate.set(Calendar.MINUTE, 0);
+        minDate.set(Calendar.SECOND, 0);
+        minDate.set(Calendar.MILLISECOND, 0);
+
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                (view, selectedYear, selectedMonth, selectedDay) -> {
+                    String date = String.format("%02d/%02d/%d", selectedDay, selectedMonth + 1, selectedYear);
+                    dateField.setText(date);
+
+                    // 如果是入住日期，检查并清除无效的退房日期
+                    if (isCheckIn) {
+                        String currentCheckOut = etCheckOutDate.getText().toString();
+                        if (!currentCheckOut.isEmpty()) {
+                            if (!isCheckOutDateValid(date, currentCheckOut)) {
+                                etCheckOutDate.setText("");
+                                Toast.makeText(this, "Check-out date cannot be before check-in date. Please re-select check-out date.", Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    } else {
+                        // 如果是退房日期，检查是否在入住日期之后
+                        String currentCheckIn = etCheckInDate.getText().toString();
+                        if (!currentCheckIn.isEmpty()) {
+                            if (!isCheckOutDateValid(currentCheckIn, date)) {
+                                dateField.setText("");
+                                Toast.makeText(this, "Check-out date cannot be before check-in date!", Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    }
+                }, year, month, day);
+
+        datePickerDialog.getDatePicker().setMinDate(minDate.getTimeInMillis());
+        datePickerDialog.show();
+    }
+
+    private void validateAndSubmit() {
+        String name = etStudentName.getText().toString().trim();
+        String matric = etStudentId.getText().toString().trim().toUpperCase();
+        String phone = etPhoneNumber.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
+        String programme = etProgramme.getText().toString().trim();
+        String semester = etSemester.getText().toString().trim();
+        String checkInDate = etCheckInDate.getText().toString().trim();
+        String checkOutDate = etCheckOutDate.getText().toString().trim();
+        String duration = selectedDuration + " Semester" + (selectedDuration > 1 ? "s" : "");
+
+        double totalPrice = roomPriceValue * selectedDuration;
+        String priceDisplay = "RM " + String.format("%.0f", totalPrice);
+
+        // Validation
+        if (name.isEmpty()) {
+            etStudentName.setError("Name is required");
+            etStudentName.requestFocus();
+            return;
+        }
+
+        if (matric.isEmpty()) {
+            etStudentId.setError("Student ID is required");
+            etStudentId.requestFocus();
+            return;
+        }
+
+        String matricPattern = "^[A-Za-z]\\d{2}[A-Za-z]{2}\\d{4}$";
+        if (!matric.matches(matricPattern)) {
+            etStudentId.setError("Invalid format! Use: A24DW0000");
+            etStudentId.requestFocus();
+            return;
+        }
+
+        if (phone.isEmpty()) {
+            etPhoneNumber.setError("Phone number is required");
+            etPhoneNumber.requestFocus();
+            return;
+        }
+
+        if (phone.length() < 10 || phone.length() > 11) {
+            etPhoneNumber.setError("Phone number must be 10-11 digits");
+            etPhoneNumber.requestFocus();
+            return;
+        }
+
+        if (email.isEmpty()) {
+            etEmail.setError("Email is required");
+            etEmail.requestFocus();
+            return;
+        }
+
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Valid email is required");
+            etEmail.requestFocus();
+            return;
+        }
+
+        if (programme.isEmpty()) {
+            etProgramme.setError("Programme/Course is required");
+            etProgramme.requestFocus();
+            return;
+        }
+
+        if (semester.isEmpty()) {
+            etSemester.setError("Semester is required");
+            etSemester.requestFocus();
+            return;
+        }
+
+        if (checkInDate.isEmpty()) {
+            etCheckInDate.setError("Check-in date is required");
+            etCheckInDate.requestFocus();
+            return;
+        }
+
+        if (checkOutDate.isEmpty()) {
+            etCheckOutDate.setError("Check-out date is required");
+            etCheckOutDate.requestFocus();
+            return;
+        }
+
+        // ========== 提交前验证退房日期不能早于入住日期 ==========
+        if (!isCheckOutDateValid(checkInDate, checkOutDate)) {
+            etCheckOutDate.setError("Check-out date cannot be before check-in date!");
+            etCheckOutDate.requestFocus();
+            Toast.makeText(this, "Please select a check-out date that is after check-in date", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        btnSubmitApplication.setEnabled(false);
+        checkAndSubmitApplication(currentUser.getUid(), name, matric, phone, email, programme, semester,
+                duration, totalPrice, priceDisplay, checkInDate, checkOutDate);
+    }
+
+    private void checkAndSubmitApplication(String uid, String name, String matric, String phone, String email,
+                                           String programme, String semester, String duration,
+                                           double totalPrice, String priceDisplay,
+                                           String checkInDate, String checkOutDate) {
         db.collection("Bookings")
-                .whereEqualTo("uid", uid)  // ✅ 改为 uid (与Users.uid一致)
+                .whereEqualTo("uid", uid)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful() && task.getResult() != null) {
                         boolean hasActiveApplication = false;
 
                         for (QueryDocumentSnapshot document : task.getResult()) {
-                            String status = document.getString("bookingStatus");  // ✅ 改为 bookingStatus
+                            String status = document.getString("bookingStatus");
                             if (status != null && !status.equalsIgnoreCase("Rejected")) {
                                 hasActiveApplication = true;
                                 break;
@@ -305,7 +510,8 @@ public class ApplyActivity extends AppCompatActivity {
                                     Toast.LENGTH_LONG).show();
                             btnSubmitApplication.setEnabled(true);
                         } else {
-                            executeApplicationSubmission(uid, name, matric, phone, date, duration);
+                            executeApplicationSubmission(uid, name, matric, phone, email, programme, semester,
+                                    duration, totalPrice, priceDisplay, checkInDate, checkOutDate);
                         }
                     } else {
                         btnSubmitApplication.setEnabled(true);
@@ -316,29 +522,50 @@ public class ApplyActivity extends AppCompatActivity {
                 });
     }
 
-    private void executeApplicationSubmission(String uid, String name, String matric, String phone, String date, String duration) {
-        // ✅ 修正: 使用正确的字段名 (与Users和Rooms一致)
+    private void executeApplicationSubmission(String uid, String name, String matric, String phone, String email,
+                                              String programme, String semester, String duration,
+                                              double totalPrice, String priceDisplay,
+                                              String checkInDate, String checkOutDate) {
+
+        // 1. 先更新 Users 集合（同步用户编辑的信息）
+        Map<String, Object> userUpdate = new HashMap<>();
+        userUpdate.put("name", name);
+        userUpdate.put("phone", phone);
+        userUpdate.put("email", email);
+        userUpdate.put("programme", programme);
+        userUpdate.put("currentSemester", semester);
+        userUpdate.put("studentId", matric);
+
+        db.collection("Users").document(uid)
+                .update(userUpdate)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("ApplyActivity", "User info updated successfully");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ApplyActivity", "Failed to update user: " + e.getMessage());
+                });
+
+        // 2. 创建 Booking 记录
         Map<String, Object> bookingData = new HashMap<>();
 
-        // Foreign Keys (名字与源Collection完全一致)
-        bookingData.put("uid", uid);                    // ✅ 改为 uid (不是 userId)
-        bookingData.put("roomId", selectedRoomId);       // ✅ 保持 roomId
-
-        // 从 Users 继承的快照数据
-        bookingData.put("name", name);                  // ✅ 改为 name (不是 studentName)
-        bookingData.put("matricNumber", matric);        // ✅ 保持 matricNumber
-        bookingData.put("phone", phone);                // ✅ 改为 phone (不是 phoneNumber)
-
-        // 从 Rooms 继承的快照数据
+        bookingData.put("uid", uid);
+        bookingData.put("roomId", selectedRoomId);
+        bookingData.put("name", name);
+        bookingData.put("matricNumber", matric);
+        bookingData.put("phone", phone);
+        bookingData.put("email", email);
+        bookingData.put("programme", programme);
+        bookingData.put("currentSemester", semester);
         bookingData.put("roomType", selectedRoomType);
-        bookingData.put("price", roomPriceValue);       // ✅ 改为 price (double, 不是 roomPrice)
-        bookingData.put("status", roomStatus);     // ✅ 新增: 预订时的房间状态
-        bookingData.put("location", roomLocation);      // ✅ 新增: 房间位置
-
-        // Booking 特有字段
-        bookingData.put("checkInDate", date);
+        bookingData.put("price", totalPrice);
+        bookingData.put("pricePerSemester", roomPriceValue);
+        bookingData.put("duration", selectedDuration);
+        bookingData.put("status", roomStatus);
+        bookingData.put("location", roomLocation);
         bookingData.put("leaseDuration", duration);
-        bookingData.put("bookingStatus", "Pending");    // ✅ 改为 bookingStatus (不是 status)
+        bookingData.put("checkInDate", checkInDate);
+        bookingData.put("checkOutDate", checkOutDate);
+        bookingData.put("bookingStatus", "Pending");
         bookingData.put("rejectReason", "");
         bookingData.put("paymentMethod", "");
         bookingData.put("paymentTimestamp", 0);
@@ -349,8 +576,7 @@ public class ApplyActivity extends AppCompatActivity {
                 .addOnSuccessListener(documentReference -> {
                     documentReference.update("bookingId", documentReference.getId())
                             .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(ApplyActivity.this, "Application submitted!", Toast.LENGTH_SHORT).show();
-                                Toast.makeText(ApplyActivity.this, "Application submitted successfully! Status: Pending", Toast.LENGTH_LONG).show();
+                                Toast.makeText(ApplyActivity.this, "Application submitted successfully! Total: " + priceDisplay + " for " + duration, Toast.LENGTH_LONG).show();
                             });
 
                     Intent intent = new Intent(ApplyActivity.this, StudentDashboardActivity.class);

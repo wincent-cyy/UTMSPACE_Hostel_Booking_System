@@ -1,200 +1,260 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F1F5F9"
-    tools:context=".StaffRepairTrackingActivity">
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
-    <!-- Header Background -->
-    <View
-        android:id="@+id/topHeaderBg"
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Back Button -->
-    <ImageButton
-        android:id="@+id/btnBack"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="36dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_arrow_back"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="#FFFFFF" />
-
-    <!-- Title -->
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Repair Requests"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/btnBack"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/btnBack" />
-
-    <!-- Search Bar -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/searchCard"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginHorizontal="20dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:layout_constraintBottom_toBottomOf="@id/topHeaderBg"
-        app:layout_constraintTop_toBottomOf="@id/topHeaderBg">
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="8dp">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingStart="16dp">
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/ivBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/back_button_background"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginStart="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="#1E293B" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Repair Tracking"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:gravity="center"
+                android:fontFamily="sans-serif" />
+
+            <LinearLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="16dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Search Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/search_bar_background"
+            android:padding="12dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
-                android:src="@android:drawable/ic_menu_search"
-                app:tint="#6366F1" />
+                android:src="@drawable/ic_search"
+                app:tint="#7E8B9E" />
 
             <EditText
-                android:id="@+id/etSearch"
-                android:layout_width="match_parent"
+                android:id="@+id/etSearchRepair"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                android:hint="Search by room number or item name..."
-                android:paddingStart="12dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:background="@null"
+                android:hint="Search by room number..."
                 android:textSize="14sp"
-                android:imeOptions="actionSearch"
                 android:inputType="text"
-                android:maxLines="1" />
+                android:fontFamily="sans-serif" />
+
+            <ImageView
+                android:id="@+id/ivClearSearch"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_close"
+                app:tint="#7E8B9E"
+                android:visibility="gone" />
+
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- Filter Chips -->
-    <LinearLayout
-        android:id="@+id/filterContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:weightSum="4"
-        app:layout_constraintTop_toBottomOf="@id/searchCard">
-
-        <TextView
-            android:id="@+id/chipAll"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/filter_chip_selected"
-            android:gravity="center"
-            android:paddingHorizontal="4dp"
-            android:text="All"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/chipPending"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:paddingHorizontal="4dp"
-            android:text="Pending"
-            android:textColor="#475569"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/chipScheduled"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:paddingHorizontal="4dp"
-            android:text="Scheduled"
-            android:textColor="#475569"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/chipCompleted"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:paddingHorizontal="4dp"
-            android:text="Completed"
-            android:textColor="#475569"
-            android:textSize="12sp"
-            android:textStyle="bold" />
 
     </LinearLayout>
 
-    <!-- Request Count -->
-    <TextView
-        android:id="@+id/tvRequestCount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="12dp"
-        android:text="0 requests"
-        android:textColor="#64748B"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterContainer" />
-
-    <!-- RecyclerView - 填满到底部 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvRepairRequests"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:paddingHorizontal="16dp"
-        android:clipToPadding="false"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvRequestCount" />
-
-    <!-- Empty State -->
+    <!-- Counter and Status Summary -->
     <LinearLayout
-        android:id="@+id/emptyState"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterContainer">
-
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@android:drawable/ic_menu_today"
-            app:tint="#CBD5E1" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
         <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="All Requests"
+            android:textSize="14sp"
+            android:textColor="#AA7A6C"
+            android:fontFamily="sans-serif" />
+
+        <TextView
+            android:id="@+id/tvRequestCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="No repair requests found"
-            android:textColor="#94A3B8" />
+            android:text="0"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#800000"
+            android:background="#FEF3F2"
+            android:padding="4dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
+
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Status Filter Chips -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/chipAll"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/filter_chip_selected"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="All"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/chipPending"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="Pending"
+                android:textColor="#475569"
+                android:textSize="13sp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/chipInProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="In Progress"
+                android:textColor="#475569"
+                android:textSize="13sp"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/chipCompleted"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="Completed"
+                android:textColor="#475569"
+                android:textSize="13sp"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Repair Request List Container -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:paddingTop="0dp">
+
+            <!-- RecyclerView for Repair Requests -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRepairList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:clipToPadding="false" />
+
+            <!-- Empty State -->
+            <TextView
+                android:id="@+id/tvEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No repair requests found"
+                android:textSize="14sp"
+                android:textColor="#AA7A6C"
+                android:gravity="center"
+                android:padding="40dp"
+                android:visibility="gone"
+                android:fontFamily="sans-serif" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

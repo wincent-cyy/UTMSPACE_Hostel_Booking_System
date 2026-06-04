@@ -1,150 +1,308 @@
 package com.example.utmspace_hostelbookingsystem;
 
-import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
+import android.os.Handler;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
-import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
 
-import java.io.OutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 public class ReceiptActivity extends AppCompatActivity {
 
-    private MaterialButton btnDownload, btnBackHome;
-    private TextView tvTotalAmount, tvReceiptMethod, tvReceiptRoom, tvReceiptDate, tvTransactionId, tvReceiptMatric, tvInstallmentPlan;
-    private View receiptCard;
+    // Header
+    private LinearLayout ivBack;
+    private TextView tvTransactionId;
+    private TextView tvPaymentDate;
+    private TextView tvPaymentMethod;
+    private TextView tvPaymentStatus;
+    private TextView tvRoomName;
+    private TextView tvRoomNumber;
+    private TextView tvDuration;
+    private TextView tvSubtotal;
+    private TextView tvServiceCharge;
+    private TextView tvTotalAmount;
+    private TextView tvStudentName;
+    private TextView tvStudentEmail;
+    private TextView tvStudentPhone;
+
+    // Buttons
+    private LinearLayout btnDownloadReceipt;
+    private LinearLayout btnBackToHome;
+
+    // Data
+    private String bookingDocId;
+    private String roomId;
+    private String roomType;
+    private String roomPrice;
+    private String studentName;
+    private String matricNumber;
+    private String phoneNumber;
+    private String checkInDate;
+    private String leaseDuration;
+    private String paymentMethod;
+    private double amountPaid;
+    private long paymentTimestamp;
+    private String studentEmail;
+
+    // Firebase
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_receipt);
 
+        mAuth = FirebaseAuth.getInstance();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
-        displayData();
-        setupListeners();
+        getIntentData();
+        loadStudentEmail();
+        displayReceiptData();
+        setupClickListeners();
     }
 
     private void initViews() {
-        btnDownload = findViewById(R.id.btnDownload);
-        btnBackHome = findViewById(R.id.btnBackHome);
-
-        tvTotalAmount = findViewById(R.id.tvTotalAmount);
-        tvReceiptMethod = findViewById(R.id.tvReceiptMethod);
-        tvReceiptRoom = findViewById(R.id.tvReceiptRoom);
-        tvReceiptDate = findViewById(R.id.tvReceiptDate);
         tvTransactionId = findViewById(R.id.tvTransactionId);
-        tvReceiptMatric = findViewById(R.id.tvReceiptMatric);
-        tvInstallmentPlan = findViewById(R.id.tvInstallmentPlan);  // 新增：分期计划显示
+        tvPaymentDate = findViewById(R.id.tvPaymentDate);
+        tvPaymentMethod = findViewById(R.id.tvPaymentMethod);
+        tvPaymentStatus = findViewById(R.id.tvPaymentStatus);
+        tvRoomName = findViewById(R.id.tvRoomName);
+        tvRoomNumber = findViewById(R.id.tvRoomNumber);
+        tvDuration = findViewById(R.id.tvDuration);
+        tvSubtotal = findViewById(R.id.tvSubtotal);
+        tvServiceCharge = findViewById(R.id.tvServiceCharge);
+        tvTotalAmount = findViewById(R.id.tvTotalAmount);
+        tvStudentName = findViewById(R.id.tvStudentName);
+        tvStudentEmail = findViewById(R.id.tvStudentEmail);
+        tvStudentPhone = findViewById(R.id.tvStudentPhone);
 
-        receiptCard = findViewById(R.id.receiptCard);
+        btnDownloadReceipt = findViewById(R.id.btnDownloadReceipt);
+        btnBackToHome = findViewById(R.id.btnBackToHome);
     }
 
-    private void displayData() {
+    private void getIntentData() {
         Intent intent = getIntent();
+        if (intent != null) {
+            bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
+            roomId = intent.getStringExtra("ROOM_ID");
+            roomType = intent.getStringExtra("ROOM_TYPE");
+            roomPrice = intent.getStringExtra("ROOM_PRICE");
+            studentName = intent.getStringExtra("STUDENT_NAME");
+            matricNumber = intent.getStringExtra("MATRIC_NUMBER");
+            phoneNumber = intent.getStringExtra("PHONE_NUMBER");
+            checkInDate = intent.getStringExtra("CHECK_IN_DATE");
+            leaseDuration = intent.getStringExtra("LEASE_DURATION");
+            paymentMethod = intent.getStringExtra("PAYMENT_METHOD");
+            amountPaid = intent.getDoubleExtra("AMOUNT_PAID", 0);
+            paymentTimestamp = intent.getLongExtra("PAYMENT_TIMESTAMP", 0);
 
-        // 获取数据
-        String method = intent.getStringExtra("PAYMENT_METHOD");
-        String room = intent.getStringExtra("ROOM_ID");
-        double amountPaid = intent.getDoubleExtra("AMOUNT_PAID", 0.0);
-        String bookingId = intent.getStringExtra("BOOKING_DOC_ID");
-        String matric = intent.getStringExtra("MATRIC_NUMBER");
-        String installmentPlan = intent.getStringExtra("INSTALLMENT_PLAN");  // 获取分期计划
+            String amountStr = intent.getStringExtra("AMOUNT_PAID");
+            if (amountStr != null && amountPaid == 0) {
+                try {
+                    amountPaid = Double.parseDouble(amountStr);
+                } catch (NumberFormatException e) {
+                    amountPaid = 0;
+                }
+            }
 
-        // 设置文本
-        tvReceiptMethod.setText(method != null ? method : "N/A");
-        tvReceiptRoom.setText(room != null ? room : "N/A");
-        tvTotalAmount.setText(String.format("RM %.2f", amountPaid));
-        tvReceiptMatric.setText(matric != null ? matric : "N/A");
-
-        // 设置分期计划显示
-        if (installmentPlan != null && !installmentPlan.equals("Full")) {
-            tvInstallmentPlan.setVisibility(View.VISIBLE);
-            tvInstallmentPlan.setText("Payment Plan: " + installmentPlan);
-        } else {
-            tvInstallmentPlan.setVisibility(View.GONE);
+            if (amountPaid == 0 && roomPrice != null) {
+                try {
+                    amountPaid = Double.parseDouble(roomPrice.replace("RM ", "").trim());
+                } catch (NumberFormatException e) {
+                    amountPaid = 1500;
+                }
+            }
         }
-
-        // 设置当前日期
-        String currentDate = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
-        tvReceiptDate.setText(currentDate);
-
-        // 设置交易ID
-        tvTransactionId.setText(bookingId != null ? bookingId : "UTM-" + System.currentTimeMillis() / 1000);
     }
 
-    private void setupListeners() {
-        btnDownload.setOnClickListener(v -> generatePDF());
+    private void loadStudentEmail() {
+        if (mAuth.getCurrentUser() != null) {
+            studentEmail = mAuth.getCurrentUser().getEmail();
+        } else {
+            studentEmail = "student@university.edu";
+        }
+    }
 
-        btnBackHome.setOnClickListener(v -> {
+    private void displayReceiptData() {
+        String transactionId = bookingDocId != null ?
+                bookingDocId.substring(Math.max(0, bookingDocId.length() - 12)) :
+                "TXN" + System.currentTimeMillis();
+        tvTransactionId.setText("Transaction ID: " + transactionId);
+
+        String formattedDate = formatDate(paymentTimestamp);
+        tvPaymentDate.setText(formattedDate);
+
+        tvPaymentMethod.setText(paymentMethod != null ? paymentMethod : "Credit/Debit Card");
+        tvPaymentStatus.setText("Completed");
+
+        tvRoomName.setText(roomType != null ? roomType : "N/A");
+        tvRoomNumber.setText(roomId != null ? roomId : "N/A");
+        tvDuration.setText(leaseDuration != null ? leaseDuration : "1 Semester");
+
+        double subtotal = amountPaid;
+        double serviceCharge = subtotal * 0.06;
+        double total = subtotal + serviceCharge;
+
+        tvSubtotal.setText(String.format("RM %.2f", subtotal));
+        tvServiceCharge.setText(String.format("RM %.2f", serviceCharge));
+        tvTotalAmount.setText(String.format("RM %.2f", total));
+
+        tvStudentName.setText(studentName != null ? studentName : "N/A");
+        tvStudentEmail.setText(studentEmail != null ? studentEmail : "N/A");
+        tvStudentPhone.setText(phoneNumber != null ? phoneNumber : "N/A");
+    }
+
+    private String formatDate(long timestamp) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault());
+        if (timestamp == 0) {
+            return sdf.format(new Date());
+        }
+        return sdf.format(new Date(timestamp));
+    }
+
+    private void setupClickListeners() {
+        btnDownloadReceipt.setOnClickListener(v -> downloadReceiptAsPDF());
+        btnBackToHome.setOnClickListener(v -> {
             Intent intent = new Intent(ReceiptActivity.this, StudentDashboardActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
         });
     }
 
-    private void generatePDF() {
-        // Ensure the view is measured for the bitmap
-        receiptCard.measure(View.MeasureSpec.makeMeasureSpec(receiptCard.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(receiptCard.getHeight(), View.MeasureSpec.EXACTLY));
+    private void downloadReceiptAsPDF() {
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+                .setTitle("Generating PDF")
+                .setMessage("Please wait...")
+                .setCancelable(false)
+                .create();
+        loadingDialog.show();
 
-        Bitmap bitmap = Bitmap.createBitmap(receiptCard.getWidth(), receiptCard.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        receiptCard.draw(canvas);
+        new Handler().postDelayed(() -> {
+            try {
+                File pdfFile = createPDFFromView();
+                loadingDialog.dismiss();
 
-        PdfDocument document = new PdfDocument();
-        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), 1).create();
-        PdfDocument.Page page = document.startPage(pageInfo);
+                if (pdfFile != null && pdfFile.exists()) {
+                    Toast.makeText(this, "Receipt saved: " + pdfFile.getName(), Toast.LENGTH_LONG).show();
+                    openPDF(pdfFile);
+                } else {
+                    Toast.makeText(this, "Failed to generate receipt", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                loadingDialog.dismiss();
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
+        }, 500);
+    }
 
-        Canvas pdfCanvas = page.getCanvas();
-        pdfCanvas.drawBitmap(bitmap, 0, 0, null);
-        document.finishPage(page);
-
-        String fileName = "UTMSpace_Receipt_" + System.currentTimeMillis() + ".pdf";
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-        values.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
-        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-
-        Uri uri = getContentResolver().insert(MediaStore.Files.getContentUri("external"), values);
-
+    private File createPDFFromView() {
         try {
-            if (uri != null) {
-                OutputStream outputStream = getContentResolver().openOutputStream(uri);
-                document.writeTo(outputStream);
-                document.close();
-                outputStream.close();
-                Toast.makeText(this, "Receipt saved to Downloads", Toast.LENGTH_SHORT).show();
-                openReceipt(uri);
+            // 获取根视图
+            View rootView = getWindow().getDecorView().getRootView();
+
+            // 测量视图
+            rootView.measure(
+                    View.MeasureSpec.makeMeasureSpec(rootView.getWidth(), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            );
+
+            int width = rootView.getMeasuredWidth();
+            int height = rootView.getMeasuredHeight();
+
+            if (width <= 0) width = 800;
+            if (height <= 0) height = 1200;
+
+            // 创建 Bitmap
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.drawColor(Color.WHITE);
+            rootView.draw(canvas);
+
+            // 创建 PDF
+            PdfDocument pdfDocument = new PdfDocument();
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(width, height, 1).create();
+            PdfDocument.Page page = pdfDocument.startPage(pageInfo);
+
+            Canvas pdfCanvas = page.getCanvas();
+            pdfCanvas.drawBitmap(bitmap, 0, 0, null);
+
+            pdfDocument.finishPage(page);
+
+            // 保存到 Downloads 目录
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "Receipt_" + timeStamp + ".pdf";
+
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs();
+            }
+
+            File pdfFile = new File(downloadsDir, fileName);
+
+            try (FileOutputStream fos = new FileOutputStream(pdfFile)) {
+                pdfDocument.writeTo(fos);
+                pdfDocument.close();
+                bitmap.recycle();
+                return pdfFile;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            return null;
         }
     }
 
-    private void openReceipt(Uri uri) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(uri, "application/pdf");
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    private void openPDF(File pdfFile) {
         try {
-            startActivity(Intent.createChooser(intent, "Open Receipt PDF"));
+            // 使用正确的 authorities (匹配你的 AndroidManifest.xml)
+            Uri pdfUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", pdfFile);
+
+            Intent pdfIntent = new Intent(Intent.ACTION_VIEW);
+            pdfIntent.setDataAndType(pdfUri, "application/pdf");
+            pdfIntent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            pdfIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(pdfIntent);
         } catch (Exception e) {
-            Toast.makeText(this, "No PDF viewer found", Toast.LENGTH_SHORT).show();
+            // 如果直接打开失败，尝试用文件管理器打开
+            try {
+                Uri pdfUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", pdfFile);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(pdfUri, "application/pdf");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(intent, "Open Receipt With"));
+            } catch (Exception e2) {
+                Toast.makeText(this, "PDF saved to: " + pdfFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

@@ -1,9 +1,11 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton; // Import this
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 public class TermsActivity extends AppCompatActivity {
 
@@ -12,18 +14,12 @@ public class TermsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_terms);
 
-        // 1. Initialize the Back Arrow Button
-        ImageButton btnBack = findViewById(R.id.btnBack);
-
         // 2. Initialize the Accept Button
-        Button btnAccept = findViewById(R.id.btnAccept);
+        Button btnAccept = findViewById(R.id.backToLoginFromTermsBtn);
 
-        // Function for the Back Arrow
-        btnBack.setOnClickListener(v -> {
-            // This simply closes the Terms page and goes back to SignUpActivity
-            // The checkbox will NOT be checked because we didn't set RESULT_OK
-            finish();
-        });
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
         // Function for the Accept Button
         btnAccept.setOnClickListener(v -> {

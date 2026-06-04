@@ -4,7 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -18,8 +18,8 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.View
     private OnRoomActionListener listener;
 
     public interface OnRoomActionListener {
-        void onEdit(RoomModel room);
-        void onDelete(RoomModel room);
+        void onViewRoom(RoomModel room);
+        void onEditRoom(RoomModel room);
     }
 
     public AdminRoomAdapter(List<RoomModel> roomList, OnRoomActionListener listener) {
@@ -37,35 +37,77 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.View
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        if (roomList == null || position >= roomList.size()) return;
         RoomModel room = roomList.get(position);
+        if (room == null) return;
 
-        holder.tvRoomId.setText(room.getRoomId());
-        holder.tvRoomType.setText(room.getRoomType());
-        holder.tvLocation.setText(room.getLocation());
-        holder.tvPrice.setText("RM " + String.format("%.2f", room.getPrice()));
-        holder.tvOccupancy.setText(room.getCurrentOccupancy() + "/" + room.getMaxCapacity());
+        // Room Number
+        String roomNumber = room.getRoomId();
+        holder.tvRoomNumber.setText(roomNumber != null ? roomNumber : "N/A");
 
-        // Set status color
-        if ("Available".equalsIgnoreCase(room.getStatus())) {
-            holder.tvStatus.setTextColor(Color.parseColor("#10B981"));
-        } else if ("Full".equalsIgnoreCase(room.getStatus())) {
-            holder.tvStatus.setTextColor(Color.parseColor("#EF4444"));
-        } else {
-            holder.tvStatus.setTextColor(Color.parseColor("#F59E0B"));
+        // Room Status
+        String status = room.getStatus();
+        if (status == null || status.isEmpty()) {
+            status = "Available";
         }
-        holder.tvStatus.setText(room.getStatus());
+        holder.tvRoomStatus.setText(status);
+        setStatusColor(holder.tvRoomStatus, status);
 
-        holder.btnEdit.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onEdit(room);
-            }
-        });
+        // Room Type
+        String roomType = room.getRoomType();
+        holder.tvRoomType.setText(roomType != null ? roomType : "N/A");
 
-        holder.btnDelete.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDelete(room);
-            }
-        });
+        // Location
+        String location = room.getLocation();
+        holder.tvLocation.setText(location != null ? location : "N/A");
+
+        // Price
+        double price = room.getPrice();
+        holder.tvPrice.setText(String.format("RM %.2f", price));
+
+        // View button
+        if (holder.btnViewRoom != null) {
+            holder.btnViewRoom.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onViewRoom(room);
+                }
+            });
+        }
+
+        // Edit button
+        if (holder.btnEditRoom != null) {
+            holder.btnEditRoom.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEditRoom(room);
+                }
+            });
+        }
+
+        // 整个卡片不可点击
+        holder.itemView.setClickable(false);
+    }
+
+    private void setStatusColor(TextView tvStatus, String status) {
+        if (status == null) return;
+
+        switch (status.toLowerCase()) {
+            case "available":
+                tvStatus.setBackgroundResource(R.drawable.status_badge_available);
+                tvStatus.setTextColor(Color.WHITE);
+                break;
+            case "full":
+                tvStatus.setBackgroundResource(R.drawable.status_badge_full);
+                tvStatus.setTextColor(Color.WHITE);
+                break;
+            case "maintenance":
+                tvStatus.setBackgroundResource(R.drawable.status_badge_maintenance);
+                tvStatus.setTextColor(Color.WHITE);
+                break;
+            default:
+                tvStatus.setBackgroundResource(R.drawable.status_badge_available);
+                tvStatus.setTextColor(Color.WHITE);
+                break;
+        }
     }
 
     @Override
@@ -73,20 +115,29 @@ public class AdminRoomAdapter extends RecyclerView.Adapter<AdminRoomAdapter.View
         return roomList != null ? roomList.size() : 0;
     }
 
+    public void updateList(List<RoomModel> newList) {
+        this.roomList = newList;
+        notifyDataSetChanged();
+    }
+
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvRoomId, tvRoomType, tvLocation, tvPrice, tvOccupancy, tvStatus;
-        Button btnEdit, btnDelete;
+        TextView tvRoomNumber;
+        TextView tvRoomStatus;
+        TextView tvRoomType;
+        TextView tvLocation;
+        TextView tvPrice;
+        LinearLayout btnViewRoom;
+        LinearLayout btnEditRoom;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvRoomId = itemView.findViewById(R.id.tvRoomId);
+            tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+            tvRoomStatus = itemView.findViewById(R.id.tvRoomStatus);
             tvRoomType = itemView.findViewById(R.id.tvRoomType);
             tvLocation = itemView.findViewById(R.id.tvLocation);
             tvPrice = itemView.findViewById(R.id.tvPrice);
-            tvOccupancy = itemView.findViewById(R.id.tvOccupancy);
-            tvStatus = itemView.findViewById(R.id.tvStatus);
-            btnEdit = itemView.findViewById(R.id.btnEdit);
-            btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnViewRoom = itemView.findViewById(R.id.btnViewRoom);
+            btnEditRoom = itemView.findViewById(R.id.btnEditRoom);
         }
     }
 }

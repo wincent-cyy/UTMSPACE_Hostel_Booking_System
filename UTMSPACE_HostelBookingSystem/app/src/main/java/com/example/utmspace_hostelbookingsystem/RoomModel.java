@@ -2,8 +2,8 @@ package com.example.utmspace_hostelbookingsystem;
 
 public class RoomModel {
 
-    private String documentId;  // Firestore document ID
-    private String roomId;      // ✅ FIXED (replace roomNumber)
+    private String documentId;
+    private String roomId;
     private String roomType;
     private String status;
     private String location;
@@ -65,7 +65,6 @@ public class RoomModel {
         return condition;
     }
 
-    // Getter
     public long getLastUpdated() {
         return lastUpdated;
     }
@@ -107,12 +106,51 @@ public class RoomModel {
         this.condition = condition;
     }
 
-    // Setter
     public void setLastUpdated(long lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
+    // ========== 輔助方法 ==========
+
+    // 檢查房間是否已滿
     public boolean isFull() {
         return currentOccupancy >= maxCapacity;
+    }
+
+    // 檢查房間是否可用
+    public boolean isAvailable() {
+        return !isFull() && "Available".equalsIgnoreCase(status);
+    }
+
+    // 獲取可用床位數
+    public int getAvailableBeds() {
+        return maxCapacity - currentOccupancy;
+    }
+
+    // 獲取房間狀態的文字描述
+    public String getStatusText() {
+        if (isFull()) {
+            return "Full";
+        } else if ("Available".equalsIgnoreCase(status)) {
+            return "Available";
+        } else {
+            return status != null ? status : "Unknown";
+        }
+    }
+
+    // 獲取房間狀態顏色資源
+    public int getStatusColor() {
+        if (isFull()) {
+            return android.R.color.holo_red_dark;
+        } else if ("Available".equalsIgnoreCase(status)) {
+            return android.R.color.holo_green_dark;
+        } else {
+            return android.R.color.holo_orange_dark;
+        }
+    }
+
+    // 獲取價格格式化的字符串
+    public String getFormattedPrice() {
+        return "RM " + String.format("%.0f", price) + " / Semester";
     }
 }

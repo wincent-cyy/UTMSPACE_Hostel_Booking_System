@@ -1,142 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:elevation="2dp"
+    android:layout_marginBottom="10dp"
+    android:padding="16dp">
 
+    <!-- Top Row: Room Number and Status -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
-        <!-- Header: Room ID and Status -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvRoomNumber"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:text="A-101"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#3C2A24"
+            android:fontFamily="sans-serif" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pending"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:padding="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:background="@drawable/status_badge_pending"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Student Name -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_person"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvStudentName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="John Doe"
+            android:textSize="13sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Room Type -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_room_type"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvRoomType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Single Room"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Date -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_calendar"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="01/06/2024"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E8E0D8"
+        android:layout_marginBottom="12dp" />
+
+    <!-- View Button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <LinearLayout
+            android:id="@+id/btnView"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/outline_button_background"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
 
             <TextView
-                android:id="@+id/tvRoomId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Room A-101"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
-                android:text="Pending"
+                android:text="View Details"
                 android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:fontFamily="sans-serif" />
 
-        <!-- User Name -->
-        <TextView
-            android:id="@+id/tvUserName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="John Doe"
-            android:textColor="#64748B"
-            android:textSize="14sp" />
-
-        <!-- Dates -->
-        <TextView
-            android:id="@+id/tvDates"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="01/01/2024 - 05/01/2024"
-            android:textColor="#64748B"
-            android:textSize="12sp" />
-
-        <!-- Total Price -->
-        <TextView
-            android:id="@+id/tvTotalPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="RM 500.00"
-            android:textColor="#6366F1"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- Action Buttons -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnViewDetails"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                android:backgroundTint="#6366F1"
-                android:text="Details"
-                android:textAllCaps="false"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/btnApprove"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#10B981"
-                android:text="Approve"
-                android:textAllCaps="false"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/btnReject"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#EF4444"
-                android:text="Reject"
-                android:textAllCaps="false"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/btnMarkPaid"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#3B82F6"
-                android:text="Mark Paid"
-                android:textAllCaps="false"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/btnDelete"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:backgroundTint="#64748B"
-                android:text="Delete"
-                android:textAllCaps="false"
-                android:textSize="12sp" />
         </LinearLayout>
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</LinearLayout>

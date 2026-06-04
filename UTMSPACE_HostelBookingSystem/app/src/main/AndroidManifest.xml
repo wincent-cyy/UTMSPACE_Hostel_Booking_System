@@ -23,6 +23,7 @@
     </queries>
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -31,6 +32,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminRepairDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminBookingDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminEditRoomActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminEditUserActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TechnicianScheduleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AllRoomsActivity"
+            android:exported="false" />
         <activity
             android:name=".AdminProfileActivity"
             android:exported="false" />
@@ -80,9 +102,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity
-            android:name=".FullImageActivity"
-            android:exported="false" />
         <activity
             android:name=".StaffRoomDetailActivity"
             android:exported="false" />
@@ -152,11 +171,9 @@
             android:name=".TermsActivity"
             android:exported="false" />
         <activity
-            android:name=".SignUpActivity"
-            android:exported="false" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true">
+            android:name=".LoginAndSignupActivity"
+            android:exported="true"
+            android:theme="@style/Theme.UTMSPACE.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -1,7 +1,6 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.Manifest;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -12,10 +11,11 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,24 +42,59 @@ import java.util.Map;
 
 public class TechnicianRepairDetailActivity extends AppCompatActivity {
 
-    private ImageButton btnBack;
-    private TextView tvStatusBadge, tvRoomNumber, tvItemName, tvDescription, tvUrgency, tvReportedBy, tvProofTitle;
-    private Button btnTakeTask, btnMarkCompleted, btnBackToList, btnUploadPhoto;
-    private ImageView ivProofImage;
+    // 返回按钮 - XML 中是 ivBack
+    private LinearLayout ivBack;
 
+    // 状态显示 - XML 中是 tvStatus
+    private TextView tvStatus;
+    private TextView tvStatusIcon;
+    private TextView tvRequestId;
+
+    // 房间信息
+    private TextView tvRoomNumber;
+    private TextView tvRoomType;
+
+    // 问题详情
+    private TextView tvIssueType;
+    private TextView tvPriority;
+    private TextView tvDescription;
+
+    // 附加信息
+    private TextView tvReportedBy;
+    private TextView tvReportedDate;
+    private TextView tvPreferredTime;
+    private TextView tvContactPerson;
+
+    // 照片相关
+    private LinearLayout proofImageCard;
+    private ImageView ivProofImage;
+    private LinearLayout takePhotoSection;
+    private LinearLayout btnTakePhoto;
+    private LinearLayout photoPreviewContainer;
+    private ImageView ivPhotoPreview;
+    private LinearLayout btnRemovePhoto;
+
+    // 按钮
+    private LinearLayout btnStartRepairContainer;
+    private LinearLayout btnStartRepair;
+    private LinearLayout btnSubmitCompletionContainer;
+    private LinearLayout btnSubmitCompletion;
+
+    // Firebase
     private FirebaseFirestore db;
     private String requestId;
     private String currentStatus;
     private String proofImageBase64 = "";
-    private boolean hasPhoto = false;
+    private String currentPhotoBase64 = "";
+    private boolean hasNewPhoto = false;      // 专门检查是否新拍了照片
+    private boolean hasExistingPhoto = false; // 已有照片
     private Uri photoUri;
     private String currentPhotoPath;
 
-    // Permission request codes
+    // Permission
     private static final int CAMERA_PERMISSION_CODE = 100;
-    private static final int STORAGE_PERMISSION_CODE = 101;
 
-    // Camera launcher
+    // Launchers
     private final ActivityResultLauncher<Intent> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {
@@ -74,23 +109,16 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
                 }
             });
 
-    // Gallery launcher
-    private final ActivityResultLauncher<Intent> galleryLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Uri imageUri = result.getData().getData();
-                    if (imageUri != null) {
-                        uploadAndDisplayImage(imageUri);
-                    }
-                }
-            });
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_technician_repair_detail);
 
         db = FirebaseFirestore.getInstance();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
         initViews();
         displayData();
@@ -100,19 +128,43 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        tvStatusBadge = findViewById(R.id.tvStatusBadge);
+        // Header
+        ivBack = findViewById(R.id.ivBack);
+
+        // Status Banner
+        tvStatusIcon = findViewById(R.id.tvStatusIcon);
+        tvStatus = findViewById(R.id.tvStatus);
+        tvRequestId = findViewById(R.id.tvRequestId);
+
+        // Room Information
         tvRoomNumber = findViewById(R.id.tvRoomNumber);
-        tvItemName = findViewById(R.id.tvItemName);
+        tvRoomType = findViewById(R.id.tvRoomType);
+
+        // Issue Details
+        tvIssueType = findViewById(R.id.tvIssueType);
+        tvPriority = findViewById(R.id.tvPriority);
         tvDescription = findViewById(R.id.tvDescription);
-        tvUrgency = findViewById(R.id.tvUrgency);
+
+        // Additional Information
         tvReportedBy = findViewById(R.id.tvReportedBy);
-        tvProofTitle = findViewById(R.id.tvProofTitle);
-        btnTakeTask = findViewById(R.id.btnTakeTask);
-        btnMarkCompleted = findViewById(R.id.btnMarkCompleted);
-        btnBackToList = findViewById(R.id.btnBackToList);
-        btnUploadPhoto = findViewById(R.id.btnUploadPhoto);
+        tvReportedDate = findViewById(R.id.tvReportedDate);
+        tvPreferredTime = findViewById(R.id.tvPreferredTime);
+        tvContactPerson = findViewById(R.id.tvContactPerson);
+
+        // Photo Cards
+        proofImageCard = findViewById(R.id.proofImageCard);
         ivProofImage = findViewById(R.id.ivProofImage);
+        takePhotoSection = findViewById(R.id.takePhotoSection);
+        btnTakePhoto = findViewById(R.id.btnTakePhoto);
+        photoPreviewContainer = findViewById(R.id.photoPreviewContainer);
+        ivPhotoPreview = findViewById(R.id.ivPhotoPreview);
+        btnRemovePhoto = findViewById(R.id.btnRemovePhoto);
+
+        // Action Buttons
+        btnStartRepairContainer = findViewById(R.id.btnStartRepairContainer);
+        btnStartRepair = findViewById(R.id.btnStartRepair);
+        btnSubmitCompletionContainer = findViewById(R.id.btnSubmitCompletionContainer);
+        btnSubmitCompletion = findViewById(R.id.btnSubmitCompletion);
     }
 
     private void displayData() {
@@ -120,65 +172,133 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         requestId = intent.getStringExtra("REQUEST_ID");
         currentStatus = intent.getStringExtra("STATUS");
 
-        tvRoomNumber.setText("Room " + intent.getStringExtra("ROOM_ID"));
-        tvItemName.setText(intent.getStringExtra("ITEM_NAME"));
-        tvDescription.setText(intent.getStringExtra("DESCRIPTION"));
-        tvUrgency.setText(intent.getStringExtra("URGENCY"));
-        tvReportedBy.setText(intent.getStringExtra("STAFF_NAME"));
+        if (currentStatus == null) {
+            currentStatus = intent.getStringExtra("status");
+        }
 
-        if (currentStatus != null) {
-            switch (currentStatus) {
-                case "Pending":
-                    tvStatusBadge.setBackgroundResource(R.drawable.status_badge_pending);
-                    tvStatusBadge.setText("Pending");
-                    break;
-                case "In Progress":
-                    tvStatusBadge.setBackgroundResource(R.drawable.status_badge_scheduled);
-                    tvStatusBadge.setText("In Progress");
-                    break;
-                case "Completed":
-                    tvStatusBadge.setBackgroundResource(R.drawable.status_badge_completed);
-                    tvStatusBadge.setText("Completed");
-                    break;
-                default:
-                    tvStatusBadge.setBackgroundResource(R.drawable.status_badge_pending);
-                    tvStatusBadge.setText("Pending");
-                    break;
-            }
+        // Set Request ID
+        tvRequestId.setText("#" + (requestId != null ? requestId.substring(0, Math.min(8, requestId.length())) : "N/A"));
+
+        // Room Information
+        String roomId = intent.getStringExtra("ROOM_ID");
+        if (roomId == null) roomId = intent.getStringExtra("roomId");
+        tvRoomNumber.setText(roomId != null ? roomId : "N/A");
+
+        String roomType = intent.getStringExtra("ROOM_TYPE");
+        if (roomType == null) roomType = intent.getStringExtra("roomType");
+        tvRoomType.setText(roomType != null ? roomType : "N/A");
+
+        // Issue Details
+        String issueType = intent.getStringExtra("ISSUE_TYPE");
+        if (issueType == null) issueType = intent.getStringExtra("issueType");
+        tvIssueType.setText(issueType != null ? issueType : "N/A");
+
+        String priority = intent.getStringExtra("PRIORITY");
+        if (priority == null) priority = intent.getStringExtra("priority");
+        tvPriority.setText(priority != null ? priority : "N/A");
+        setPriorityColor(priority);
+
+        String description = intent.getStringExtra("DESCRIPTION");
+        if (description == null) description = intent.getStringExtra("description");
+        tvDescription.setText(description != null ? description : "No description");
+
+        // Additional Information
+        String reportedBy = intent.getStringExtra("STAFF_NAME");
+        if (reportedBy == null) reportedBy = intent.getStringExtra("name");
+        tvReportedBy.setText(reportedBy != null ? reportedBy : "Unknown");
+
+        long createdAt = intent.getLongExtra("CREATED_AT", 0);
+        if (createdAt == 0) createdAt = intent.getLongExtra("createdAt", 0);
+        if (createdAt > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale.getDefault());
+            tvReportedDate.setText(sdf.format(new Date(createdAt)));
+        } else {
+            tvReportedDate.setText("N/A");
+        }
+
+        String preferredTime = intent.getStringExtra("PREFERRED_TIME");
+        if (preferredTime == null) preferredTime = intent.getStringExtra("availableTime");
+        tvPreferredTime.setText(preferredTime != null ? preferredTime : "Not specified");
+
+        String contactPerson = intent.getStringExtra("CONTACT_PERSON");
+        if (contactPerson == null) contactPerson = intent.getStringExtra("contactPerson");
+        tvContactPerson.setText(contactPerson != null && !contactPerson.isEmpty() ? contactPerson : "N/A");
+
+        // Set status display
+        setStatusDisplay(currentStatus);
+    }
+
+    private void setStatusDisplay(String status) {
+        if (status == null) status = "Pending";
+        tvStatus.setText(status);
+
+        switch (status.toLowerCase()) {
+            case "pending":
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                break;
+            case "in progress":
+            case "in-progress":
+                tvStatusIcon.setText("🔄");
+                tvStatus.setTextColor(getColor(android.R.color.holo_blue_dark));
+                break;
+            case "completed":
+                tvStatusIcon.setText("✅");
+                tvStatus.setTextColor(getColor(android.R.color.holo_green_dark));
+                break;
+            default:
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+        }
+    }
+
+    private void setPriorityColor(String priority) {
+        if (priority == null) return;
+        switch (priority.toLowerCase()) {
+            case "high":
+                tvPriority.setTextColor(getColor(android.R.color.holo_red_dark));
+                break;
+            case "medium":
+                tvPriority.setTextColor(getColor(android.R.color.holo_orange_dark));
+                break;
+            case "low":
+                tvPriority.setTextColor(getColor(android.R.color.holo_green_dark));
+                break;
         }
     }
 
     private void setupButtons() {
-        if (currentStatus != null) {
-            switch (currentStatus) {
-                case "Pending":
-                    btnTakeTask.setVisibility(View.VISIBLE);
-                    btnMarkCompleted.setVisibility(View.GONE);
-                    btnBackToList.setVisibility(View.GONE);
-                    tvProofTitle.setVisibility(View.GONE);
-                    btnUploadPhoto.setVisibility(View.GONE);
-                    ivProofImage.setVisibility(View.GONE);
-                    break;
-                case "In Progress":
-                    btnTakeTask.setVisibility(View.GONE);
-                    btnMarkCompleted.setVisibility(View.VISIBLE);
-                    btnBackToList.setVisibility(View.GONE);
-                    tvProofTitle.setVisibility(View.VISIBLE);
-                    btnUploadPhoto.setVisibility(View.VISIBLE);
-                    break;
-                case "Completed":
-                    btnTakeTask.setVisibility(View.GONE);
-                    btnMarkCompleted.setVisibility(View.GONE);
-                    btnBackToList.setVisibility(View.VISIBLE);
-                    tvProofTitle.setVisibility(View.VISIBLE);
-                    btnUploadPhoto.setVisibility(View.GONE);
-                    break;
-                default:
-                    btnTakeTask.setVisibility(View.VISIBLE);
-                    btnMarkCompleted.setVisibility(View.GONE);
-                    btnBackToList.setVisibility(View.GONE);
-                    break;
-            }
+        if (currentStatus == null) return;
+
+        switch (currentStatus.toLowerCase()) {
+            case "pending":
+                btnStartRepairContainer.setVisibility(View.VISIBLE);
+                btnSubmitCompletionContainer.setVisibility(View.GONE);
+                takePhotoSection.setVisibility(View.GONE);
+                proofImageCard.setVisibility(View.GONE);
+                break;
+
+            case "in progress":
+            case "in-progress":
+                btnStartRepairContainer.setVisibility(View.GONE);
+                btnSubmitCompletionContainer.setVisibility(View.VISIBLE);
+                takePhotoSection.setVisibility(View.VISIBLE);
+                proofImageCard.setVisibility(View.GONE);
+                break;
+
+            case "completed":
+                btnStartRepairContainer.setVisibility(View.GONE);
+                btnSubmitCompletionContainer.setVisibility(View.GONE);
+                takePhotoSection.setVisibility(View.GONE);
+                proofImageCard.setVisibility(View.VISIBLE);
+                break;
+
+            default:
+                btnStartRepairContainer.setVisibility(View.VISIBLE);
+                btnSubmitCompletionContainer.setVisibility(View.GONE);
+                takePhotoSection.setVisibility(View.GONE);
+                proofImageCard.setVisibility(View.GONE);
+                break;
         }
     }
 
@@ -188,30 +308,47 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         db.collection("RepairRequests").document(requestId).get()
                 .addOnSuccessListener(doc -> {
                     String savedImage = doc.getString("proofImage");
-                    if (savedImage != null && !savedImage.isEmpty()) {
-                        proofImageBase64 = savedImage;
-                        hasPhoto = true;
-                        byte[] decodedBytes = Base64.decode(savedImage, Base64.DEFAULT);
+                    String completionPhoto = doc.getString("completionPhoto");
+                    String imageToLoad = completionPhoto != null && !completionPhoto.isEmpty() ? completionPhoto : savedImage;
+
+                    if (imageToLoad != null && !imageToLoad.isEmpty()) {
+                        proofImageBase64 = imageToLoad;
+                        hasExistingPhoto = true;
+                        byte[] decodedBytes = Base64.decode(imageToLoad, Base64.DEFAULT);
                         Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
                         ivProofImage.setImageBitmap(bitmap);
-                        ivProofImage.setVisibility(View.VISIBLE);
+                        proofImageCard.setVisibility(View.VISIBLE);
                     }
                 });
     }
 
-    private void showImagePickerDialog() {
-        String[] options = {"Take Photo", "Choose from Gallery"};
+    private void setupClickListeners() {
+        ivBack.setOnClickListener(v -> finish());
 
-        new AlertDialog.Builder(this)
-                .setTitle("Select Image")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        checkCameraPermission();
-                    } else {
-                        checkStoragePermission();
-                    }
-                })
-                .show();
+        btnStartRepair.setOnClickListener(v -> updateStatus("In Progress"));
+
+        btnSubmitCompletion.setOnClickListener(v -> {
+            // 必须要有新拍的照片才能提交
+            if (hasNewPhoto) {
+                updateStatusWithPhoto("Completed");
+            } else {
+                Toast.makeText(this, "Please take a new photo as proof of completion", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        btnTakePhoto.setOnClickListener(v -> checkCameraPermission());
+
+        if (btnRemovePhoto != null) {
+            btnRemovePhoto.setOnClickListener(v -> removePhoto());
+        }
+    }
+
+    private void removePhoto() {
+        currentPhotoBase64 = "";
+        hasNewPhoto = false;  // 重置新照片标志
+        photoPreviewContainer.setVisibility(View.GONE);
+        btnTakePhoto.setVisibility(View.VISIBLE);
+        ivPhotoPreview.setImageBitmap(null);
     }
 
     private void checkCameraPermission() {
@@ -229,24 +366,6 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void checkStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ doesn't need storage permission for media
-            openGallery();
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        STORAGE_PERMISSION_CODE);
-            } else {
-                openGallery();
-            }
-        } else {
-            openGallery();
-        }
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -256,18 +375,11 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
             }
-        } else if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openGallery();
-            } else {
-                Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show();
-            }
         }
     }
 
     private void openCamera() {
         try {
-            // Create a file to store the image
             File photoFile = createImageFile();
             if (photoFile != null) {
                 photoUri = FileProvider.getUriForFile(this,
@@ -297,48 +409,39 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         return imageFile;
     }
 
-    private void openGallery() {
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        galleryLauncher.launch(galleryIntent);
-    }
-
     private void uploadAndDisplayImage(Uri imageUri) {
         try {
             InputStream is = getContentResolver().openInputStream(imageUri);
             Bitmap bitmap = BitmapFactory.decodeStream(is);
 
-            // Resize bitmap to avoid太大了
-            int maxWidth = 1024;
-            int maxHeight = 1024;
-            if (bitmap.getWidth() > maxWidth || bitmap.getHeight() > maxHeight) {
-                float ratio = Math.min((float) maxWidth / bitmap.getWidth(), (float) maxHeight / bitmap.getHeight());
-                int newWidth = Math.round(bitmap.getWidth() * ratio);
-                int newHeight = Math.round(bitmap.getHeight() * ratio);
-                bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+            // 使用 600x600 像素，保证完成证明清晰可见
+            int targetSize = 600;
+
+            // 保持原始宽高比
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            int targetWidth, targetHeight;
+
+            if (width > height) {
+                targetWidth = targetSize;
+                targetHeight = (int) ((float) height / width * targetSize);
+            } else {
+                targetHeight = targetSize;
+                targetWidth = (int) ((float) width / height * targetSize);
             }
 
-            // Compress image
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
-            proofImageBase64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
-            hasPhoto = true;
+            Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true);
 
-            // Display image
-            ivProofImage.setImageBitmap(bitmap);
-            ivProofImage.setVisibility(View.VISIBLE);
+            ivPhotoPreview.setImageBitmap(scaledBitmap);
+            photoPreviewContainer.setVisibility(View.VISIBLE);
+            btnTakePhoto.setVisibility(View.GONE);
 
-            // Save to Firestore
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("proofImage", proofImageBase64);
+            // 使用 60% 质量，比头像更清晰
+            currentPhotoBase64 = bitmapToMediumBase64(scaledBitmap);
+            hasNewPhoto = true;
 
-            db.collection("RepairRequests").document(requestId)
-                    .update(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Photo uploaded successfully", Toast.LENGTH_SHORT).show();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Failed to upload: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+            Log.d("TechnicianRepairDetail", "Final size: " + targetWidth + "x" + targetHeight);
+            Log.d("TechnicianRepairDetail", "Base64 length: " + currentPhotoBase64.length());
 
             is.close();
         } catch (Exception e) {
@@ -346,31 +449,29 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
+    private String bitmapToMediumBase64(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        // 使用 60% 质量
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos);
+        byte[] imageBytes = baos.toByteArray();
+        return Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+    }
 
-        btnTakeTask.setOnClickListener(v -> updateStatus("In Progress"));
+    private String bitmapToShortBase64(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 40, baos);
+        byte[] imageBytes = baos.toByteArray();
+        String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
 
-        btnMarkCompleted.setOnClickListener(v -> {
-            if (hasPhoto) {
-                updateStatus("Completed");
-            } else {
-                Toast.makeText(this, "Please upload proof photo before completing the task", Toast.LENGTH_LONG).show();
-            }
-        });
-
-        btnBackToList.setOnClickListener(v -> {
-            Intent intent = new Intent(TechnicianRepairDetailActivity.this, TechnicianRepairRequestActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        });
-
-        btnUploadPhoto.setOnClickListener(v -> showImagePickerDialog());
+        Log.d("TechnicianRepairDetail", "Image bytes: " + imageBytes.length + " bytes");
+        return base64;
     }
 
     private void updateStatus(String newStatus) {
         if (requestId == null) return;
+
+        btnStartRepair.setEnabled(false);
+        btnStartRepair.setAlpha(0.5f);
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", newStatus);
@@ -379,21 +480,37 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         db.collection("RepairRequests").document(requestId)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
-                    String message;
-                    if (newStatus.equals("In Progress")) {
-                        message = "Task started successfully!";
-                    } else {
-                        message = "Task marked as completed!";
-                    }
-                    Toast.makeText(TechnicianRepairDetailActivity.this, message, Toast.LENGTH_LONG).show();
-
-                    Intent intent = new Intent(TechnicianRepairDetailActivity.this, TechnicianRepairRequestActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
+                    Toast.makeText(this, "Task started successfully!", Toast.LENGTH_LONG).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(TechnicianRepairDetailActivity.this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnStartRepair.setEnabled(true);
+                    btnStartRepair.setAlpha(1f);
+                    Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void updateStatusWithPhoto(String newStatus) {
+        if (requestId == null) return;
+
+        btnSubmitCompletion.setEnabled(false);
+        btnSubmitCompletion.setAlpha(0.5f);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", newStatus);
+        updates.put("updatedAt", System.currentTimeMillis());
+        updates.put("completionPhoto", currentPhotoBase64);
+
+        db.collection("RepairRequests").document(requestId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Task completed successfully!", Toast.LENGTH_LONG).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnSubmitCompletion.setEnabled(true);
+                    btnSubmitCompletion.setAlpha(1f);
+                    Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 }

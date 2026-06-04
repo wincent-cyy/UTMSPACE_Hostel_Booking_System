@@ -1,5 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- 基本顏色（系統可能需要） -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- 主題主色（保持原样） -->
+    <color name="primaryColor">#800000</color>
+    <color name="primaryDarkColor">#5C0000</color>
+
+    <!-- 背景顏色（保持原样，不改） -->
+    <color name="backgroundColor">#F5F0EB</color>
+    <color name="cardBackground">#FFFFFF</color>
+    <color name="darker_red">#5C0000</color>
+
+    <!-- 文字顏色 - 深色模式下变深/加粗，提高可见度 -->
+    <color name="textPrimary">#2C1A14</color>      <!-- 更深的主文字色 -->
+    <color name="textSecondary">#6B4A3E</color>    <!-- 更深的副文字色 -->
+    <color name="textHint">#A08070</color>         <!-- 提示文字稍微加深 -->
+    <color name="textLabel">#A04030</color>        <!-- 标签颜色加深 -->
+    <color name="textLink">#9B2E1E</color>         <!-- 链接颜色加深 -->
+    <color name="textDark">#1A1A1A</color>         <!-- 深色文字 -->
+    <color name="textLight">#FFFFFF</color>        <!-- 浅色文字保持 -->
+    <color name="tabInactiveText">#805540</color>  <!-- Tab非激活文字加深 -->
+
+    <!-- 邊框與分隔線（保持原样） -->
+    <color name="inputBorder">#E7D7CF</color>
+    <color name="inputFocusBorder">#C04333</color>
+    <color name="dividerColor">#EEDAD2</color>
+
+    <!-- 其他（保持原样） -->
+    <color name="errorRed">#D32F2F</color>
+    <color name="iconTint">#C96B5A</color>
+
+    <!-- 狀態標籤顏色（保持原样） -->
+    <color name="pending_bg">#FEF3C7</color>
+    <color name="pending_text">#D97706</color>
+    <color name="approved_bg">#DCFCE7</color>
+    <color name="approved_text">#15803D</color>
+    <color name="completed_bg">#DCFCE7</color>
+    <color name="completed_text">#15803D</color>
+    <color name="paid_bg">#DBEAFE</color>
+    <color name="paid_text">#1E40AF</color>
+    <color name="rejected_bg">#FEE2E2</color>
+    <color name="rejected_text">#B91C1C</color>
 </resources>

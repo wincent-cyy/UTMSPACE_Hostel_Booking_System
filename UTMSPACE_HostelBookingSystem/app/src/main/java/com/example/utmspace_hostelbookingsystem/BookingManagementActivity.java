@@ -1,52 +1,62 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
-import android.text.InputFilter;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class BookingManagementActivity extends AppCompatActivity {
 
-    // UI Structural Elements
-    private EditText etStaffSearch;
-    private RecyclerView rvStaffBookings;
-    private LinearLayout staffEmptyState;
+    // UI Elements
+    private EditText etSearchBooking;
+    private ImageView ivClearSearch;
+    private LinearLayout btnFilter;
+    private TextView tvBookingCount;
+    private RecyclerView rvBookings;
+    private TextView tvEmptyState;
     private BottomNavigationView bottomNavigation;
 
-    // Database Architecture & Lists
+    // Firebase
     private FirebaseFirestore db;
-    private BookingAdapter adapter;
-    private List<Booking> masterAllBookingsList;
-    private List<Booking> filteredBookingsList;
 
+    // Data
+    private List<Booking> allBookings = new ArrayList<>();
+    private List<Booking> filteredBookings = new ArrayList<>();
+    private BookingAdapter adapter;
+
+    // Filter variables
     private String selectedStatus = "All";
-    private String selectedRoomType = "All";  // ✅ 新增
+    private String selectedRoomType = "All";
     private String currentSearchQuery = "";
 
+    // Search delay
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
 
@@ -57,141 +67,102 @@ public class BookingManagementActivity extends AppCompatActivity {
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         db = FirebaseFirestore.getInstance();
 
         initViews();
         setupRecyclerView();
-        setupSearchFilter();
+        setupSearchFunction();
+        setupListeners();
         setupNavigation();
 
-        fetchAllBookingsFromFirestore();
+        fetchAllBookings();
     }
 
     private void initViews() {
-        etStaffSearch = findViewById(R.id.etStaffSearch);
-        rvStaffBookings = findViewById(R.id.rvStaffBookings);
-        staffEmptyState = findViewById(R.id.staffEmptyState);
+        etSearchBooking = findViewById(R.id.etSearchBooking);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
+        btnFilter = findViewById(R.id.btnFilter);
+        tvBookingCount = findViewById(R.id.tvBookingCount);
+        rvBookings = findViewById(R.id.rvBookings);
+        tvEmptyState = findViewById(R.id.tvEmptyState);
         bottomNavigation = findViewById(R.id.bottomNavigation);
-
-        View btnFilter = findViewById(R.id.btnListFilter);
-        if (btnFilter != null) {
-            btnFilter.setOnClickListener(v -> showFilterBottomSheet());
-        }
     }
 
     private void setupRecyclerView() {
-        masterAllBookingsList = new ArrayList<>();
-        filteredBookingsList = new ArrayList<>();
-
-        rvStaffBookings.setLayoutManager(new LinearLayoutManager(this));
-
-        // ✅ 修正: 使用新的字段名
-        adapter = new BookingAdapter(filteredBookingsList, booking -> {
+        rvBookings.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new BookingAdapter(filteredBookings, booking -> {
             Intent intent = new Intent(BookingManagementActivity.this, StaffActionActivity.class);
-
-            // ✅ 修正: 使用新的 getter 方法
             intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
             intent.putExtra("BOOKING_STATUS", booking.getBookingStatus());
+            intent.putExtra("REJECT_REASON", booking.getRejectReason());
             intent.putExtra("ROOM_ID", booking.getRoomId());
             intent.putExtra("ROOM_TYPE", booking.getRoomType());
             intent.putExtra("ROOM_PRICE", booking.getDisplayPrice());
-
-            // ✅ 修正: 从 Users 继承的字段
             intent.putExtra("STUDENT_NAME", booking.getName());
             intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
             intent.putExtra("PHONE_NUMBER", booking.getPhone());
+            intent.putExtra("EMAIL", booking.getEmail());
+            intent.putExtra("PROGRAMME", booking.getProgramme());
             intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
             intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
-
-            // ✅ 修正: 外键 uid
+            intent.putExtra("CREATED_AT", booking.getCreatedAt());
             intent.putExtra("userId", booking.getUid());
-
             startActivity(intent);
         }, true);
-
-        rvStaffBookings.setAdapter(adapter);
+        rvBookings.setAdapter(adapter);
     }
 
-    private void fetchAllBookingsFromFirestore() {
-        db.collection("Bookings")
-                .whereIn("bookingStatus", Arrays.asList("Pending", "Approved", "Rejected", "Paid"))
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    masterAllBookingsList.clear();
-
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Booking booking = document.toObject(Booking.class);
-                        booking.setBookingId(document.getId());
-                        masterAllBookingsList.add(booking);
-                    }
-
-                    applyFilters();  // ✅ 改为调用 applyFilters()
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(BookingManagementActivity.this, "Network Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void setupSearchFilter() {
-        // 禁止自动大写
-        etStaffSearch.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-
-        // 限制只能输入字母、数字和连字符
-        InputFilter roomNumberFilter = (source, start, end, dest, dstart, dend) -> {
-            for (int i = start; i < end; i++) {
-                char c = source.charAt(i);
-                if (!Character.isLetterOrDigit(c) && c != '-') {
-                    return "";
-                }
-            }
-            return null;
-        };
-        etStaffSearch.setFilters(new InputFilter[]{roomNumberFilter, new InputFilter.LengthFilter(10)});
-
-        etStaffSearch.addTextChangedListener(new TextWatcher() {
+    private void setupSearchFunction() {
+        etSearchBooking.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // 取消之前的延迟任务
                 if (searchRunnable != null) {
                     searchHandler.removeCallbacks(searchRunnable);
                 }
 
-                // 保存当前搜索词
                 String query = s.toString();
 
-                // 创建新的延迟任务（500ms 后执行）
+                if (ivClearSearch != null) {
+                    ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+
                 searchRunnable = () -> {
                     currentSearchQuery = query;
                     applyFilters();
-
-                    // 验证房间号格式（只在用户停止输入后检查）
-                    if (!query.isEmpty()) {
-                        String cleanQuery = query.toLowerCase().trim();
-                        boolean isValidRoomFormat = cleanQuery.matches("^[A-Za-z]-?\\d+$") || cleanQuery.matches("^[A-Za-z]\\d+$");
-
-                        if (!isValidRoomFormat) {
-                            Toast.makeText(BookingManagementActivity.this,
-                                    "Please enter a valid Room Number (e.g., A-101, A101)",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
                 };
-
-                // 延迟 500ms 执行
-                searchHandler.postDelayed(searchRunnable, 500);
+                searchHandler.postDelayed(searchRunnable, 300);
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                etSearchBooking.setText("");
+                currentSearchQuery = "";
+                applyFilters();
+            });
+        }
+    }
+
+    private void setupListeners() {
+        if (btnFilter != null) {
+            btnFilter.setOnClickListener(v -> showFilterBottomSheet());
+        }
     }
 
     private void setupNavigation() {
-        bottomNavigation.setSelectedItemId(R.id.nav_staff_bookings);
+        if (bottomNavigation == null) return;
 
+        bottomNavigation.setSelectedItemId(R.id.nav_staff_bookings);
         bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
@@ -217,88 +188,123 @@ public class BookingManagementActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchAllBookings() {
+        db.collection("Bookings")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    allBookings.clear();
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Booking booking = new Booking();
+
+                        // Manually set all fields from Firestore document
+                        booking.setBookingId(document.getId());
+                        booking.setBookingStatus(document.getString("bookingStatus"));
+                        booking.setRoomId(document.getString("roomId"));
+                        booking.setRoomType(document.getString("roomType"));
+                        booking.setName(document.getString("name"));
+                        booking.setMatricNumber(document.getString("matricNumber"));
+                        booking.setPhone(document.getString("phone"));
+                        booking.setEmail(document.getString("email"));
+                        booking.setProgramme(document.getString("programme"));
+                        booking.setCheckInDate(document.getString("checkInDate"));
+                        booking.setLeaseDuration(document.getString("leaseDuration"));
+                        booking.setRejectReason(document.getString("rejectReason"));
+
+                        // Handle price (could be Double or Long)
+                        Object priceObj = document.get("price");
+                        if (priceObj instanceof Double) {
+                            booking.setPrice((Double) priceObj);
+                        } else if (priceObj instanceof Long) {
+                            booking.setPrice(((Long) priceObj).doubleValue());
+                        } else if (priceObj instanceof Integer) {
+                            booking.setPrice(((Integer) priceObj).doubleValue());
+                        } else {
+                            booking.setPrice(0.0);
+                        }
+
+                        // Handle createdAt (could be Long or Timestamp)
+                        Object createdAtObj = document.get("createdAt");
+                        if (createdAtObj instanceof Long) {
+                            booking.setCreatedAt((Long) createdAtObj);
+                        } else if (createdAtObj instanceof com.google.firebase.Timestamp) {
+                            booking.setCreatedAt(((com.google.firebase.Timestamp) createdAtObj).getSeconds() * 1000);
+                        } else {
+                            booking.setCreatedAt(System.currentTimeMillis());
+                        }
+
+                        booking.setUid(document.getString("uid"));
+
+                        allBookings.add(booking);
+                    }
+
+                    applyFilters();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load bookings: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
     private void showFilterBottomSheet() {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
         View sheetView = getLayoutInflater().inflate(R.layout.dialog_staff_filter, null);
         bottomSheetDialog.setContentView(sheetView);
 
-        // Status buttons
+        // Status buttons - 使用 TextView
         TextView btnStatusAll = sheetView.findViewById(R.id.btnStatusAll);
         TextView btnStatusPending = sheetView.findViewById(R.id.btnStatusPending);
         TextView btnStatusApproved = sheetView.findViewById(R.id.btnStatusApproved);
         TextView btnStatusRejected = sheetView.findViewById(R.id.btnStatusRejected);
         TextView btnStatusPaid = sheetView.findViewById(R.id.btnStatusPaid);
 
-        // Room Type buttons
+        // Room Type buttons - 使用 TextView
         TextView btnRoomAll = sheetView.findViewById(R.id.btnRoomAll);
         TextView btnRoomSingle = sheetView.findViewById(R.id.btnRoomSingle);
         TextView btnRoomDouble = sheetView.findViewById(R.id.btnRoomDouble);
         TextView btnRoomQuad = sheetView.findViewById(R.id.btnRoomQuad);
 
-        MaterialButton btnClear = sheetView.findViewById(R.id.btnClearFilters);
-        MaterialButton btnApply = sheetView.findViewById(R.id.btnApplyFilters);
+        // Action buttons - 使用 TextView（因为你的 XML 中用的是 TextView）
+        TextView btnClear = sheetView.findViewById(R.id.btnClearFilters);
+        TextView btnApply = sheetView.findViewById(R.id.btnApplyFilters);
 
-        // Track temporary selections
         final String[] tempStatus = {selectedStatus};
         final String[] tempRoomType = {selectedRoomType};
 
-        // ✅ 使用原来的颜色设置方式
         Runnable updateUI = () -> {
-            // 1. Reset and update Status chips
-            btnStatusAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnStatusAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnStatusPending.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnStatusPending.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnStatusApproved.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnStatusApproved.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnStatusRejected.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnStatusRejected.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnStatusPaid.setBackgroundResource(R.drawable.filter_chip_unselected);  // ✅ 添加
-            btnStatusPaid.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+            resetChipStyle(btnStatusAll);
+            resetChipStyle(btnStatusPending);
+            resetChipStyle(btnStatusApproved);
+            resetChipStyle(btnStatusRejected);
+            resetChipStyle(btnStatusPaid);
 
-            if (tempStatus[0].equals("Pending")) {
-                btnStatusPending.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnStatusPending.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempStatus[0].equals("Approved")) {
-                btnStatusApproved.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnStatusApproved.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempStatus[0].equals("Rejected")) {
-                btnStatusRejected.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnStatusRejected.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempStatus[0].equals("Paid")) {  // ✅ 添加
-                btnStatusPaid.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnStatusPaid.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempStatus[0].equals("All")) {
-                btnStatusAll.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnStatusAll.setTextColor(android.graphics.Color.WHITE);
+            if ("Pending".equals(tempStatus[0])) {
+                setChipSelected(btnStatusPending);
+            } else if ("Approved".equals(tempStatus[0])) {
+                setChipSelected(btnStatusApproved);
+            } else if ("Rejected".equals(tempStatus[0])) {
+                setChipSelected(btnStatusRejected);
+            } else if ("Paid".equals(tempStatus[0])) {
+                setChipSelected(btnStatusPaid);
+            } else {
+                setChipSelected(btnStatusAll);
             }
 
-            // 2. Reset and update Room Type chips
-            btnRoomAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnRoomAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnRoomSingle.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnRoomSingle.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnRoomDouble.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnRoomDouble.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-            btnRoomQuad.setBackgroundResource(R.drawable.filter_chip_unselected);
-            btnRoomQuad.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+            resetChipStyle(btnRoomAll);
+            resetChipStyle(btnRoomSingle);
+            resetChipStyle(btnRoomDouble);
+            resetChipStyle(btnRoomQuad);
 
-            if (tempRoomType[0].equals("Single")) {
-                btnRoomSingle.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnRoomSingle.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempRoomType[0].equals("Double")) {
-                btnRoomDouble.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnRoomDouble.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempRoomType[0].equals("Quad")) {
-                btnRoomQuad.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnRoomQuad.setTextColor(android.graphics.Color.WHITE);
-            } else if (tempRoomType[0].equals("All")) {
-                btnRoomAll.setBackgroundResource(R.drawable.filter_chip_selected);
-                btnRoomAll.setTextColor(android.graphics.Color.WHITE);
+            if ("Single".equals(tempRoomType[0])) {
+                setChipSelected(btnRoomSingle);
+            } else if ("Double".equals(tempRoomType[0])) {
+                setChipSelected(btnRoomDouble);
+            } else if ("Quad".equals(tempRoomType[0])) {
+                setChipSelected(btnRoomQuad);
+            } else {
+                setChipSelected(btnRoomAll);
             }
         };
 
-        // Execute baseline selection state rendering
         updateUI.run();
 
         // Status click listeners
@@ -320,6 +326,7 @@ public class BookingManagementActivity extends AppCompatActivity {
             selectedRoomType = tempRoomType[0];
             applyFilters();
             bottomSheetDialog.dismiss();
+            Toast.makeText(this, "Filters applied", Toast.LENGTH_SHORT).show();
         });
 
         // Clear button
@@ -327,7 +334,7 @@ public class BookingManagementActivity extends AppCompatActivity {
             selectedStatus = "All";
             selectedRoomType = "All";
             currentSearchQuery = "";
-            etStaffSearch.setText("");
+            etSearchBooking.setText("");
             applyFilters();
             bottomSheetDialog.dismiss();
             Toast.makeText(this, "Filters cleared", Toast.LENGTH_SHORT).show();
@@ -336,70 +343,75 @@ public class BookingManagementActivity extends AppCompatActivity {
         bottomSheetDialog.show();
     }
 
-    private void applyFilters() {
-        filteredBookingsList.clear();
+    private void resetChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
+    }
 
-        for (Booking booking : masterAllBookingsList) {
-            // Status filter
+    private void setChipSelected(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_selected);
+        chip.setTextColor(getColor(android.R.color.white));
+    }
+
+    private void applyFilters() {
+        filteredBookings.clear();
+
+        for (Booking booking : allBookings) {
             boolean matchesStatus = true;
+            boolean matchesRoomType = true;
+            boolean matchesSearch = true;
+
+            // Status filter
             if (!"All".equals(selectedStatus)) {
                 String status = booking.getBookingStatus();
                 matchesStatus = status != null && status.equalsIgnoreCase(selectedStatus);
             }
 
             // Room Type filter
-            boolean matchesRoomType = true;
             if (!"All".equals(selectedRoomType)) {
                 String roomType = booking.getRoomType();
-                matchesRoomType = roomType != null && roomType.toLowerCase().contains(selectedRoomType.toLowerCase());
-            }
-
-            // Search filter
-            boolean matchesSearch = true;
-            if (!currentSearchQuery.isEmpty()) {
-                String cleanQuery = currentSearchQuery.toLowerCase().trim();
-
-                // 验证输入是否为有效的房间号格式
-                boolean isValidRoomFormat = cleanQuery.matches("^[A-Za-z]-?\\d+$") || cleanQuery.matches("^[A-Za-z]\\d+$");
-
-                if (!isValidRoomFormat) {
-                    matchesSearch = false;
-                } else {
-                    String roomId = booking.getRoomId() != null ? booking.getRoomId().toLowerCase() : "";
-                    matchesSearch = roomId.contains(cleanQuery);
+                if (roomType != null) {
+                    if ("Single".equals(selectedRoomType)) {
+                        matchesRoomType = roomType.toLowerCase().contains("single");
+                    } else if ("Double".equals(selectedRoomType)) {
+                        matchesRoomType = roomType.toLowerCase().contains("double");
+                    } else if ("Quad".equals(selectedRoomType)) {
+                        matchesRoomType = roomType.toLowerCase().contains("quad");
+                    }
                 }
             }
 
+            // Search filter - by room number or student name
+            if (!currentSearchQuery.isEmpty()) {
+                String cleanQuery = currentSearchQuery.toLowerCase().trim();
+                String roomId = booking.getRoomId() != null ? booking.getRoomId().toLowerCase() : "";
+                String studentName = booking.getName() != null ? booking.getName().toLowerCase() : "";
+                matchesSearch = roomId.contains(cleanQuery) || studentName.contains(cleanQuery);
+            }
+
             if (matchesStatus && matchesRoomType && matchesSearch) {
-                filteredBookingsList.add(booking);
+                filteredBookings.add(booking);
             }
         }
 
-        // ✅ 只在搜索完成且没有结果时显示一次提示
-        if (filteredBookingsList.isEmpty() && !currentSearchQuery.isEmpty()) {
-            String cleanQuery = currentSearchQuery.toLowerCase().trim();
-            boolean isValidRoomFormat = cleanQuery.matches("^[A-Za-z]-?\\d+$") || cleanQuery.matches("^[A-Za-z]\\d+$");
-            if (isValidRoomFormat) {
-                Toast.makeText(this, "No room found with number: " + currentSearchQuery, Toast.LENGTH_SHORT).show();
-            }
-        }
+        adapter.updateList(filteredBookings);
+        tvBookingCount.setText(filteredBookings.size() + " applications");
 
-        // Update empty state
-        if (filteredBookingsList.isEmpty()) {
-            rvStaffBookings.setVisibility(View.GONE);
-            staffEmptyState.setVisibility(View.VISIBLE);
+        if (filteredBookings.isEmpty()) {
+            rvBookings.setVisibility(View.GONE);
+            tvEmptyState.setVisibility(View.VISIBLE);
         } else {
-            rvStaffBookings.setVisibility(View.VISIBLE);
-            staffEmptyState.setVisibility(View.GONE);
+            rvBookings.setVisibility(View.VISIBLE);
+            tvEmptyState.setVisibility(View.GONE);
         }
-
-        adapter.notifyDataSetChanged();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        fetchAllBookingsFromFirestore();
+        fetchAllBookings();
 
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_staff_bookings);

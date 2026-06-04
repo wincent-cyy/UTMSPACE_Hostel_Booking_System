@@ -2,19 +2,21 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.Spinner;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -22,23 +24,30 @@ import java.util.Map;
 
 public class StaffRoomDetailActivity extends AppCompatActivity {
 
-    private ImageButton btnBack;
-    private TextView tvRoomNumber, tvRoomType, tvMaxCapacity, tvPrice;
-    private Spinner spnStatus, spnCondition;
-    private EditText etCurrentOccupancy;
-    private Button btnRepairRequest, btnSaveChanges;
+    // UI Elements - 匹配 XML ID
+    private LinearLayout ivBack;
+    private TextInputEditText etRoomNumber;
+    private TextInputEditText etRoomType;
+    private TextInputEditText etLocation;
+    private TextInputEditText etPrice;
+    private TextInputEditText etStatus;
+    private TextInputEditText etMaxCapacity;
+    private EditText etCurrentOccupancy;  // 改为可编辑的 EditText
+    private LinearLayout btnSendRepairRequest;
+    private LinearLayout btnViewRepairHistory;
+    private LinearLayout btnCancel;
+    private LinearLayout btnSave;
 
+    // Firebase
     private FirebaseFirestore db;
+
+    // Data
     private String roomDocId;
     private String originalStatus;
-    private String originalCondition;
-    private int originalOccupancy;
+    private int maxCapacity;
 
-    // Status options
+    // Status options for dropdown
     private String[] statusOptions = {"Available", "Full", "Maintenance"};
-
-    // Condition options
-    private String[] conditionOptions = {"Good", "Needs Repair", "Under Maintenance"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,90 +56,157 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
         getIntentData();
-        setupSpinners();
         setupClickListeners();
+        setupStatusDropdown();
         loadRoomData();
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        tvRoomNumber = findViewById(R.id.tvRoomNumber);
-        tvRoomType = findViewById(R.id.tvRoomType);
-        tvMaxCapacity = findViewById(R.id.tvMaxCapacity);
-        tvPrice = findViewById(R.id.tvPrice);
-        spnStatus = findViewById(R.id.spnStatus);
-        spnCondition = findViewById(R.id.spnCondition);
+        ivBack = findViewById(R.id.ivBack);
+        etRoomNumber = findViewById(R.id.etRoomNumber);
+        etRoomType = findViewById(R.id.etRoomType);
+        etLocation = findViewById(R.id.etLocation);
+        etPrice = findViewById(R.id.etPrice);
+        etStatus = findViewById(R.id.etStatus);
+        etMaxCapacity = findViewById(R.id.etMaxCapacity);
         etCurrentOccupancy = findViewById(R.id.etCurrentOccupancy);
-        btnRepairRequest = findViewById(R.id.btnRepairRequest);
-        btnSaveChanges = findViewById(R.id.btnSaveChanges);
+        btnSendRepairRequest = findViewById(R.id.btnSendRepairRequest);
+        btnViewRepairHistory = findViewById(R.id.btnViewRepairHistory);
+        btnCancel = findViewById(R.id.btnCancel);
+        btnSave = findViewById(R.id.btnSave);
+
+        // 设置 Max Capacity 为不可编辑（只读）
+        if (etMaxCapacity != null) {
+            etMaxCapacity.setFocusable(false);
+            etMaxCapacity.setClickable(false);
+            etMaxCapacity.setEnabled(false);
+        }
+
+        // Current Occupancy 可编辑，但限制只能输入数字
+        if (etCurrentOccupancy != null) {
+            etCurrentOccupancy.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        } else {
+            android.util.Log.e("StaffRoomDetail", "etCurrentOccupancy is null! Please check XML layout.");
+        }
     }
 
     private void getIntentData() {
         Intent intent = getIntent();
         if (intent != null) {
             roomDocId = intent.getStringExtra("ROOM_DOC_ID");
-            tvRoomNumber.setText(intent.getStringExtra("ROOM_ID"));
-            tvRoomType.setText(intent.getStringExtra("ROOM_TYPE"));
 
-            // ✅ 修复价格显示
+            // 显示基本信息
+            String roomId = intent.getStringExtra("ROOM_ID");
+            String roomType = intent.getStringExtra("ROOM_TYPE");
+            String location = intent.getStringExtra("ROOM_LOCATION");
             double price = intent.getDoubleExtra("ROOM_PRICE", 0);
-            tvPrice.setText(String.format("RM %.2f", price));
+            maxCapacity = intent.getIntExtra("ROOM_MAX_CAPACITY", 1);
+            int currentOccupancy = intent.getIntExtra("ROOM_CURRENT_OCCUPANCY", 0);
+            String status = intent.getStringExtra("ROOM_STATUS");
 
-            tvMaxCapacity.setText(String.valueOf(intent.getIntExtra("ROOM_MAX_CAPACITY", 4)));
+            if (etRoomNumber != null) etRoomNumber.setText(roomId != null ? roomId : "N/A");
+            if (etRoomType != null) etRoomType.setText(roomType != null ? roomType : "N/A");
+            if (etLocation != null) etLocation.setText(location != null ? location : "Not specified");
+            if (etPrice != null) etPrice.setText(String.format("%.0f", price));
+            if (etMaxCapacity != null) etMaxCapacity.setText(String.valueOf(maxCapacity));
+            if (etCurrentOccupancy != null) etCurrentOccupancy.setText(String.valueOf(currentOccupancy));
+
+            if (status != null && etStatus != null) {
+                originalStatus = status;
+                etStatus.setText(status);
+                updateStatusAppearance(status);
+            }
         }
     }
 
-    private void setupSpinners() {
-        // Status Spinner
-        ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
-        statusAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spnStatus.setAdapter(statusAdapter);
+    private void setupStatusDropdown() {
+        if (etStatus == null) return;
 
-        // Condition Spinner
-        ArrayAdapter<String> conditionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, conditionOptions);
-        conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spnCondition.setAdapter(conditionAdapter);
+        etStatus.setFocusable(false);
+        etStatus.setClickable(true);
+
+        etStatus.setOnClickListener(v -> showStatusPickerDialog());
+    }
+
+    private void showStatusPickerDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Status");
+
+        builder.setItems(statusOptions, (dialog, which) -> {
+            String selectedStatus = statusOptions[which];
+            if (etStatus != null) {
+                etStatus.setText(selectedStatus);
+                updateStatusAppearance(selectedStatus);
+            }
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void updateStatusAppearance(String status) {
+        if (etStatus == null) return;
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(30f);
+
+        if ("Available".equalsIgnoreCase(status)) {
+            bg.setColor(Color.parseColor("#DCFCE7"));
+            etStatus.setTextColor(Color.parseColor("#15803D"));
+        } else if ("Full".equalsIgnoreCase(status)) {
+            bg.setColor(Color.parseColor("#FEE2E2"));
+            etStatus.setTextColor(Color.parseColor("#B91C1C"));
+        } else if ("Maintenance".equalsIgnoreCase(status)) {
+            bg.setColor(Color.parseColor("#FEF3C7"));
+            etStatus.setTextColor(Color.parseColor("#D97706"));
+        }
+
+        etStatus.setBackground(bg);
+        etStatus.setPadding(24, 12, 24, 12);
     }
 
     private void loadRoomData() {
         if (roomDocId == null || roomDocId.isEmpty()) {
-            Toast.makeText(this, "Error: Room ID not found", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Room ID not found", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        db.collection("Rooms").document(roomDocId).get()
+        db.collection("Rooms").document(roomDocId)
+                .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        // Load status
+                        String roomNumber = documentSnapshot.getString("roomId");
+                        String roomType = documentSnapshot.getString("roomType");
+                        String location = documentSnapshot.getString("location");
+                        Double price = documentSnapshot.getDouble("price");
                         String status = documentSnapshot.getString("status");
-                        originalStatus = status;
-                        if (status != null) {
-                            for (int i = 0; i < statusOptions.length; i++) {
-                                if (statusOptions[i].equalsIgnoreCase(status)) {
-                                    spnStatus.setSelection(i);
-                                    break;
-                                }
-                            }
-                        }
+                        Integer maxCap = documentSnapshot.getLong("maxCapacity") != null
+                                ? documentSnapshot.getLong("maxCapacity").intValue() : 1;
+                        Integer currentOcc = documentSnapshot.getLong("currentOccupancy") != null
+                                ? documentSnapshot.getLong("currentOccupancy").intValue() : 0;
 
-                        // Load condition
-                        String condition = documentSnapshot.getString("condition");
-                        originalCondition = condition;
-                        if (condition != null) {
-                            for (int i = 0; i < conditionOptions.length; i++) {
-                                if (conditionOptions[i].equalsIgnoreCase(condition)) {
-                                    spnCondition.setSelection(i);
-                                    break;
-                                }
-                            }
+                        if (roomNumber != null && etRoomNumber != null) etRoomNumber.setText(roomNumber);
+                        if (roomType != null && etRoomType != null) etRoomType.setText(roomType);
+                        if (location != null && etLocation != null) etLocation.setText(location);
+                        if (price != null && etPrice != null) etPrice.setText(String.format("%.0f", price));
+                        if (status != null && etStatus != null) {
+                            originalStatus = status;
+                            etStatus.setText(status);
+                            updateStatusAppearance(status);
                         }
-
-                        // Load current occupancy
-                        Long occupancy = documentSnapshot.getLong("currentOccupancy");
-                        originalOccupancy = occupancy != null ? occupancy.intValue() : 0;
-                        etCurrentOccupancy.setText(String.valueOf(originalOccupancy));
+                        if (maxCap != null && etMaxCapacity != null) {
+                            maxCapacity = maxCap;
+                            etMaxCapacity.setText(String.valueOf(maxCapacity));
+                        }
+                        if (currentOcc != null && etCurrentOccupancy != null) {
+                            etCurrentOccupancy.setText(String.valueOf(currentOcc));
+                        }
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -139,77 +215,125 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
+        // 返回按钮
+        if (ivBack != null) {
+            ivBack.setOnClickListener(v -> finish());
+        }
 
-        btnRepairRequest.setOnClickListener(v -> {
-            Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairRequestActivity.class);
-            intent.putExtra("ROOM_ID", tvRoomNumber.getText().toString());
-            intent.putExtra("ROOM_DOC_ID", roomDocId);
-            startActivity(intent);
-        });
+        // 发送维修请求
+        if (btnSendRepairRequest != null) {
+            btnSendRepairRequest.setOnClickListener(v -> {
+                String roomNumber = etRoomNumber != null ? etRoomNumber.getText().toString() : "";
+                Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairRequestActivity.class);
+                intent.putExtra("ROOM_ID", roomNumber);
+                intent.putExtra("ROOM_DOC_ID", roomDocId);
+                startActivity(intent);
+            });
+        }
 
-        btnSaveChanges.setOnClickListener(v -> saveChanges());
+        // 查看维修历史
+        if (btnViewRepairHistory != null) {
+            btnViewRepairHistory.setOnClickListener(v -> {
+                Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairTrackingActivity.class);
+                intent.putExtra("ROOM_DOC_ID", roomDocId);
+                startActivity(intent);
+            });
+        }
+
+        // 取消按钮
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> finish());
+        }
+
+        // 保存按钮
+        if (btnSave != null) {
+            btnSave.setOnClickListener(v -> saveChanges());
+        }
     }
 
     private void saveChanges() {
-        String newStatus = spnStatus.getSelectedItem().toString();
-        String newCondition = spnCondition.getSelectedItem().toString();
-        String occupancyStr = etCurrentOccupancy.getText().toString().trim();
+        // 获取用户输入 - 添加 null 检查
+        String roomNumber = etRoomNumber != null ? etRoomNumber.getText().toString().trim() : "";
+        String roomType = etRoomType != null ? etRoomType.getText().toString().trim() : "";
+        String location = etLocation != null ? etLocation.getText().toString().trim() : "";
+        String priceStr = etPrice != null ? etPrice.getText().toString().trim() : "";
+        String status = etStatus != null ? etStatus.getText().toString().trim() : "";
+        String occupancyStr = etCurrentOccupancy != null ? etCurrentOccupancy.getText().toString().trim() : "";
 
-        int newOccupancy;
+        // 验证输入
+        if (TextUtils.isEmpty(roomNumber)) {
+            if (etRoomNumber != null) etRoomNumber.setError("Room number is required");
+            return;
+        }
+
+        if (TextUtils.isEmpty(roomType)) {
+            if (etRoomType != null) etRoomType.setError("Room type is required");
+            return;
+        }
+
+        double price;
         try {
-            newOccupancy = Integer.parseInt(occupancyStr);
+            price = Double.parseDouble(priceStr);
+            if (price < 0) {
+                if (etPrice != null) etPrice.setError("Price cannot be negative");
+                return;
+            }
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Please enter a valid number for occupancy", Toast.LENGTH_SHORT).show();
+            if (etPrice != null) etPrice.setError("Valid price is required");
             return;
         }
 
-        int maxCapacity = Integer.parseInt(tvMaxCapacity.getText().toString());
-
-        // Validate occupancy
-        if (newOccupancy < 0) {
-            Toast.makeText(this, "Occupancy cannot be negative", Toast.LENGTH_SHORT).show();
+        int currentOccupancy;
+        try {
+            currentOccupancy = Integer.parseInt(occupancyStr);
+            if (currentOccupancy < 0) {
+                if (etCurrentOccupancy != null) etCurrentOccupancy.setError("Occupancy cannot be negative");
+                return;
+            }
+            if (currentOccupancy > maxCapacity) {
+                if (etCurrentOccupancy != null) {
+                    etCurrentOccupancy.setError("Occupancy cannot exceed max capacity (" + maxCapacity + ")");
+                }
+                return;
+            }
+        } catch (NumberFormatException e) {
+            if (etCurrentOccupancy != null) etCurrentOccupancy.setError("Valid occupancy is required");
             return;
         }
 
-        if (newOccupancy > maxCapacity) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Capacity Exceeded")
-                    .setMessage("Current occupancy (" + newOccupancy + ") exceeds max capacity (" + maxCapacity + "). Do you want to update anyway?")
-                    .setPositiveButton("Yes", (dialog, which) -> updateRoomData(newStatus, newCondition, newOccupancy, maxCapacity))
-                    .setNegativeButton("No", null)
-                    .show();
-            return;
+        // ========== 修复状态逻辑 ==========
+        String finalStatus;
+
+        // 如果用户选择的是 Maintenance，保持 Maintenance，不受 occupancy 影响
+        if ("Maintenance".equalsIgnoreCase(status)) {
+            finalStatus = "Maintenance";
+        } else {
+            // 只有非 Maintenance 状态才根据 occupancy 自动调整
+            if (currentOccupancy <= 0) {
+                finalStatus = "Available";
+            } else if (currentOccupancy >= maxCapacity) {
+                finalStatus = "Full";
+            } else {
+                finalStatus = "Available";
+            }
         }
 
-        updateRoomData(newStatus, newCondition, newOccupancy, maxCapacity);
-    }
-
-    private void updateRoomData(String newStatus, String newCondition, int newOccupancy, int maxCapacity) {
-        // Calculate new room status based on occupancy
-        String calculatedStatus = newStatus;
-
-        // If status is "Available" but occupancy reaches max, change to "Full"
-        if ("Available".equalsIgnoreCase(newStatus) && newOccupancy >= maxCapacity) {
-            calculatedStatus = "Full";
-        }
-        // If status is "Full" but occupancy drops below max, change to "Available"
-        else if ("Full".equalsIgnoreCase(newStatus) && newOccupancy < maxCapacity) {
-            calculatedStatus = "Available";
-        }
-        // If status is "Maintenance", keep as is regardless of occupancy
-        else if ("Maintenance".equalsIgnoreCase(newStatus)) {
-            calculatedStatus = "Maintenance";
+        // 显示保存中
+        if (btnSave != null) {
+            btnSave.setEnabled(false);
+            btnSave.setAlpha(0.5f);
         }
 
+        // 更新 Firestore
         Map<String, Object> updates = new HashMap<>();
-        updates.put("status", calculatedStatus);
-        updates.put("condition", newCondition);
-        updates.put("currentOccupancy", newOccupancy);
+        updates.put("roomId", roomNumber);
+        updates.put("roomType", roomType);
+        updates.put("location", location);
+        updates.put("price", price);
+        updates.put("status", finalStatus);
+        updates.put("maxCapacity", maxCapacity);
+        updates.put("currentOccupancy", currentOccupancy);
         updates.put("lastUpdated", System.currentTimeMillis());
-
-        btnSaveChanges.setEnabled(false);
-        btnSaveChanges.setText("Saving...");
 
         db.collection("Rooms").document(roomDocId)
                 .update(updates)
@@ -218,10 +342,11 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
                     finish();
                 })
                 .addOnFailureListener(e -> {
-                    btnSaveChanges.setEnabled(true);
-                    btnSaveChanges.setText("Save Changes");
+                    if (btnSave != null) {
+                        btnSave.setEnabled(true);
+                        btnSave.setAlpha(1.0f);
+                    }
                     Toast.makeText(StaffRoomDetailActivity.this, "Failed to update: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
                 });
     }
 }

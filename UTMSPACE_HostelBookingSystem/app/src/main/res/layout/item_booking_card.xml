@@ -1,71 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="6dp"
-    android:layout_marginVertical="6dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="3dp"
-    app:cardBackgroundColor="#FFFFFF">
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="16dp"
+    android:layout_marginBottom="12dp"
+    android:elevation="2dp"
+    android:clickable="true"
+    android:focusable="true">
 
+    <!-- Top Row: Room Name and Number -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <!-- Room Identifier Reference Title -->
-            <TextView
-                android:id="@+id/tvRoomId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@id/tvStatus"
-                android:layout_marginEnd="8dp"
-                android:text="Room A-302"
-                android:textColor="#1E293B"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <!-- Dynamic UI Status Badge Decoration Component -->
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="@drawable/input_field_rounded"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:text="Pending"
-                android:textColor="#D97706"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
-
-        <!-- Room Type Character Classification Information -->
         <TextView
             android:id="@+id/tvRoomType"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Premium Single Studio"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp"/>
+            android:layout_weight="1"
+            android:text="Single Room"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#3C2A24"
+            android:fontFamily="sans-serif" />
 
-        <!-- Operational Metadata Boundary (Check-In & Duration) -->
         <TextView
-            android:id="@+id/tvDetails"
+            android:id="@+id/tvRoomId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Check-in: 01/06/2026 • 6 Months"
-            android:textColor="#64748B"
-            android:textSize="13sp"
-            android:layout_marginTop="10dp"/>
+            android:text="A-101"
+            android:textSize="12sp"
+            android:textColor="#AA7A6C"
+            android:background="#F1F5F9"
+            android:padding="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:fontFamily="sans-serif" />
+
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+
+    <!-- Student Name -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_person"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvStudentName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Student Name"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Booking Date -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_calendar"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvBookingDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="01/06/2024"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Status -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pending"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:padding="4dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="#FEF3C7"
+            android:textColor="#D97706"
+            android:fontFamily="sans-serif" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_arrow_forward"
+            app:tint="#AA7A6C" />
+
+    </LinearLayout>
+
+</LinearLayout>

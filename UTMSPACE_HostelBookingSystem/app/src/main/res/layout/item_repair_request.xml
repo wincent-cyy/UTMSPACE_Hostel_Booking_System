@@ -1,94 +1,148 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="12dp"
+    android:layout_marginStart="6dp"
+    android:layout_marginEnd="6dp"
+    android:layout_marginBottom="8dp"
+    android:elevation="2dp"
+    android:clickable="true"
+    android:focusable="true">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Top Row: Room Number and Request Date -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
 
-        <!-- 第一行：房间号和状态 -->
         <TextView
             android:id="@+id/tvRoomNumber"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textColor="#1E293B"
+            android:layout_weight="1"
+            android:text="A-101"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tvStatus"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Room A-101" />
+            android:textColor="#3C2A24" />
+
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="01/06/2024"
+            android:textSize="10sp"
+            android:textColor="#AA7A6C" />
+
+    </LinearLayout>
+
+    <!-- Issue Type -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_warning"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvIssueType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Plumbing Issue"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:maxLines="1" />
+
+    </LinearLayout>
+
+    <!-- Description -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="start"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_description"
+            app:tint="#AA7A6C"
+            android:layout_marginTop="1dp" />
+
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Water leakage from ceiling"
+            android:textSize="11sp"
+            android:textColor="#5B6E8C"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+    <!-- Status and Action Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <TextView
             android:id="@+id/tvStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/status_badge_pending"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="4dp"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:text="Pending"
+            android:textSize="10sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Pending" />
+            android:padding="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:background="#FEF3C7"
+            android:textColor="#D97706" />
 
-        <!-- 第二行：维修项目 -->
-        <TextView
-            android:id="@+id/tvItemName"
+        <View
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvRoomNumber"
-            tools:text="Air Conditioner" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-        <!-- 第三行：紧急程度和日期 -->
         <LinearLayout
-            android:id="@+id/layoutDetails"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvItemName">
+            android:id="@+id/btnDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:background="@drawable/primary_button_background"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
 
             <TextView
-                android:id="@+id/tvUrgency"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/urgency_badge"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                tools:text="High" />
-
-            <TextView
-                android:id="@+id/tvDate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="#94A3B8"
+                android:text="Details"
                 android:textSize="11sp"
-                tools:text="24 May 2026" />
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
 
         </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+</LinearLayout>

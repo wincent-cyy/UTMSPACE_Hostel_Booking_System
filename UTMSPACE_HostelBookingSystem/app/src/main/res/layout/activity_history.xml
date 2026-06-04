@@ -1,130 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
-    tools:context=".HistoryActivity">
-
-    <!-- Header Background -->
-    <View
-        android:id="@+id/headerBg"
-        android:layout_width="match_parent"
-        android:layout_height="160dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
     <LinearLayout
-        android:id="@+id/headerTextLayer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="8dp">
 
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
+        <!-- 标题行：包含标题和清除按钮 -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="History"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Track your history lists"
-            android:textColor="#C7D2FE"
-            android:textSize="14sp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="My Bookings"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000"
+                    android:layout_marginStart="20dp"
+                    android:fontFamily="sans-serif" />
+
+                <View
+                    android:layout_width="60dp"
+                    android:layout_height="3dp"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="8dp"
+                    android:background="#800000" />
+
+            </LinearLayout>
+
+            <!-- Clear History Button - 放在标题行右侧 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClearHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="Clear History"
+                android:textSize="12sp"
+                android:textColor="#800000"
+                android:backgroundTint="#FEE2E2"
+                app:strokeColor="#800000"
+                app:strokeWidth="1dp"
+                app:cornerRadius="20dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- Clear History Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnClearHistory"
-        style="@style/Widget.Material3.Button.OutlinedButton"
-        android:layout_width="wrap_content"
-        android:layout_height="36dp"
-        android:layout_marginEnd="24dp"
-        android:text="Clear History"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        android:textSize="11sp"
-        android:paddingHorizontal="12dp"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        app:strokeColor="#80FFFFFF"
-        app:strokeWidth="1dp"
-        app:backgroundTint="#33FFFFFF"
-        app:cornerRadius="20dp"
-        app:layout_constraintBottom_toBottomOf="@+id/headerTextLayer"
-        app:layout_constraintTop_toTopOf="@+id/headerTextLayer"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Tab Layout -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:layout_constraintBottom_toBottomOf="@id/headerBg"
-        app:tabIndicatorColor="#FFFFFF"
-        app:tabIndicatorHeight="3dp"
-        app:tabSelectedTextColor="#FFFFFF"
-        app:tabTextColor="#CCFFFFFF">
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:layout_margin="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="0dp"
+        android:background="@drawable/tab_container_background"
+        android:gravity="center">
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ongoing" />
+        <TextView
+            android:id="@+id/tabOngoing"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="Ongoing"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/tab_background_selector"
+            android:gravity="center"
+            android:layout_marginEnd="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="History" />
-    </com.google.android.material.tabs.TabLayout>
+        <TextView
+            android:id="@+id/tabHistory"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="History"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#800000"
+            android:background="@drawable/tab_background_selector"
+            android:gravity="center"
+            android:layout_marginStart="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif" />
 
-    <!-- Empty State Informational Text Display -->
-    <TextView
-        android:id="@+id/tvEmptyState"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Doesn't have record yet"
-        android:textColor="#64748B"
-        android:textSize="16sp"
-        android:textStyle="normal"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBg" />
+    </LinearLayout>
 
-    <!-- Shared RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvBookingHistory"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
-        app:layout_constraintTop_toBottomOf="@id/headerBg"
-        tools:listitem="@layout/item_booking_history" />
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-    <!-- Bottom Navigation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:paddingTop="0dp">
+
+            <LinearLayout
+                android:id="@+id/ongoingOrdersContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/historyOrdersContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No bookings found"
+                android:textSize="14sp"
+                android:textColor="#AA7A6C"
+                android:gravity="center"
+                android:padding="40dp"
+                android:visibility="gone"
+                android:fontFamily="sans-serif" />
+
+        </LinearLayout>
+    </ScrollView>
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        style="@style/BottomNavStyle"
+        android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="#FFFFFF"
-        app:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bottom_nav_background"
         app:menu="@menu/student_nav_menu"
-        tools:ignore="VisualLintBottomNav" />
+        app:itemIconTint="@drawable/nav_item_active"
+        app:itemTextColor="@drawable/nav_item_active"
+        app:itemRippleColor="@android:color/transparent"
+        app:elevation="0dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

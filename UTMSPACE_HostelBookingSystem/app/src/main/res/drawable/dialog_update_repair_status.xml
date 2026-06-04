@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Update Repair Status"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#800000"
+        android:layout_marginBottom="16dp"
+        android:fontFamily="sans-serif" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#EEDAD2"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Room: A-101"
+        android:textSize="14sp"
+        android:textColor="#3C2A24"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="sans-serif" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Issue: Plumbing Issue"
+        android:textSize="14sp"
+        android:textColor="#3C2A24"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="sans-serif" />
+
+    <!-- Status Options -->
+    <TextView
+        android:id="@+id/optionPending"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:text="Pending"
+        android:textSize="15sp"
+        android:textColor="#D97706"
+        android:paddingStart="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F1F5F9" />
+
+    <TextView
+        android:id="@+id/optionInProgress"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:text="In Progress"
+        android:textSize="15sp"
+        android:textColor="#3B82F6"
+        android:paddingStart="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F1F5F9" />
+
+    <TextView
+        android:id="@+id/optionCompleted"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:text="Completed"
+        android:textSize="15sp"
+        android:textColor="#10B981"
+        android:paddingStart="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F1F5F9" />
+
+    <TextView
+        android:id="@+id/optionCancel"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center"
+        android:text="Cancel"
+        android:textSize="15sp"
+        android:textColor="#AA7A6C"
+        android:layout_marginTop="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+</LinearLayout>

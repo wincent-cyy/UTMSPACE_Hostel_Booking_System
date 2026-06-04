@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 選中狀態 -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#800000" />
+            <corners android:radius="60dp" />
+        </shape>
+    </item>
+    <!-- 默認狀態（未選中） -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#F4EDE8" />
+            <corners android:radius="60dp" />
+        </shape>
+    </item>
+</selector>

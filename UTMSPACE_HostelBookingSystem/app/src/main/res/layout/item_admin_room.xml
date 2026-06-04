@@ -1,112 +1,189 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:elevation="2dp"
+    android:layout_marginBottom="10dp"
+    android:padding="16dp">
 
+    <!-- Top Row: Room Number and Status -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvRoomNumber"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:text="A-101"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#3C2A24"
+            android:fontFamily="sans-serif" />
 
-            <TextView
-                android:id="@+id/tvRoomId"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="#1E293B"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvRoomStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Available"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:padding="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:background="@drawable/status_badge_available"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif" />
 
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Room Type -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_room_type"
+            app:tint="#AA7A6C" />
 
         <TextView
             android:id="@+id/tvRoomType"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="#475569"
-            android:textSize="14sp" />
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Single Room"
+            android:textSize="13sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Location -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_location"
+            app:tint="#AA7A6C" />
 
         <TextView
             android:id="@+id/tvLocation"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="#64748B"
-            android:textSize="12sp" />
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Block A, Level 1"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Price -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_price"
+            app:tint="#AA7A6C" />
+
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="RM 1500"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E8E0D8"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:id="@+id/btnViewRoom"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/outline_button_background"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="8dp">
 
             <TextView
-                android:id="@+id/tvPrice"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="#6366F1"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvOccupancy"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#64748B"
-                android:textSize="12sp" />
+                android:text="View"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:fontFamily="sans-serif" />
+
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="end"
-            android:orientation="horizontal">
+            android:id="@+id/btnEditRoom"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/primary_button_background"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
 
-            <Button
-                android:id="@+id/btnEdit"
+            <TextView
                 android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:backgroundTint="#6366F1"
+                android:layout_height="wrap_content"
                 android:text="Edit"
-                android:textColor="#FFFFFF"
                 android:textSize="12sp"
-                android:paddingHorizontal="20dp"
-                app:cornerRadius="6dp" />
-
-            <Button
-                android:id="@+id/btnDelete"
-                android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:layout_marginStart="8dp"
-                android:backgroundTint="#EF4444"
-                android:text="Delete"
+                android:textStyle="bold"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:paddingHorizontal="20dp"
-                app:cornerRadius="6dp" />
+                android:fontFamily="sans-serif" />
 
         </LinearLayout>
 
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

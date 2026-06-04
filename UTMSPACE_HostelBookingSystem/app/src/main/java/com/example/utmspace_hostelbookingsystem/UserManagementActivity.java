@@ -1,23 +1,30 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -30,18 +37,18 @@ public class UserManagementActivity extends AppCompatActivity {
 
     // UI Elements
     private EditText etSearchUser;
-    private RecyclerView rvUserList;
+    private ImageView ivClearSearch;
+    private LinearLayout userListContainer;
     private LinearLayout emptyState;
     private TextView tvUserCount;
 
-    private TextView chipAll, chipStudent, chipStaff, chipTechnician;
+    private TextView chipAll, chipStudent, chipStaff, chipTechnician, chipAdmin;
     private BottomNavigationView bottomNavigation;
 
     // Firebase
     private FirebaseFirestore db;
 
     // Data
-    private UserAdapter adapter;
     private List<User> allUsersList;
     private List<User> filteredList;
 
@@ -56,10 +63,16 @@ public class UserManagementActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_management);
 
+        // Use ADJUST_PAN instead of ADJUST_RESIZE to prevent bottom nav from being pushed up
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
         db = FirebaseFirestore.getInstance();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
-        setupRecyclerView();
         setupFilterChips();
         setupSearchFilter();
         loadUsers();
@@ -68,7 +81,8 @@ public class UserManagementActivity extends AppCompatActivity {
 
     private void initViews() {
         etSearchUser = findViewById(R.id.etSearchUser);
-        rvUserList = findViewById(R.id.rvUserList);
+        ivClearSearch = findViewById(R.id.ivClearSearch);
+        userListContainer = findViewById(R.id.userListContainer);
         emptyState = findViewById(R.id.emptyState);
         tvUserCount = findViewById(R.id.tvUserCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -77,27 +91,10 @@ public class UserManagementActivity extends AppCompatActivity {
         chipStudent = findViewById(R.id.chipStudent);
         chipStaff = findViewById(R.id.chipStaff);
         chipTechnician = findViewById(R.id.chipTechnician);
-    }
+        chipAdmin = findViewById(R.id.chipAdmin);
 
-    private void setupRecyclerView() {
         allUsersList = new ArrayList<>();
         filteredList = new ArrayList<>();
-
-        rvUserList.setLayoutManager(new LinearLayoutManager(this));
-
-        // ✅ 直接使用 OnUserActionListener（因为在同一个包下，接口是公开的）
-        adapter = new UserAdapter(filteredList, new UserAdapter.OnUserActionListener() {
-            @Override
-            public void onEdit(User user) {
-                showEditDialog(user);
-            }
-
-            @Override
-            public void onDelete(User user) {
-                showDeleteConfirmDialog(user);
-            }
-        });
-        rvUserList.setAdapter(adapter);
     }
 
     private void setupFilterChips() {
@@ -124,23 +121,43 @@ public class UserManagementActivity extends AppCompatActivity {
             updateChipStyles(chipTechnician);
             applyFilters();
         });
+
+        chipAdmin.setOnClickListener(v -> {
+            currentRoleFilter = "admin";
+            updateChipStyles(chipAdmin);
+            applyFilters();
+        });
     }
 
     private void updateChipStyles(TextView selectedChip) {
-        chipAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipAll.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipStudent.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipStudent.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipStaff.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipStaff.setTextColor(android.graphics.Color.parseColor("#0369A1"));
-        chipTechnician.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipTechnician.setTextColor(android.graphics.Color.parseColor("#0369A1"));
+        resetChipStyle(chipAll);
+        resetChipStyle(chipStudent);
+        resetChipStyle(chipStaff);
+        resetChipStyle(chipTechnician);
+        resetChipStyle(chipAdmin);
 
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
 
+    private void resetChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
+    }
+
     private void setupSearchFilter() {
+        // Set keyboard to close when done typing
+        etSearchUser.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        etSearchUser.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(etSearchUser.getWindowToken(), 0);
+                return true;
+            }
+            return false;
+        });
+
         etSearchUser.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -152,8 +169,12 @@ public class UserManagementActivity extends AppCompatActivity {
                 }
 
                 String query = s.toString();
+                if (ivClearSearch != null) {
+                    ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+
                 searchRunnable = () -> {
-                    currentSearchQuery = query;
+                    currentSearchQuery = query.toLowerCase().trim();
                     applyFilters();
                 };
                 searchHandler.postDelayed(searchRunnable, 300);
@@ -162,23 +183,40 @@ public class UserManagementActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        if (ivClearSearch != null) {
+            ivClearSearch.setOnClickListener(v -> {
+                etSearchUser.setText("");
+                currentSearchQuery = "";
+                applyFilters();
+            });
+        }
     }
 
     private void loadUsers() {
         db.collection("Users")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    android.util.Log.d("UserManagement", "Successfully loaded " + queryDocumentSnapshots.size() + " users");
                     allUsersList.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        User user = document.toObject(User.class);
+                        User user = new User();
                         user.setUid(document.getId());
+                        user.setName(document.getString("name"));
+                        user.setEmail(document.getString("email"));
+                        user.setPhone(document.getString("phone"));
+                        user.setRole(document.getString("role"));
+                        user.setStudentId(document.getString("studentId"));
+                        user.setStaffId(document.getString("staffId"));
+                        user.setProgramme(document.getString("programme"));
+                        user.setDepartment(document.getString("department"));
+                        user.setSpecialization(document.getString("specialization"));
+                        user.setWorkshop(document.getString("workshop"));
+
                         allUsersList.add(user);
                     }
                     applyFilters();
                 })
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("UserManagement", "Error loading users: ", e);
                     Toast.makeText(this, "Failed to load users: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
@@ -195,10 +233,9 @@ public class UserManagementActivity extends AppCompatActivity {
 
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
-                String cleanQuery = currentSearchQuery.toLowerCase().trim();
                 String name = user.getName() != null ? user.getName().toLowerCase() : "";
                 String email = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
-                matchesSearch = name.contains(cleanQuery) || email.contains(cleanQuery);
+                matchesSearch = name.contains(currentSearchQuery) || email.contains(currentSearchQuery);
             }
 
             if (matchesRole && matchesSearch) {
@@ -206,118 +243,115 @@ public class UserManagementActivity extends AppCompatActivity {
             }
         }
 
-        if (filteredList.isEmpty()) {
-            rvUserList.setVisibility(View.GONE);
-            emptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvUserList.setVisibility(View.VISIBLE);
-            emptyState.setVisibility(View.GONE);
-        }
+        displayUsers();
+    }
+
+    private void displayUsers() {
+        userListContainer.removeAllViews();
 
         tvUserCount.setText(filteredList.size() + " users");
-        adapter.notifyDataSetChanged();
-    }
 
-    private void showEditDialog(User user) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_user, null);
-
-        EditText etName = dialogView.findViewById(R.id.etName);
-        EditText etPhone = dialogView.findViewById(R.id.etPhone);
-        android.widget.Spinner spnRole = dialogView.findViewById(R.id.spnRole);
-
-        etName.setText(user.getName());
-        etPhone.setText(user.getPhone());
-
-        String[] roles = {"student", "staff", "technician"};
-        ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roles);
-        roleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spnRole.setAdapter(roleAdapter);
-
-        for (int i = 0; i < roles.length; i++) {
-            if (roles[i].equalsIgnoreCase(user.getRole())) {
-                spnRole.setSelection(i);
-                break;
-            }
+        if (filteredList.isEmpty()) {
+            emptyState.setVisibility(View.VISIBLE);
+            userListContainer.setVisibility(View.GONE);
+            return;
         }
 
-        builder.setTitle("Edit User")
-                .setView(dialogView)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String newName = etName.getText().toString().trim().toUpperCase();
-                    String newPhone = etPhone.getText().toString().trim();
-                    String newRole = roles[spnRole.getSelectedItemPosition()];
+        emptyState.setVisibility(View.GONE);
+        userListContainer.setVisibility(View.VISIBLE);
 
-                    if (newName.isEmpty()) {
-                        Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+        for (int i = 0; i < filteredList.size(); i++) {
+            User user = filteredList.get(i);
+            View userCard = createUserCard(user);
+            userListContainer.addView(userCard);
 
-                    if (newPhone.length() < 10 || newPhone.length() > 11) {
-                        Toast.makeText(this, "Phone number must be 10-11 digits", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    updateUser(user.getUid(), newName, newPhone, newRole);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+            // Add spacing between cards
+            if (i < filteredList.size() - 1) {
+                addDivider();
+            }
+        }
     }
 
-    private void updateUser(String uid, String name, String phone, String role) {
-        java.util.Map<String, Object> updates = new java.util.HashMap<>();
-        updates.put("name", name);
-        updates.put("phone", phone);
-        updates.put("role", role);
-
-        android.util.Log.d("UserManagement", "Updating user: " + uid);
-        android.util.Log.d("UserManagement", "Updates: " + updates.toString());
-
-        db.collection("Users").document(uid)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    android.util.Log.d("UserManagement", "Update successful");
-                    Toast.makeText(this, "User updated successfully", Toast.LENGTH_SHORT).show();
-                    loadUsers();
-                })
-                .addOnFailureListener(e -> {
-                    android.util.Log.e("UserManagement", "Update failed: ", e);
-                    Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+    private void addDivider() {
+        View divider = new View(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                12
+        );
+        divider.setLayoutParams(params);
+        userListContainer.addView(divider);
     }
 
-    private void showDeleteConfirmDialog(User user) {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete User")
-                .setMessage("Are you sure you want to delete " + user.getName() + "? This action cannot be undone.")
-                .setPositiveButton("Delete", (dialog, which) -> deleteUser(user))
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
+    private View createUserCard(User user) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_user_card, null);
 
-    private void deleteUser(User user) {
-        String userEmail = user.getEmail();
+        TextView tvUserName = itemView.findViewById(R.id.tvUserName);
+        TextView tvUserRole = itemView.findViewById(R.id.tvUserRole);
+        TextView tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
+        TextView tvUserPhone = itemView.findViewById(R.id.tvUserPhone);
+        LinearLayout btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
+        LinearLayout btnEditUser = itemView.findViewById(R.id.btnEditUser);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Delete User")
-                .setMessage("To completely delete " + user.getName() + " (" + userEmail + "):\n\n" +
-                        "1. Go to Firebase Console\n" +
-                        "2. Authentication → Users\n" +
-                        "3. Find and delete this user\n\n" +
-                        "Remove from Firestore now?")
-                .setPositiveButton("Remove from Firestore", (dialog, which) -> {
-                    db.collection("Users").document(user.getUid())
-                            .delete()
-                            .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(this, "User removed from Firestore.\nPlease also delete from Firebase Console.", Toast.LENGTH_LONG).show();
-                                loadUsers();
-                            });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        tvUserName.setText(user.getName() != null ? user.getName() : "N/A");
+        tvUserEmail.setText(user.getEmail() != null ? user.getEmail() : "N/A");
+        tvUserPhone.setText(user.getPhone() != null ? user.getPhone() : "N/A");
+
+        String role = user.getRole() != null ? user.getRole() : "Student";
+        tvUserRole.setText(role.substring(0, 1).toUpperCase() + role.substring(1).toLowerCase());
+
+        // 设置圆角背景 - 只设置颜色和圆角
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setCornerRadius(30f);
+
+        switch (role.toLowerCase()) {
+            case "student":
+                drawable.setColor(Color.parseColor("#10B981")); // 绿色
+                break;
+            case "staff":
+                drawable.setColor(Color.parseColor("#3B82F6")); // 蓝色
+                break;
+            case "technician":
+                drawable.setColor(Color.parseColor("#F59E0B")); // 橙色
+                break;
+            case "admin":
+                drawable.setColor(Color.parseColor("#800000")); // 深红色
+                break;
+            default:
+                drawable.setColor(Color.parseColor("#10B981"));
+                break;
+        }
+
+        tvUserRole.setBackground(drawable);
+        tvUserRole.setTextColor(Color.WHITE);
+        // 使用 TextView 的 setPadding 方法
+        tvUserRole.setPadding(24, 8, 24, 8);
+
+        // View Details 和 Edit 按钮都跳转到 AdminEditUserActivity
+        btnViewDetails.setOnClickListener(v -> {
+            Intent intent = new Intent(UserManagementActivity.this, AdminEditUserActivity.class);
+            intent.putExtra("USER_ID", user.getUid());
+            intent.putExtra("USER_ROLE", user.getRole());
+            intent.putExtra("USER_NAME", user.getName());
+            startActivity(intent);
+        });
+
+        btnEditUser.setOnClickListener(v -> {
+            Intent intent = new Intent(UserManagementActivity.this, AdminEditUserActivity.class);
+            intent.putExtra("USER_ID", user.getUid());
+            intent.putExtra("USER_ROLE", user.getRole());
+            intent.putExtra("USER_NAME", user.getName());
+            startActivity(intent);
+        });
+
+        // 整个卡片不可点击
+        itemView.setClickable(false);
+
+        return itemView;
     }
 
     private void setupBottomNavigation() {
+        if (bottomNavigation == null) return;
+
         bottomNavigation.setSelectedItemId(R.id.nav_users);
 
         bottomNavigation.setOnItemSelectedListener(item -> {
@@ -326,15 +360,21 @@ public class UserManagementActivity extends AppCompatActivity {
             if (id == R.id.nav_users) {
                 return true;
             } else if (id == R.id.nav_home) {
-                startActivity(new Intent(this, AdminDashboardActivity.class));
+                Intent intent = new Intent(this, AdminDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_rooms) {
-                startActivity(new Intent(this, RoomManagementActivity.class));
+                Intent intent = new Intent(this, RoomManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_management) {
-                startActivity(new Intent(this, ManagementActivity.class));
+                Intent intent = new Intent(this, ManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             }
@@ -346,8 +386,58 @@ public class UserManagementActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadUsers();
+
         if (bottomNavigation != null) {
             bottomNavigation.setSelectedItemId(R.id.nav_users);
         }
+    }
+
+    // User Model Class
+    public static class User {
+        private String uid;
+        private String name;
+        private String email;
+        private String phone;
+        private String role;
+        private String studentId;
+        private String staffId;
+        private String programme;
+        private String department;
+        private String specialization;
+        private String workshop;
+
+        // Getters and Setters
+        public String getUid() { return uid; }
+        public void setUid(String uid) { this.uid = uid; }
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+
+        public String getRole() { return role; }
+        public void setRole(String role) { this.role = role; }
+
+        public String getStudentId() { return studentId; }
+        public void setStudentId(String studentId) { this.studentId = studentId; }
+
+        public String getStaffId() { return staffId; }
+        public void setStaffId(String staffId) { this.staffId = staffId; }
+
+        public String getProgramme() { return programme; }
+        public void setProgramme(String programme) { this.programme = programme; }
+
+        public String getDepartment() { return department; }
+        public void setDepartment(String department) { this.department = department; }
+
+        public String getSpecialization() { return specialization; }
+        public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+        public String getWorkshop() { return workshop; }
+        public void setWorkshop(String workshop) { this.workshop = workshop; }
     }
 }

@@ -3,11 +3,10 @@ package com.example.utmspace_hostelbookingsystem;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -21,9 +20,7 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
     private OnBookingActionListener listener;
 
     public interface OnBookingActionListener {
-        void onUpdateStatus(BookingModel booking, String newStatus);
         void onViewDetails(BookingModel booking);
-        void onDelete(BookingModel booking);
     }
 
     public AdminBookingAdapter(List<BookingModel> bookingList, OnBookingActionListener listener) {
@@ -46,95 +43,105 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        if (bookingList == null || position >= bookingList.size()) return;
         BookingModel booking = bookingList.get(position);
+        if (booking == null) return;
 
-        holder.tvRoomId.setText(booking.getRoomId());
-        holder.tvUserName.setText(booking.getName());  // 使用 getName()
+        // Room Number - 使用 getRoomId()
+        String roomNumber = booking.getRoomId();
+        holder.tvRoomNumber.setText(roomNumber != null ? roomNumber : "N/A");
 
-        // 修复日期显示 - 使用 checkInDate 和 leaseDuration
-        String checkIn = booking.getCheckInDate();  // 直接是 String
-        String leaseDuration = booking.getLeaseDuration() != null ? booking.getLeaseDuration() : "N/A";
-        holder.tvDates.setText(checkIn + " (" + leaseDuration + ")");
+        // Student Name - 使用 getName()
+        String studentName = booking.getName();
+        holder.tvStudentName.setText(studentName != null ? studentName : "N/A");
 
-        holder.tvTotalPrice.setText("RM " + booking.getPrice());  // 使用 getPrice()
+        // Room Type
+        String roomType = booking.getRoomType();
+        holder.tvRoomType.setText(roomType != null ? roomType : "N/A");
 
-        // 使用 bookingStatus
-        String status = booking.getBookingStatus() != null ? booking.getBookingStatus() : "Pending";
-        holder.tvStatus.setText(status);
-
-        // Set status color
-        int statusColor = getStatusColor(status);
-        holder.tvStatus.setTextColor(statusColor);
-
-        // Action buttons
-        holder.btnViewDetails.setOnClickListener(v -> listener.onViewDetails(booking));
-        holder.btnDelete.setOnClickListener(v -> listener.onDelete(booking));
-
-        // Status update buttons
-        if ("Pending".equals(status)) {
-            holder.btnApprove.setVisibility(View.VISIBLE);
-            holder.btnReject.setVisibility(View.VISIBLE);
-            holder.btnApprove.setOnClickListener(v -> listener.onUpdateStatus(booking, "Approved"));
-            holder.btnReject.setOnClickListener(v -> listener.onUpdateStatus(booking, "Rejected"));
+        // Date - 使用 getCreatedAt()
+        long createdAt = booking.getCreatedAt();
+        if (createdAt > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            holder.tvDate.setText(sdf.format(new Date(createdAt)));
         } else {
-            holder.btnApprove.setVisibility(View.GONE);
-            holder.btnReject.setVisibility(View.GONE);
+            holder.tvDate.setText("N/A");
         }
 
-        // Show paid button for approved bookings
-        if ("Approved".equals(status)) {
-            holder.btnMarkPaid.setVisibility(View.VISIBLE);
-            holder.btnMarkPaid.setOnClickListener(v -> listener.onUpdateStatus(booking, "Paid"));
-        } else {
-            holder.btnMarkPaid.setVisibility(View.GONE);
+        // Status - 使用 getBookingStatus()
+        String status = booking.getBookingStatus();
+        if (status == null || status.isEmpty()) {
+            status = "Pending";
+        }
+        holder.tvStatus.setText(status);
+        setStatusColor(holder.tvStatus, status);
+
+        // View Details button only
+        if (holder.btnView != null) {
+            holder.btnView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onViewDetails(booking);
+                }
+            });
+        }
+
+        // 整个卡片不可点击
+        holder.itemView.setClickable(false);
+    }
+
+    private void setStatusColor(TextView tvStatus, String status) {
+        if (status == null) return;
+
+        switch (status.toLowerCase()) {
+            case "pending":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#FEF3C7")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#D97706"));
+                break;
+            case "approved":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#DCFCE7")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#15803D"));
+                break;
+            case "rejected":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#FEE2E2")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#B91C1C"));
+                break;
+            case "paid":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#DBEAFE")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#1E40AF"));
+                break;
+            default:
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#E5E7EB")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#374151"));
+                break;
         }
     }
 
     @Override
     public int getItemCount() {
-        return bookingList.size();
-    }
-
-    private String formatDate(long timestamp) {
-        if (timestamp <= 0) return "N/A";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        return sdf.format(new Date(timestamp));
-    }
-
-    private int getStatusColor(String status) {
-        if (status == null) return android.graphics.Color.parseColor("#64748B");
-
-        switch (status) {
-            case "Approved":
-            case "Paid":
-                return android.graphics.Color.parseColor("#10B981");
-            case "Pending":
-                return android.graphics.Color.parseColor("#F59E0B");
-            case "Rejected":
-                return android.graphics.Color.parseColor("#EF4444");
-            default:
-                return android.graphics.Color.parseColor("#64748B");
-        }
+        return bookingList != null ? bookingList.size() : 0;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        CardView cardView;
-        TextView tvRoomId, tvUserName, tvDates, tvTotalPrice, tvStatus;
-        Button btnViewDetails, btnApprove, btnReject, btnMarkPaid, btnDelete;
+        TextView tvRoomNumber;
+        TextView tvStudentName;
+        TextView tvRoomType;
+        TextView tvDate;
+        TextView tvStatus;
+        LinearLayout btnView;
 
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardView = itemView.findViewById(R.id.cardView);
-            tvRoomId = itemView.findViewById(R.id.tvRoomId);
-            tvUserName = itemView.findViewById(R.id.tvUserName);
-            tvDates = itemView.findViewById(R.id.tvDates);
-            tvTotalPrice = itemView.findViewById(R.id.tvTotalPrice);
+            tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+            tvStudentName = itemView.findViewById(R.id.tvStudentName);
+            tvRoomType = itemView.findViewById(R.id.tvRoomType);
+            tvDate = itemView.findViewById(R.id.tvDate);
             tvStatus = itemView.findViewById(R.id.tvStatus);
-            btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
-            btnApprove = itemView.findViewById(R.id.btnApprove);
-            btnReject = itemView.findViewById(R.id.btnReject);
-            btnMarkPaid = itemView.findViewById(R.id.btnMarkPaid);
-            btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnView = itemView.findViewById(R.id.btnView);
         }
     }
 }

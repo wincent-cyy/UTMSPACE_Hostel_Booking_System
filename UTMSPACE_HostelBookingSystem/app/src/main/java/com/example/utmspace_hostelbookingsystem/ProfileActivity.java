@@ -5,37 +5,35 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.Uri;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.CompoundButton;
-import android.widget.RelativeLayout;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
-import androidx.appcompat.widget.SwitchCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.yalantis.ucrop.UCrop;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
 import java.util.concurrent.Executor;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -46,37 +44,30 @@ public class ProfileActivity extends AppCompatActivity {
     private static final String KEY_SAVED_UID = "SavedUserUid";
     private static final String KEY_NOTIFICATION_ENABLED = "NotificationEnabled";
 
-    private MaterialButton btnLogout, btnDeleteAccount;
-    private RelativeLayout settingPersonalInfo, settingChangePassword;
-    private ShapeableImageView ivProfileLarge, btnEditPicture;
-    private TextView tvUserName, tvUserEmail;
-    private CompoundButton switchBiometric;
-    private SwitchCompat switchNotifications;
+    // UI Elements
+    private LinearLayout profileAvatar;  // 改用 LinearLayout 作为头像容器
+    private ImageView ivProfilePicture;
+    private TextView tvUserName;
+    private TextView tvUserRole;
+    private TextView tvUserEmail;
 
+    private LinearLayout btnEditProfile;
+    private LinearLayout btnChangePassword;
+    private LinearLayout btnFingerprint;
+    private Switch switchFingerprint;
+    private LinearLayout btnDeleteAccount;
+    private LinearLayout btnLogout;
+
+    private BottomNavigationView bottomNavigationView;
+
+    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private BottomNavigationView bottomNavigation;
-    private String userRole = "student";
     private SharedPreferences sharedPreferences;
 
-    private boolean isUpdatingUI = false;
+    private String userRole = "student";
     private boolean isRoleLoaded = false;
-
-    private final ActivityResultLauncher<Intent> galleryLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Uri sourceUri = result.getData().getData();
-                    if (sourceUri != null) startCropActivity(sourceUri);
-                }
-            });
-
-    private final ActivityResultLauncher<Intent> cropLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Uri resultUri = UCrop.getOutput(result.getData());
-                    if (resultUri != null) processAndUploadFirestoreImage(resultUri);
-                }
-            });
+    private boolean isUpdatingUI = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,25 +78,59 @@ public class ProfileActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
         fetchUserProfileData();
         loadBiometricToggleStatus();
-        loadNotificationToggleStatus();
         setupListeners();
     }
 
     private void initViews() {
-        btnLogout = findViewById(R.id.btnLogout);
-        btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
-        bottomNavigation = findViewById(R.id.bottomNavigation);
-        settingPersonalInfo = findViewById(R.id.setting_change_username);
-        settingChangePassword = findViewById(R.id.setting_change_password);
-        ivProfileLarge = findViewById(R.id.ivProfileLarge);
-        btnEditPicture = findViewById(R.id.btnEditPicture);
+        // Header - 使用 profileAvatar 作为头像容器
+        profileAvatar = findViewById(R.id.profileAvatar);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvUserName = findViewById(R.id.tvUserName);
+        tvUserRole = findViewById(R.id.tvUserRole);
         tvUserEmail = findViewById(R.id.tvUserEmail);
-        switchBiometric = findViewById(R.id.switchBiometric);
-        switchNotifications = findViewById(R.id.switchNotifications);
+
+        // Account Management Section
+        btnEditProfile = findViewById(R.id.btnEditProfile);
+        btnChangePassword = findViewById(R.id.btnChangePassword);
+
+        // Security and Privacy Section
+        btnFingerprint = findViewById(R.id.btnFingerprint);
+        switchFingerprint = findViewById(R.id.switchFingerprint);
+
+        // Danger Zone Section
+        btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
+
+        // Logout Button
+        btnLogout = findViewById(R.id.btnLogout);
+
+        // Bottom Navigation
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+
+        // ========== 设置 Switch 颜色 ==========
+        // 设置 Switch 的 Track 颜色（背景）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // 未选中时的 Track 颜色
+            switchFingerprint.setTrackTintList(android.content.res.ColorStateList.valueOf(
+                    Color.parseColor("#E0E0E0")));
+            // 选中时的 Track 颜色
+            switchFingerprint.setTrackTintList(android.content.res.ColorStateList.valueOf(
+                    Color.parseColor("#800000")));
+        }
+
+        // 设置 Switch 的 Thumb 颜色（圆形按钮）
+        switchFingerprint.setThumbTintList(android.content.res.ColorStateList.valueOf(
+                Color.parseColor("#FFFFFF")));
+
+        if (profileAvatar == null) {
+            Log.e(TAG, "profileAvatar not found in XML! Please add android:id=\"@+id/profileAvatar\"");
+        }
     }
 
     private void loadBiometricToggleStatus() {
@@ -116,28 +141,19 @@ public class ProfileActivity extends AppCompatActivity {
         boolean isEnabled = sharedPreferences.getBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, false);
 
         isUpdatingUI = true;
-        switchBiometric.setChecked(isEnabled);
+        switchFingerprint.setChecked(isEnabled);
         isUpdatingUI = false;
-    }
-
-    private void loadNotificationToggleStatus() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) return;
-
-        String uid = currentUser.getUid();
-        boolean isEnabled = sharedPreferences.getBoolean(KEY_NOTIFICATION_ENABLED + "_" + uid, false);
-        switchNotifications.setChecked(isEnabled);
     }
 
     private void updateSwitchSilently(boolean checked) {
         isUpdatingUI = true;
-        switchBiometric.setChecked(checked);
+        switchFingerprint.setChecked(checked);
         isUpdatingUI = false;
     }
 
     private void setupListeners() {
-
-        switchBiometric.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        // Fingerprint Switch
+        switchFingerprint.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isUpdatingUI) return;
 
             FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -151,7 +167,6 @@ public class ProfileActivity extends AppCompatActivity {
 
             if (isChecked) {
                 BiometricManager manager = BiometricManager.from(this);
-
                 int result = manager.canAuthenticate(
                         BiometricManager.Authenticators.BIOMETRIC_STRONG
                                 | BiometricManager.Authenticators.DEVICE_CREDENTIAL
@@ -180,77 +195,66 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            FirebaseUser currentUser = mAuth.getCurrentUser();
-            if (currentUser == null) return;
-
-            String uid = currentUser.getUid();
-            sharedPreferences.edit()
-                    .putBoolean(KEY_NOTIFICATION_ENABLED + "_" + uid, isChecked)
-                    .apply();
-
-            Toast.makeText(this, isChecked ? "Notifications enabled" : "Notifications disabled", Toast.LENGTH_SHORT).show();
+        // Edit Profile
+        btnEditProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, EditInfoActivity.class);
+            startActivity(intent);
         });
 
-        bottomNavigation.setOnItemSelectedListener(item -> {
+        // Change Password
+        btnChangePassword.setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, ProfilePasswordActivity.class);
+            startActivity(intent);
+        });
 
+        // Delete Account
+        btnDeleteAccount.setOnClickListener(v -> showDeleteDialog());
+
+        // Logout
+        btnLogout.setOnClickListener(v -> performLogout());
+
+        // Bottom Navigation
+        setupBottomNavigation();
+    }
+
+    private void setupBottomNavigation() {
+        if (bottomNavigationView == null) return;
+
+        bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            Intent intent = null;
 
-            // Handle Profile selection first (common for all roles)
             if (itemId == R.id.nav_profile) {
                 return true;
             }
 
-            // Wait for role to load
             if (!isRoleLoaded) {
                 Toast.makeText(this, "Loading role...", Toast.LENGTH_SHORT).show();
                 return false;
             }
 
-            // =========================
-            // STAFF NAVIGATION
-            // =========================
+            Intent intent = null;
+
             if ("staff".equals(userRole)) {
-
-                if (itemId == R.id.nav_staff_home) {
+                if (itemId == R.id.nav_home) {
                     intent = new Intent(this, StaffDashboardActivity.class);
-
-                } else if (itemId == R.id.nav_staff_bookings) {
+                } else if (itemId == R.id.nav_booking) {
                     intent = new Intent(this, BookingManagementActivity.class);
-
-                } else if (itemId == R.id.nav_rooms) {
+                } else if (itemId == R.id.nav_history) {
                     intent = new Intent(this, StaffRoomListActivity.class);
                 }
-            }
-
-            // =========================
-            // TECHNICIAN NAVIGATION
-            // =========================
-            else if ("technician".equals(userRole)) {
-
-                if (itemId == R.id.nav_tech_home) {
+            } else if ("technician".equals(userRole)) {
+                if (itemId == R.id.nav_home) {
                     intent = new Intent(this, TechnicianDashboardActivity.class);
-
-                } else if (itemId == R.id.nav_request) {
+                } else if (itemId == R.id.nav_booking) {
                     intent = new Intent(this, TechnicianRepairRequestActivity.class);
-
-                } else if (itemId == R.id.nav_tech_history) {
+                } else if (itemId == R.id.nav_history) {
                     intent = new Intent(this, TechnicianHistoryActivity.class);
                 }
-            }
-
-            // =========================
-            // STUDENT NAVIGATION
-            // =========================
-            else {
-
+            } else {
                 if (itemId == R.id.nav_home) {
                     intent = new Intent(this, StudentDashboardActivity.class);
-
                 } else if (itemId == R.id.nav_booking) {
                     intent = new Intent(this, BookingsActivity.class);
-
                 } else if (itemId == R.id.nav_history) {
                     intent = new Intent(this, HistoryActivity.class);
                 }
@@ -265,46 +269,6 @@ public class ProfileActivity extends AppCompatActivity {
 
             return false;
         });
-
-        settingPersonalInfo.setOnClickListener(v ->
-                startActivity(new Intent(this, EditInfoActivity.class)));
-
-        settingChangePassword.setOnClickListener(v ->
-                startActivity(new Intent(this, ProfilePasswordActivity.class)));
-
-        btnEditPicture.setOnClickListener(v ->
-                galleryLauncher.launch(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)));
-
-        btnLogout.setOnClickListener(v -> performLogout());
-
-        btnDeleteAccount.setOnClickListener(v -> showDeleteDialog());
-    }
-
-    private void setupBottomNavMenu() {
-        if (bottomNavigation == null) return;
-
-        bottomNavigation.getMenu().clear();
-
-        if ("staff".equals(userRole)) {
-            bottomNavigation.inflateMenu(R.menu.staff_nav_menu);
-        } else if ("technician".equals(userRole)) {
-            // Check if technician menu exists, otherwise use student menu
-            try {
-                bottomNavigation.inflateMenu(R.menu.technician_nav_menu);
-            } catch (Exception e) {
-                bottomNavigation.inflateMenu(R.menu.student_nav_menu);
-            }
-        } else {
-            bottomNavigation.inflateMenu(R.menu.student_nav_menu);
-        }
-
-        // Set profile as selected (use the correct ID based on role)
-        try {
-            bottomNavigation.setSelectedItemId(R.id.nav_profile);
-        } catch (Exception e) {
-            // If nav_profile doesn't exist in the menu, try to find a profile equivalent
-            Log.e(TAG, "Profile menu item not found", e);
-        }
     }
 
     private void authenticateBiometric(String uid) {
@@ -314,7 +278,6 @@ public class ProfileActivity extends AppCompatActivity {
                 new BiometricPrompt.AuthenticationCallback() {
                     @Override
                     public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                        // 保存指纹启用状态
                         SharedPreferences.Editor editor = sharedPreferences.edit();
                         editor.putBoolean(KEY_BIOMETRIC_ENABLED + "_" + uid, true);
                         editor.putString(KEY_SAVED_UID, uid);
@@ -355,26 +318,10 @@ public class ProfileActivity extends AppCompatActivity {
         biometricPrompt.authenticate(promptInfo);
     }
 
-    private void startCropActivity(Uri sourceUri) {
-        try {
-            File file = new File(getCacheDir(), "cropped_" + System.currentTimeMillis() + ".jpg");
-
-            UCrop uCrop = UCrop.of(sourceUri, Uri.fromFile(file))
-                    .withAspectRatio(1, 1)
-                    .withMaxResultSize(512, 512);
-
-            cropLauncher.launch(uCrop.getIntent(this));
-        } catch (Exception e) {
-            Log.e(TAG, "Crop error", e);
-            Toast.makeText(this, "Failed to crop image", Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void fetchUserProfileData() {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) {
-            // User not logged in, redirect to login
-            startActivity(new Intent(this, LoginActivity.class));
+            startActivity(new Intent(this, LoginAndSignupActivity.class));
             finish();
             return;
         }
@@ -383,92 +330,94 @@ public class ProfileActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(doc -> {
                     if (doc.exists()) {
-                        // Get role - FIXED: Only set once
+                        // Get role
                         String role = doc.getString("role");
                         userRole = (role == null) ? "student" : role.trim().toLowerCase();
+                        tvUserRole.setText(userRole.substring(0, 1).toUpperCase() + userRole.substring(1));
 
                         // Set name and email
                         String name = doc.getString("name");
                         String email = doc.getString("email");
 
-                        if (name != null && !name.isEmpty()) {
-                            tvUserName.setText(name);
-                        } else {
-                            tvUserName.setText(user.getDisplayName() != null ? user.getDisplayName() : "User");
-                        }
+                        tvUserName.setText(name != null && !name.isEmpty() ? name :
+                                (user.getDisplayName() != null ? user.getDisplayName() : "User"));
+                        tvUserEmail.setText(email != null && !email.isEmpty() ? email :
+                                (user.getEmail() != null ? user.getEmail() : ""));
 
-                        if (email != null && !email.isEmpty()) {
-                            tvUserEmail.setText(email);
-                        } else {
-                            tvUserEmail.setText(user.getEmail() != null ? user.getEmail() : "");
-                        }
+                        // Load profile picture
+                        String base64String = doc.getString("profileImageBase64");
 
-                        // Load profile picture from Base64
-                        String img = doc.getString("profilePictureBase64");
-                        if (img != null && !img.isEmpty()) {
+                        if (base64String != null && !base64String.isEmpty()) {
                             try {
-                                byte[] bytes = Base64.decode(img, Base64.DEFAULT);
-                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                ivProfileLarge.setImageBitmap(bitmap);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Failed to decode image", e);
+                                byte[] decodedString = Base64.decode(base64String, Base64.DEFAULT);
+                                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                                if (bitmap != null && profileAvatar != null) {
+                                    // 清除原有背景
+                                    profileAvatar.setBackground(null);
+                                    // 使用 Glide 加载圆形图片并设置为背景
+                                    Glide.with(this)
+                                            .load(bitmap)
+                                            .circleCrop()
+                                            .into(new CustomTarget<Drawable>() {
+                                                @Override
+                                                public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                                                    if (profileAvatar != null) {
+                                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                                            profileAvatar.setBackground(resource);
+                                                        } else {
+                                                            profileAvatar.setBackgroundDrawable(resource);
+                                                        }
+                                                    }
+                                                }
+
+                                                @Override
+                                                public void onLoadCleared(@Nullable Drawable placeholder) {
+                                                }
+                                            });
+                                    // 隐藏 ImageView
+                                    if (ivProfilePicture != null) {
+                                        ivProfilePicture.setVisibility(View.GONE);
+                                    }
+                                } else {
+                                    resetToDefaultAvatar();
+                                }
+                            } catch (IllegalArgumentException e) {
+                                Log.e(TAG, "Base64 decode error", e);
+                                resetToDefaultAvatar();
                             }
+                        } else {
+                            resetToDefaultAvatar();
                         }
 
-                        // Mark role as loaded
                         isRoleLoaded = true;
 
-                        // Setup bottom navigation menu
-                        setupBottomNavMenu();
+                        if (bottomNavigationView != null) {
+                            bottomNavigationView.setSelectedItemId(R.id.nav_profile);
+                        }
                     } else {
-                        // User document doesn't exist, create one?
                         isRoleLoaded = true;
                         userRole = "student";
-                        setupBottomNavMenu();
+                        tvUserRole.setText("Student");
+                        resetToDefaultAvatar();
                     }
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to fetch user profile details", e);
-                    // Still mark as loaded with default role
                     isRoleLoaded = true;
                     userRole = "student";
-                    setupBottomNavMenu();
+                    tvUserRole.setText("Student");
+                    resetToDefaultAvatar();
                     Toast.makeText(this, "Failed to load profile data", Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void processAndUploadFirestoreImage(Uri uri) {
-        try {
-            InputStream is = getContentResolver().openInputStream(uri);
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
-
-            // Compress bitmap
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-
-            String base64 = Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
-
-            // Update Firestore
-            db.collection("Users")
-                    .document(mAuth.getCurrentUser().getUid())
-                    .update("profilePictureBase64", base64)
-                    .addOnSuccessListener(aVoid -> {
-                        runOnUiThread(() -> {
-                            ivProfileLarge.setImageBitmap(bitmap);
-                            Toast.makeText(this, "Profile picture updated", Toast.LENGTH_SHORT).show();
-                        });
-                    })
-                    .addOnFailureListener(e -> {
-                        runOnUiThread(() ->
-                                Toast.makeText(this, "Failed to update picture: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                        );
-                    });
-
-            is.close();
-
-        } catch (Exception e) {
-            Log.e(TAG, "Image error", e);
-            Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
+    private void resetToDefaultAvatar() {
+        if (profileAvatar != null) {
+            profileAvatar.setBackgroundResource(R.drawable.avatar_background);
+        }
+        if (ivProfilePicture != null) {
+            ivProfilePicture.setVisibility(View.VISIBLE);
+            ivProfilePicture.setImageResource(R.drawable.ic_account_circle);
         }
     }
 
@@ -486,20 +435,17 @@ public class ProfileActivity extends AppCompatActivity {
         if (user != null) {
             String uid = user.getUid();
 
-            SharedPreferences bioPrefs = getSharedPreferences("BioAuthPrefs", MODE_PRIVATE);
-            SharedPreferences.Editor editor = bioPrefs.edit();
-            editor.remove(KEY_BIOMETRIC_ENABLED + "_" + uid);  // 清除该用户的指纹状态
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.remove(KEY_BIOMETRIC_ENABLED + "_" + uid);
             editor.remove(KEY_NOTIFICATION_ENABLED + "_" + uid);
-            editor.remove(KEY_SAVED_UID);                       // 清除保存的 UID
-            editor.remove("SavedEmail");                        // 清除保存的邮箱
-            editor.remove("SavedPassword");                     // 清除保存的密码
+            editor.remove(KEY_SAVED_UID);
+            editor.remove("SavedEmail");
+            editor.remove("SavedPassword");
             editor.apply();
 
-            // Delete Firestore document first
             db.collection("Users").document(uid)
                     .delete()
                     .addOnSuccessListener(aVoid -> {
-                        // Then delete Firebase Auth user
                         user.delete()
                                 .addOnSuccessListener(aVoid2 -> {
                                     Toast.makeText(this, "Account deleted", Toast.LENGTH_SHORT).show();
@@ -516,24 +462,18 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void performLogout() {
-        // 只退出登录，不清除指纹数据
         mAuth.signOut();
-        startActivity(new Intent(this, LoginActivity.class));
+        startActivity(new Intent(this, LoginAndSignupActivity.class));
         finish();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        fetchUserProfileData();
 
-        if (bottomNavigation != null) {
-            bottomNavigation.post(() -> {
-                try {
-                    bottomNavigation.setSelectedItemId(R.id.nav_profile);
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to set selected item", e);
-                }
-            });
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_profile);
         }
     }
 }

@@ -19,8 +19,8 @@
         android:id="@+id/tvFilterTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Filter Requirements"
-        android:textColor="#0F172A"
+        android:text="Filter Rooms"
+        android:textColor="#800000"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
@@ -31,72 +31,109 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Availability Status"
-        android:textColor="#475569"
+        android:textColor="#B75547"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Status Row Selection Chips -->
+    <!-- Status Row Selection Chips - 改为两行布局 -->
     <LinearLayout
-        android:id="@+id/statusSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_marginBottom="24dp">
 
-        <TextView
-            android:id="@+id/btnStatusAll"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:text="All"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"/>
+        <!-- 第一行：All, Available, Full -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
 
-        <TextView
-            android:id="@+id/btnStatusAvailable"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:text="Available"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"/>
+            <TextView
+                android:id="@+id/btnStatusAll"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:text="All"
+                android:textColor="#475569"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"/>
 
-        <TextView
-            android:id="@+id/btnStatusFull"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/filter_chip_unselected"
-            android:gravity="center"
-            android:text="Full"
-            android:textColor="#475569"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"/>
+            <TextView
+                android:id="@+id/btnStatusAvailable"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="3dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:text="Available"
+                android:textColor="#475569"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnStatusFull"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:text="Full"
+                android:textColor="#475569"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- 第二行：Maintenance -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnStatusMaintenance"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="2"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/filter_chip_unselected"
+                android:gravity="center"
+                android:text="Maintenance"
+                android:textColor="#475569"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <!-- 占位符，保持布局平衡 -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="2"
+                android:visibility="invisible" />
+
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Category 2: Location/Block Filter Title (Replaced Price Sort) -->
+    <!-- Category 2: Location/Block Filter -->
     <TextView
         android:id="@+id/tvLocationTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hostel Block / Location"
-        android:textColor="#475569"
+        android:textColor="#B75547"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="12dp"/>
@@ -107,7 +144,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="32dp">
+        android:layout_marginBottom="24dp">
 
         <TextView
             android:id="@+id/btnBlockAll"
@@ -155,19 +192,20 @@
             android:focusable="true"/>
     </LinearLayout>
 
-    <!-- Category 3: Room Type Filter (For Dashboard) -->
+    <!-- Category 3: Room Type Filter -->
     <LinearLayout
         android:id="@+id/roomTypeSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <TextView
+            android:id="@+id/tvRoomTypeTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Room Type"
-            android:textColor="#475569"
+            android:textColor="#B75547"
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp"/>
@@ -186,9 +224,9 @@
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/filter_chip_unselected"
                 android:gravity="center"
-                android:text="All Rooms"
+                android:text="All"
                 android:textColor="#475569"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -203,7 +241,7 @@
                 android:gravity="center"
                 android:text="Single"
                 android:textColor="#475569"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -218,7 +256,7 @@
                 android:gravity="center"
                 android:text="Double"
                 android:textColor="#475569"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -233,7 +271,7 @@
                 android:gravity="center"
                 android:text="Quad"
                 android:textColor="#475569"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -244,35 +282,38 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
 
-        <com.google.android.material.button.MaterialButton
+        <TextView
             android:id="@+id/btnClearFilters"
-            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
+            android:background="@drawable/filter_button_outline"
+            android:gravity="center"
             android:text="Clear"
-            android:textColor="#64748B"
-            android:textSize="16sp"
+            android:textColor="#800000"
+            android:textSize="15sp"
             android:textStyle="bold"
-            app:strokeColor="#CBD5E1"
-            app:strokeWidth="1.5dp"
-            app:cornerRadius="12dp" />
+            android:clickable="true"
+            android:focusable="true" />
 
-        <com.google.android.material.button.MaterialButton
+        <TextView
             android:id="@+id/btnApplyFilters"
             android:layout_width="0dp"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_weight="1.5"
             android:layout_marginStart="8dp"
-            android:text="Confirm"
+            android:background="@drawable/primary_button_background"
+            android:gravity="center"
+            android:text="Apply"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold"
-            app:backgroundTint="#6366F1"
-            app:cornerRadius="12dp" />
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
 </LinearLayout>

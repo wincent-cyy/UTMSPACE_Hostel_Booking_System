@@ -3,11 +3,10 @@ package com.example.utmspace_hostelbookingsystem;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -21,7 +20,7 @@ public class AdminRepairAdapter extends RecyclerView.Adapter<AdminRepairAdapter.
     private OnRepairActionListener listener;
 
     public interface OnRepairActionListener {
-        void onViewDetails(RepairRequestModel request);
+        void onViewDetails(RepairRequestModel repair);
     }
 
     public AdminRepairAdapter(List<RepairRequestModel> repairList, OnRepairActionListener listener) {
@@ -44,79 +43,130 @@ public class AdminRepairAdapter extends RecyclerView.Adapter<AdminRepairAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        RepairRequestModel request = repairList.get(position);
+        if (repairList == null || position >= repairList.size()) return;
+        RepairRequestModel repair = repairList.get(position);
+        if (repair == null) return;
 
-        holder.tvRoomId.setText(request.getRoomId());
+        // Room Number - 使用 getRoomId()
+        String roomNumber = repair.getRoomId();
+        holder.tvRoomNumber.setText(roomNumber != null ? roomNumber : "N/A");
 
-        // 显示 Item Name
-        String itemName = request.getItemName() != null ? request.getItemName() : "N/A";
-        holder.tvItemName.setText(itemName);
+        // Issue Type - 使用 getIssueType() 或 getItemName()
+        String issueType = repair.getIssueType();
+        if (issueType == null || issueType.isEmpty()) {
+            issueType = repair.getItemName();
+        }
+        holder.tvIssueType.setText(issueType != null ? issueType : "N/A");
 
-        // 显示 Staff Name (Assigned Staff)
-        String staffName = request.getStaffName() != null ? request.getStaffName() : "Not Assigned";
-        holder.tvStaffName.setText("Assigned: " + staffName);
+        // Priority - 使用 getPriority() 或 getUrgency()
+        String priority = repair.getPriority();
+        if (priority == null || priority.isEmpty()) {
+            priority = repair.getUrgency();
+        }
+        holder.tvPriority.setText(priority != null ? priority : "Medium");
+        setPriorityColor(holder.tvPriority, priority);
 
-        // 显示 Description
-        String description = request.getDescription() != null ? request.getDescription() : "No description";
-        holder.tvDescription.setText(description);
+        // Date - 使用 getCreatedAt()
+        long createdAt = repair.getCreatedAt();
+        if (createdAt > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            holder.tvDate.setText(sdf.format(new Date(createdAt)));
+        } else {
+            holder.tvDate.setText("N/A");
+        }
 
-        // 显示 Status
-        holder.tvStatus.setText(request.getStatus());
+        // Status
+        String status = repair.getStatus();
+        if (status == null || status.isEmpty()) {
+            status = "Pending";
+        }
+        holder.tvStatus.setText(status);
+        setStatusColor(holder.tvStatus, status);
 
-        // 显示 Created At
-        holder.tvCreatedAt.setText(formatDate(request.getCreatedAt()));
+        // View Details button only
+        if (holder.btnView != null) {
+            holder.btnView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onViewDetails(repair);
+                }
+            });
+        }
 
-        // Set status color
-        int statusColor = getStatusColor(request.getStatus());
-        holder.tvStatus.setTextColor(statusColor);
+        // 整个卡片不可点击
+        holder.itemView.setClickable(false);
+    }
 
-        // View details button
-        holder.btnViewDetails.setOnClickListener(v -> listener.onViewDetails(request));
+    private void setPriorityColor(TextView tvPriority, String priority) {
+        if (priority == null) return;
+
+        switch (priority.toLowerCase()) {
+            case "high":
+                tvPriority.setTextColor(android.graphics.Color.parseColor("#EF4444"));
+                break;
+            case "medium":
+                tvPriority.setTextColor(android.graphics.Color.parseColor("#F59E0B"));
+                break;
+            case "low":
+                tvPriority.setTextColor(android.graphics.Color.parseColor("#10B981"));
+                break;
+            case "emergency":
+                tvPriority.setTextColor(android.graphics.Color.parseColor("#7F1D1D"));
+                break;
+            default:
+                tvPriority.setTextColor(android.graphics.Color.parseColor("#64748B"));
+                break;
+        }
+    }
+
+    private void setStatusColor(TextView tvStatus, String status) {
+        if (status == null) return;
+
+        switch (status.toLowerCase()) {
+            case "pending":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#FEF3C7")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#D97706"));
+                break;
+            case "in progress":
+            case "in-progress":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#DBEAFE")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#1E40AF"));
+                break;
+            case "completed":
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#DCFCE7")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#15803D"));
+                break;
+            default:
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                        android.graphics.Color.parseColor("#E5E7EB")));
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#374151"));
+                break;
+        }
     }
 
     @Override
     public int getItemCount() {
-        return repairList.size();
-    }
-
-    private String formatDate(long timestamp) {
-        if (timestamp <= 0) return "N/A";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        return sdf.format(new Date(timestamp));
-    }
-
-    private int getStatusColor(String status) {
-        if (status == null) return android.graphics.Color.parseColor("#64748B");
-
-        switch (status) {
-            case "Completed":
-                return android.graphics.Color.parseColor("#10B981");
-            case "In Progress":
-                return android.graphics.Color.parseColor("#3B82F6");
-            case "Pending":
-                return android.graphics.Color.parseColor("#F59E0B");
-            case "Rejected":
-                return android.graphics.Color.parseColor("#EF4444");
-            default:
-                return android.graphics.Color.parseColor("#64748B");
-        }
+        return repairList != null ? repairList.size() : 0;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        CardView cardView;
-        TextView tvRoomId, tvItemName, tvStaffName, tvDescription, tvStatus, tvCreatedAt;
-        Button btnViewDetails;
+        TextView tvRoomNumber;
+        TextView tvIssueType;
+        TextView tvPriority;
+        TextView tvDate;
+        TextView tvStatus;
+        LinearLayout btnView;
 
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardView = itemView.findViewById(R.id.cardView);
-            tvRoomId = itemView.findViewById(R.id.tvRoomId);
-            tvItemName = itemView.findViewById(R.id.tvItemName);
-            tvStaffName = itemView.findViewById(R.id.tvStaffName);
-            tvDescription = itemView.findViewById(R.id.tvDescription);
+            tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+            tvIssueType = itemView.findViewById(R.id.tvIssueType);
+            tvPriority = itemView.findViewById(R.id.tvPriority);
+            tvDate = itemView.findViewById(R.id.tvDate);
             tvStatus = itemView.findViewById(R.id.tvStatus);
-            tvCreatedAt = itemView.findViewById(R.id.tvCreatedAt);
-            btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
+            btnView = itemView.findViewById(R.id.btnView);
         }
     }
 }

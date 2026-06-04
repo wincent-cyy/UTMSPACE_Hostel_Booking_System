@@ -4,268 +4,274 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.content.ContextCompat;
 
-import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class ManagementActivity extends AppCompatActivity {
 
-    // UI Elements
-    private TabLayout tabLayout;
-    private EditText etSearch;
-    private RecyclerView rvItemList;
+    // Tab buttons
+    private TextView tabBookings, tabRepairs;
+
+    // Search bar
+    private EditText etSearchGlobal;
+    private ImageView ivClearSearchGlobal;
+
+    // Bookings section
+    private LinearLayout bookingsSection;
+    private TextView chipAllBookings, chipPendingBookings, chipApprovedBookings, chipRejectedBookings, chipPaidBookings;
+    private TextView tvBookingCount;
+    private LinearLayout bookingsContainer;
+
+    // Repairs section
+    private LinearLayout repairsSection;
+    private TextView chipAllRepairs, chipPendingRepairs, chipInProgressRepairs, chipCompletedRepairs;
+    private TextView tvRepairCount;
+    private LinearLayout repairsContainer;
+
+    // Empty state
     private LinearLayout emptyState;
-    private TextView tvItemCount;
+    private TextView tvEmptyTitle, tvEmptySubtitle;
+
     private BottomNavigationView bottomNavigation;
-
-    // Filter chips for Bookings
-    private TextView chipAll, chipPending, chipApproved, chipRejected, chipPaid;
-
-    // Filter chips for Repair Requests
-    private TextView repairChipAll, repairChipPending, repairChipInProgress, repairChipCompleted;
-
-    // Layout containers
-    private LinearLayout bookingFilters, repairFilters;
 
     // Firebase
     private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
 
-    // Data - 使用独立的列表，不共用
-    private List<BookingModel> bookingList = new ArrayList<>();
-    private List<RepairRequestModel> repairList = new ArrayList<>();
-
-    private AdminBookingAdapter bookingAdapter;
-    private AdminRepairAdapter repairAdapter;
+    // Data
+    private List<BookingModel> allBookings = new ArrayList<>();
+    private List<BookingModel> filteredBookings = new ArrayList<>();
+    private List<RepairRequestModel> allRepairs = new ArrayList<>();
+    private List<RepairRequestModel> filteredRepairs = new ArrayList<>();
 
     private String currentTab = "Bookings";
-    private String currentFilter = "All";
+    private String currentBookingFilter = "All";
+    private String currentRepairFilter = "All";
     private String currentSearchQuery = "";
 
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
-    private boolean isProcessing = false;
-    private boolean isBookingsLoaded = false;
-    private boolean isRepairsLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_management);
 
+        getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
         db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
         initViews();
-        setupRecyclerView();
-        setupTabLayout();
+        setupTabs();
         setupFilterChips();
-        setupSearchFilter();
+        setupSearchFunction();
         setupBottomNavigation();
 
-        // 初始加载 Bookings
         loadBookings();
+        loadRepairs();
     }
 
     private void initViews() {
-        tabLayout = findViewById(R.id.tabLayout);
-        etSearch = findViewById(R.id.etSearch);
-        rvItemList = findViewById(R.id.rvItemList);
+        tabBookings = findViewById(R.id.tabBookings);
+        tabRepairs = findViewById(R.id.tabRepairs);
+        etSearchGlobal = findViewById(R.id.etSearchGlobal);
+        ivClearSearchGlobal = findViewById(R.id.ivClearSearchGlobal);
+        bookingsSection = findViewById(R.id.bookingsSection);
+        chipAllBookings = findViewById(R.id.chipAllBookings);
+        chipPendingBookings = findViewById(R.id.chipPendingBookings);
+        chipApprovedBookings = findViewById(R.id.chipApprovedBookings);
+        chipRejectedBookings = findViewById(R.id.chipRejectedBookings);
+        chipPaidBookings = findViewById(R.id.chipPaidBookings);
+        tvBookingCount = findViewById(R.id.tvBookingCount);
+        bookingsContainer = findViewById(R.id.bookingsContainer);
+        repairsSection = findViewById(R.id.repairsSection);
+        chipAllRepairs = findViewById(R.id.chipAllRepairs);
+        chipPendingRepairs = findViewById(R.id.chipPendingRepairs);
+        chipInProgressRepairs = findViewById(R.id.chipInProgressRepairs);
+        chipCompletedRepairs = findViewById(R.id.chipCompletedRepairs);
+        tvRepairCount = findViewById(R.id.tvRepairCount);
+        repairsContainer = findViewById(R.id.repairsContainer);
         emptyState = findViewById(R.id.emptyState);
-        tvItemCount = findViewById(R.id.tvItemCount);
+        tvEmptyTitle = findViewById(R.id.tvEmptyTitle);
+        tvEmptySubtitle = findViewById(R.id.tvEmptySubtitle);
         bottomNavigation = findViewById(R.id.bottomNavigation);
-
-        chipAll = findViewById(R.id.chipAll);
-        chipPending = findViewById(R.id.chipPending);
-        chipApproved = findViewById(R.id.chipApproved);
-        chipRejected = findViewById(R.id.chipRejected);
-        chipPaid = findViewById(R.id.chipPaid);
-
-        repairChipAll = findViewById(R.id.repairChipAll);
-        repairChipPending = findViewById(R.id.repairChipPending);
-        repairChipInProgress = findViewById(R.id.repairChipInProgress);
-        repairChipCompleted = findViewById(R.id.repairChipCompleted);
-
-        bookingFilters = findViewById(R.id.bookingFilters);
-        repairFilters = findViewById(R.id.repairFilters);
     }
 
-    private void setupRecyclerView() {
-        rvItemList.setLayoutManager(new LinearLayoutManager(this));
-    }
-
-    private void setupTabLayout() {
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                if (tab.getPosition() == 0) {
-                    // 切换到 Bookings
-                    currentTab = "Bookings";
-                    currentFilter = "All";
-                    currentSearchQuery = "";
-                    etSearch.setText("");
-
-                    bookingFilters.setVisibility(View.VISIBLE);
-                    repairFilters.setVisibility(View.GONE);
-                    updateBookingChipStyles(chipAll);
-
-                    // 切换 adapter
-                    if (bookingAdapter != null) {
-                        rvItemList.setAdapter(bookingAdapter);
-                        filterBookings();
-                    } else {
-                        loadBookings();
-                    }
-                } else {
-                    // 切换到 RepairRequests
-                    currentTab = "RepairRequests";
-                    currentFilter = "All";
-                    currentSearchQuery = "";
-                    etSearch.setText("");
-
-                    bookingFilters.setVisibility(View.GONE);
-                    repairFilters.setVisibility(View.VISIBLE);
-                    updateRepairChipStyles(repairChipAll);
-
-                    // 切换 adapter
-                    if (repairAdapter != null) {
-                        rvItemList.setAdapter(repairAdapter);
-                        filterRepairs();
-                    } else {
-                        loadRepairRequests();
-                    }
-                }
-            }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {}
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {}
+    private void setupTabs() {
+        tabBookings.setOnClickListener(v -> {
+            currentTab = "Bookings";
+            updateTabStyles(true);
+            showBookingsSection();
+            etSearchGlobal.setText("");
+            currentSearchQuery = "";
+            applyBookingFilters();
         });
+
+        tabRepairs.setOnClickListener(v -> {
+            currentTab = "Repairs";
+            updateTabStyles(false);
+            showRepairsSection();
+            etSearchGlobal.setText("");
+            currentSearchQuery = "";
+            applyRepairFilters();
+        });
+    }
+
+    private void updateTabStyles(boolean isBookingsSelected) {
+        if (isBookingsSelected) {
+            tabBookings.setBackgroundResource(R.drawable.filter_chip_selected);
+            tabBookings.setTextColor(getColor(android.R.color.white));
+            tabRepairs.setBackgroundResource(R.drawable.filter_chip_unselected);
+            tabRepairs.setTextColor(getColor(R.color.tabInactiveText));
+        } else {
+            tabRepairs.setBackgroundResource(R.drawable.filter_chip_selected);
+            tabRepairs.setTextColor(getColor(android.R.color.white));
+            tabBookings.setBackgroundResource(R.drawable.filter_chip_unselected);
+            tabBookings.setTextColor(getColor(R.color.tabInactiveText));
+        }
+    }
+
+    private void showBookingsSection() {
+        bookingsSection.setVisibility(View.VISIBLE);
+        repairsSection.setVisibility(View.GONE);
+        tvEmptyTitle.setText("No Bookings Found");
+        tvEmptySubtitle.setText("No bookings available at the moment");
+        currentBookingFilter = "All";
+        updateBookingChipStyles(chipAllBookings);
+    }
+
+    private void showRepairsSection() {
+        bookingsSection.setVisibility(View.GONE);
+        repairsSection.setVisibility(View.VISIBLE);
+        tvEmptyTitle.setText("No Repair Requests Found");
+        tvEmptySubtitle.setText("No repair requests available at the moment");
+        currentRepairFilter = "All";
+        updateRepairChipStyles(chipAllRepairs);
     }
 
     private void setupFilterChips() {
-        // Booking chips
-        chipAll.setOnClickListener(v -> {
-            currentFilter = "All";
-            updateBookingChipStyles(chipAll);
-            filterBookings();
+        chipAllBookings.setOnClickListener(v -> {
+            currentBookingFilter = "All";
+            updateBookingChipStyles(chipAllBookings);
+            applyBookingFilters();
+        });
+        chipPendingBookings.setOnClickListener(v -> {
+            currentBookingFilter = "Pending";
+            updateBookingChipStyles(chipPendingBookings);
+            applyBookingFilters();
+        });
+        chipApprovedBookings.setOnClickListener(v -> {
+            currentBookingFilter = "Approved";
+            updateBookingChipStyles(chipApprovedBookings);
+            applyBookingFilters();
+        });
+        chipRejectedBookings.setOnClickListener(v -> {
+            currentBookingFilter = "Rejected";
+            updateBookingChipStyles(chipRejectedBookings);
+            applyBookingFilters();
+        });
+        chipPaidBookings.setOnClickListener(v -> {
+            currentBookingFilter = "Paid";
+            updateBookingChipStyles(chipPaidBookings);
+            applyBookingFilters();
         });
 
-        chipPending.setOnClickListener(v -> {
-            currentFilter = "Pending";
-            updateBookingChipStyles(chipPending);
-            filterBookings();
+        chipAllRepairs.setOnClickListener(v -> {
+            currentRepairFilter = "All";
+            updateRepairChipStyles(chipAllRepairs);
+            applyRepairFilters();
         });
-
-        chipApproved.setOnClickListener(v -> {
-            currentFilter = "Approved";
-            updateBookingChipStyles(chipApproved);
-            filterBookings();
+        chipPendingRepairs.setOnClickListener(v -> {
+            currentRepairFilter = "Pending";
+            updateRepairChipStyles(chipPendingRepairs);
+            applyRepairFilters();
         });
-
-        chipRejected.setOnClickListener(v -> {
-            currentFilter = "Rejected";
-            updateBookingChipStyles(chipRejected);
-            filterBookings();
+        chipInProgressRepairs.setOnClickListener(v -> {
+            currentRepairFilter = "In Progress";
+            updateRepairChipStyles(chipInProgressRepairs);
+            applyRepairFilters();
         });
-
-        chipPaid.setOnClickListener(v -> {
-            currentFilter = "Paid";
-            updateBookingChipStyles(chipPaid);
-            filterBookings();
-        });
-
-        // Repair chips
-        repairChipAll.setOnClickListener(v -> {
-            currentFilter = "All";
-            updateRepairChipStyles(repairChipAll);
-            filterRepairs();
-        });
-
-        repairChipPending.setOnClickListener(v -> {
-            currentFilter = "Pending";
-            updateRepairChipStyles(repairChipPending);
-            filterRepairs();
-        });
-
-        repairChipInProgress.setOnClickListener(v -> {
-            currentFilter = "In Progress";
-            updateRepairChipStyles(repairChipInProgress);
-            filterRepairs();
-        });
-
-        repairChipCompleted.setOnClickListener(v -> {
-            currentFilter = "Completed";
-            updateRepairChipStyles(repairChipCompleted);
-            filterRepairs();
+        chipCompletedRepairs.setOnClickListener(v -> {
+            currentRepairFilter = "Completed";
+            updateRepairChipStyles(chipCompletedRepairs);
+            applyRepairFilters();
         });
     }
 
     private void updateBookingChipStyles(TextView selectedChip) {
-        chipAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipAll.setTextColor(getColor(android.R.color.black));
-        chipPending.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipPending.setTextColor(getColor(android.R.color.black));
-        chipApproved.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipApproved.setTextColor(getColor(android.R.color.black));
-        chipRejected.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipRejected.setTextColor(getColor(android.R.color.black));
-        chipPaid.setBackgroundResource(R.drawable.filter_chip_unselected);
-        chipPaid.setTextColor(getColor(android.R.color.black));
-
+        resetBookingChipStyle(chipAllBookings);
+        resetBookingChipStyle(chipPendingBookings);
+        resetBookingChipStyle(chipApprovedBookings);
+        resetBookingChipStyle(chipRejectedBookings);
+        resetBookingChipStyle(chipPaidBookings);
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
+    }
+
+    private void resetBookingChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
     }
 
     private void updateRepairChipStyles(TextView selectedChip) {
-        repairChipAll.setBackgroundResource(R.drawable.filter_chip_unselected);
-        repairChipAll.setTextColor(getColor(android.R.color.black));
-        repairChipPending.setBackgroundResource(R.drawable.filter_chip_unselected);
-        repairChipPending.setTextColor(getColor(android.R.color.black));
-        repairChipInProgress.setBackgroundResource(R.drawable.filter_chip_unselected);
-        repairChipInProgress.setTextColor(getColor(android.R.color.black));
-        repairChipCompleted.setBackgroundResource(R.drawable.filter_chip_unselected);
-        repairChipCompleted.setTextColor(getColor(android.R.color.black));
-
+        resetRepairChipStyle(chipAllRepairs);
+        resetRepairChipStyle(chipPendingRepairs);
+        resetRepairChipStyle(chipInProgressRepairs);
+        resetRepairChipStyle(chipCompletedRepairs);
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
 
-    private void setupSearchFilter() {
-        etSearch.addTextChangedListener(new TextWatcher() {
+    private void resetRepairChipStyle(TextView chip) {
+        if (chip == null) return;
+        chip.setBackgroundResource(R.drawable.filter_chip_unselected);
+        chip.setTextColor(getColor(R.color.tabInactiveText));
+    }
+
+    private void setupSearchFunction() {
+        etSearchGlobal.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        etSearchGlobal.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(etSearchGlobal.getWindowToken(), 0);
+                return true;
+            }
+            return false;
+        });
+
+        etSearchGlobal.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -274,14 +280,16 @@ public class ManagementActivity extends AppCompatActivity {
                 if (searchRunnable != null) {
                     searchHandler.removeCallbacks(searchRunnable);
                 }
-
                 String query = s.toString();
+                if (ivClearSearchGlobal != null) {
+                    ivClearSearchGlobal.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                }
                 searchRunnable = () -> {
-                    currentSearchQuery = query;
+                    currentSearchQuery = query.toLowerCase().trim();
                     if (currentTab.equals("Bookings")) {
-                        filterBookings();
+                        applyBookingFilters();
                     } else {
-                        filterRepairs();
+                        applyRepairFilters();
                     }
                 };
                 searchHandler.postDelayed(searchRunnable, 300);
@@ -290,40 +298,47 @@ public class ManagementActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        if (ivClearSearchGlobal != null) {
+            ivClearSearchGlobal.setOnClickListener(v -> {
+                etSearchGlobal.setText("");
+                currentSearchQuery = "";
+                if (currentTab.equals("Bookings")) {
+                    applyBookingFilters();
+                } else {
+                    applyRepairFilters();
+                }
+            });
+        }
     }
 
     private void loadBookings() {
         db.collection("Bookings")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    bookingList.clear();
+                    allBookings.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        BookingModel booking = document.toObject(BookingModel.class);
+                        BookingModel booking = new BookingModel();
                         booking.setDocumentId(document.getId());
-                        bookingList.add(booking);
+                        booking.setRoomId(document.getString("roomId"));
+                        booking.setRoomType(document.getString("roomType"));
+                        booking.setName(document.getString("name"));
+                        booking.setMatricNumber(document.getString("matricNumber"));
+                        booking.setPhone(document.getString("phone"));
+                        booking.setEmail(document.getString("email"));
+                        booking.setProgramme(document.getString("programme"));
+                        booking.setLocation(document.getString("location"));
+                        booking.setBookingStatus(document.getString("bookingStatus"));
+                        booking.setCreatedAt(document.getLong("createdAt") != null ? document.getLong("createdAt") : 0);
+                        booking.setPrice(document.getDouble("price") != null ? document.getDouble("price") : 0);
+                        booking.setCheckInDate(document.getString("checkInDate"));
+                        booking.setLeaseDuration(document.getString("leaseDuration"));
+                        booking.setRejectReason(document.getString("rejectReason"));
+
+                        allBookings.add(booking);
                     }
-                    Log.d("MANAGEMENT", "Loaded " + bookingList.size() + " bookings");
-
-                    // 创建 adapter
-                    bookingAdapter = new AdminBookingAdapter(bookingList, new AdminBookingAdapter.OnBookingActionListener() {
-                        @Override
-                        public void onUpdateStatus(BookingModel booking, String newStatus) {
-                            updateBookingStatus(booking, newStatus);
-                        }
-                        @Override
-                        public void onViewDetails(BookingModel booking) {
-                            showBookingDetailsDialog(booking);
-                        }
-                        @Override
-                        public void onDelete(BookingModel booking) {
-                            showDeleteBookingConfirmDialog(booking);
-                        }
-                    });
-
-                    // 如果当前是 Bookings tab，显示数据
                     if (currentTab.equals("Bookings")) {
-                        rvItemList.setAdapter(bookingAdapter);
-                        filterBookings();
+                        applyBookingFilters();
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -331,31 +346,46 @@ public class ManagementActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadRepairRequests() {
+    private void loadRepairs() {
         db.collection("RepairRequests")
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    repairList.clear();
+                    allRepairs.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        RepairRequestModel request = document.toObject(RepairRequestModel.class);
+                        RepairRequestModel request = new RepairRequestModel();
                         request.setDocumentId(document.getId());
-                        repairList.add(request);
+                        request.setRoomId(document.getString("roomId"));
+                        request.setRoomType(document.getString("roomType"));
+                        request.setIssueType(document.getString("issueType"));
+                        request.setPriority(document.getString("priority"));
+                        request.setDescription(document.getString("description"));
+                        request.setStatus(document.getString("status"));
+                        request.setCreatedAt(document.getLong("createdAt") != null ? document.getLong("createdAt") : 0);
+                        request.setItemName(document.getString("itemName"));
+                        request.setUrgency(document.getString("urgency"));
+                        request.setStaffName(document.getString("staffName"));
+                        request.setProofImage(document.getString("proofImage"));
+                        request.setAvailableTime(document.getString("availableTime"));
+                        request.setContactPerson(document.getString("contactPerson"));
+                        request.setCompletionPhoto(document.getString("completionPhoto"));
+
+                        request.setStudentName(document.getString("studentName"));
+                        request.setStudentId(document.getString("studentId"));
+                        request.setStudentEmail(document.getString("studentEmail"));
+
+                        Long startedAt = document.getLong("startedAt");
+                        if (startedAt != null) request.setStartedAt(startedAt);
+
+                        Long completedAt = document.getLong("completedAt");
+                        if (completedAt != null) request.setCompletedAt(completedAt);
+
+                        Long lastUpdated = document.getLong("lastUpdated");
+                        if (lastUpdated != null) request.setLastUpdated(lastUpdated);
+
+                        allRepairs.add(request);
                     }
-                    Log.d("MANAGEMENT", "Loaded " + repairList.size() + " repair requests");
-
-                    // 创建 adapter
-                    repairAdapter = new AdminRepairAdapter(repairList, new AdminRepairAdapter.OnRepairActionListener() {
-                        @Override
-                        public void onViewDetails(RepairRequestModel request) {
-                            showRepairDetailsDialog(request);
-                        }
-                    });
-
-                    // 如果当前是 RepairRequests tab，显示数据
-                    if (currentTab.equals("RepairRequests")) {
-                        rvItemList.setAdapter(repairAdapter);
-                        filterRepairs();
+                    if (currentTab.equals("Repairs")) {
+                        applyRepairFilters();
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -363,312 +393,253 @@ public class ManagementActivity extends AppCompatActivity {
                 });
     }
 
-    private void filterBookings() {
-        if (bookingAdapter == null) return;
-
-        List<BookingModel> filtered = new ArrayList<>();
-
-        for (BookingModel booking : bookingList) {
+    private void applyBookingFilters() {
+        filteredBookings.clear();
+        for (BookingModel booking : allBookings) {
             boolean matchesFilter = true;
             boolean matchesSearch = true;
-
-            if (!currentFilter.equals("All")) {
+            if (!"All".equals(currentBookingFilter)) {
                 String status = booking.getBookingStatus();
-                matchesFilter = status != null && status.equalsIgnoreCase(currentFilter);
+                matchesFilter = status != null && status.equalsIgnoreCase(currentBookingFilter);
             }
-
             if (!currentSearchQuery.isEmpty()) {
-                String query = currentSearchQuery.toLowerCase().trim();
                 String roomId = booking.getRoomId() != null ? booking.getRoomId().toLowerCase() : "";
                 String name = booking.getName() != null ? booking.getName().toLowerCase() : "";
-                matchesSearch = roomId.contains(query) || name.contains(query);
+                matchesSearch = roomId.contains(currentSearchQuery) || name.contains(currentSearchQuery);
             }
-
             if (matchesFilter && matchesSearch) {
-                filtered.add(booking);
+                filteredBookings.add(booking);
             }
         }
-
-        bookingAdapter.updateList(filtered);
-        updateUIState(filtered.size(), "bookings");
+        displayBookings();
     }
 
-    private void filterRepairs() {
-        if (repairAdapter == null) return;
-
-        List<RepairRequestModel> filtered = new ArrayList<>();
-
-        for (RepairRequestModel request : repairList) {
+    private void applyRepairFilters() {
+        filteredRepairs.clear();
+        for (RepairRequestModel request : allRepairs) {
             boolean matchesFilter = true;
             boolean matchesSearch = true;
-
-            if (!currentFilter.equals("All")) {
+            if (!"All".equals(currentRepairFilter)) {
                 String status = request.getStatus();
-                matchesFilter = status != null && status.equalsIgnoreCase(currentFilter);
+                matchesFilter = status != null && status.equalsIgnoreCase(currentRepairFilter);
             }
-
             if (!currentSearchQuery.isEmpty()) {
-                String query = currentSearchQuery.toLowerCase().trim();
                 String roomId = request.getRoomId() != null ? request.getRoomId().toLowerCase() : "";
-                String description = request.getDescription() != null ? request.getDescription().toLowerCase() : "";
-                matchesSearch = roomId.contains(query) || description.contains(query);
+                matchesSearch = roomId.contains(currentSearchQuery);
             }
-
             if (matchesFilter && matchesSearch) {
-                filtered.add(request);
+                filteredRepairs.add(request);
             }
         }
-
-        repairAdapter.updateList(filtered);
-        updateUIState(filtered.size(), "requests");
+        displayRepairs();
     }
 
-    private void updateUIState(int size, String type) {
-        if (size == 0) {
-            rvItemList.setVisibility(View.GONE);
+    private void displayBookings() {
+        bookingsContainer.removeAllViews();
+        if (filteredBookings.isEmpty()) {
             emptyState.setVisibility(View.VISIBLE);
-            tvItemCount.setText("0 " + type);
-        } else {
-            rvItemList.setVisibility(View.VISIBLE);
-            emptyState.setVisibility(View.GONE);
-            tvItemCount.setText(size + " " + type);
-        }
-    }
-
-    private void updateBookingStatus(BookingModel booking, String newStatus) {
-        if (isProcessing) {
-            Toast.makeText(this, "Please wait...", Toast.LENGTH_SHORT).show();
+            bookingsContainer.setVisibility(View.GONE);
+            tvBookingCount.setText("0 bookings");
             return;
         }
-
-        isProcessing = true;
-
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("bookingStatus", newStatus);
-        updates.put("lastUpdated", System.currentTimeMillis());
-
-        db.collection("Bookings").document(booking.getDocumentId())
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    isProcessing = false;
-                    Toast.makeText(this, "Booking " + newStatus.toLowerCase(), Toast.LENGTH_SHORT).show();
-                    loadBookings();
-                })
-                .addOnFailureListener(e -> {
-                    isProcessing = false;
-                    Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+        emptyState.setVisibility(View.GONE);
+        bookingsContainer.setVisibility(View.VISIBLE);
+        tvBookingCount.setText(filteredBookings.size() + " bookings");
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        for (int i = 0; i < filteredBookings.size(); i++) {
+            BookingModel booking = filteredBookings.get(i);
+            View card = createBookingCard(booking, sdf);
+            bookingsContainer.addView(card);
+            if (i < filteredBookings.size() - 1) {
+                addDivider(bookingsContainer);
+            }
+        }
     }
 
-    private void showBookingDetailsDialog(BookingModel booking) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_booking_details, null);
+    private void displayRepairs() {
+        repairsContainer.removeAllViews();
+        if (filteredRepairs.isEmpty()) {
+            emptyState.setVisibility(View.VISIBLE);
+            repairsContainer.setVisibility(View.GONE);
+            tvRepairCount.setText("0 requests");
+            return;
+        }
+        emptyState.setVisibility(View.GONE);
+        repairsContainer.setVisibility(View.VISIBLE);
+        tvRepairCount.setText(filteredRepairs.size() + " requests");
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        for (int i = 0; i < filteredRepairs.size(); i++) {
+            RepairRequestModel request = filteredRepairs.get(i);
+            View card = createRepairCard(request, sdf);
+            repairsContainer.addView(card);
+            if (i < filteredRepairs.size() - 1) {
+                addDivider(repairsContainer);
+            }
+        }
+    }
 
-        TextView tvRoomId = dialogView.findViewById(R.id.tvRoomId);
-        TextView tvUserName = dialogView.findViewById(R.id.tvUserName);
-        TextView tvUserEmail = dialogView.findViewById(R.id.tvUserEmail);
-        TextView tvCheckIn = dialogView.findViewById(R.id.tvCheckIn);
-        TextView tvTotalPrice = dialogView.findViewById(R.id.tvTotalPrice);
-        TextView tvStatus = dialogView.findViewById(R.id.tvStatus);
-        TextView tvBookingDate = dialogView.findViewById(R.id.tvBookingDate);
+    private void addDivider(LinearLayout container) {
+        View divider = new View(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 12);
+        divider.setLayoutParams(params);
+        container.addView(divider);
+    }
 
-        tvRoomId.setText(booking.getRoomId());
-        tvUserName.setText(booking.getName());
-        tvUserEmail.setText(booking.getMatricNumber());
-        tvCheckIn.setText(booking.getCheckInDate());
-        tvTotalPrice.setText("RM " + booking.getPrice());
+    private View createBookingCard(BookingModel booking, SimpleDateFormat sdf) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_admin_booking, null);
+        TextView tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+        TextView tvStudentName = itemView.findViewById(R.id.tvStudentName);
+        TextView tvRoomType = itemView.findViewById(R.id.tvRoomType);
+        TextView tvDate = itemView.findViewById(R.id.tvDate);
+        TextView tvStatus = itemView.findViewById(R.id.tvStatus);
+        LinearLayout btnView = itemView.findViewById(R.id.btnView);
 
+        tvRoomNumber.setText(booking.getRoomId() != null ? booking.getRoomId() : "N/A");
+        tvStudentName.setText(booking.getName() != null ? booking.getName() : "N/A");
+        tvRoomType.setText(booking.getRoomType() != null ? booking.getRoomType() : "N/A");
+        tvDate.setText(booking.getCreatedAt() > 0 ? sdf.format(new Date(booking.getCreatedAt())) : "N/A");
         String status = booking.getBookingStatus() != null ? booking.getBookingStatus() : "Pending";
         tvStatus.setText(status);
-        tvBookingDate.setText(formatDate(booking.getCreatedAt()));
+        setBookingStatusColor(tvStatus, status);
 
-        int statusColor = getStatusColor(status);
-        tvStatus.setTextColor(statusColor);
-
-        builder.setTitle("Booking Details")
-                .setView(dialogView)
-                .setPositiveButton("Close", null)
-                .show();
+        btnView.setOnClickListener(v -> {
+            Intent intent = new Intent(ManagementActivity.this, AdminBookingDetailActivity.class);
+            intent.putExtra("BOOKING_ID", booking.getDocumentId());
+            intent.putExtra("ROOM_ID", booking.getRoomId());
+            intent.putExtra("ROOM_TYPE", booking.getRoomType());
+            intent.putExtra("ROOM_LOCATION", booking.getLocation());
+            intent.putExtra("STUDENT_NAME", booking.getName());
+            intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+            intent.putExtra("PHONE", booking.getPhone());
+            intent.putExtra("EMAIL", booking.getEmail());
+            intent.putExtra("PROGRAMME", booking.getProgramme());
+            intent.putExtra("PRICE", booking.getPrice());
+            intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
+            intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
+            intent.putExtra("STATUS", booking.getBookingStatus());
+            intent.putExtra("REJECT_REASON", booking.getRejectReason());
+            intent.putExtra("CREATED_AT", booking.getCreatedAt());
+            startActivity(intent);
+        });
+        return itemView;
     }
 
-    private void showRepairDetailsDialog(RepairRequestModel request) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_repair_details, null);
+    private View createRepairCard(RepairRequestModel request, SimpleDateFormat sdf) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_admin_repair, null);
+        TextView tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);
+        TextView tvIssueType = itemView.findViewById(R.id.tvIssueType);
+        TextView tvPriority = itemView.findViewById(R.id.tvPriority);
+        TextView tvDate = itemView.findViewById(R.id.tvDate);
+        TextView tvStatus = itemView.findViewById(R.id.tvStatus);
+        LinearLayout btnView = itemView.findViewById(R.id.btnView);
 
-        TextView tvRoomId = dialogView.findViewById(R.id.tvRoomId);
-        TextView tvItemName = dialogView.findViewById(R.id.tvItemName);
-        TextView tvUrgency = dialogView.findViewById(R.id.tvUrgency);
-        TextView tvStatus = dialogView.findViewById(R.id.tvStatus);
-        TextView tvStaffName = dialogView.findViewById(R.id.tvStaffName);
-        TextView tvCreatedAt = dialogView.findViewById(R.id.tvCreatedAt);
-        TextView tvLastUpdated = dialogView.findViewById(R.id.tvLastUpdated);
-        TextView tvDescription = dialogView.findViewById(R.id.tvDescription);
-        ImageView ivProofImage = dialogView.findViewById(R.id.ivProofImage);
-        Button btnViewFullImage = dialogView.findViewById(R.id.btnViewFullImage);
-
-        // Set text values
-        tvRoomId.setText(request.getRoomId());
-        tvItemName.setText(request.getItemName() != null ? request.getItemName() : "N/A");
-        tvUrgency.setText(request.getUrgency() != null ? request.getUrgency() : "Medium");
-        tvStatus.setText(request.getStatus());
-        tvStaffName.setText(request.getStaffName() != null ? request.getStaffName() : "Not Assigned");
-        tvCreatedAt.setText(formatDateTime(request.getCreatedAt()));
-        tvLastUpdated.setText(formatDateTime(request.getLastUpdated()));
-        tvDescription.setText(request.getDescription() != null ? request.getDescription() : "No description provided");
-
-        // Set status color
-        int statusColor = getStatusColor(request.getStatus());
-        tvStatus.setTextColor(statusColor);
-
-        // Set urgency color
-        int urgencyColor = getUrgencyColor(request.getUrgency());
-        tvUrgency.setTextColor(urgencyColor);
-
-        // Load proof image from Base64 string
-        String proofImageBase64 = request.getProofImage();  // 注意字段名是 proofImage
-        if (proofImageBase64 != null && !proofImageBase64.isEmpty()) {
-            try {
-                // 解码 Base64 字符串为字节数组
-                byte[] imageBytes = Base64.decode(proofImageBase64, Base64.DEFAULT);
-                // 将字节数组转换为 Bitmap
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                // 显示图片
-                ivProofImage.setImageBitmap(bitmap);
-
-                btnViewFullImage.setVisibility(View.VISIBLE);
-                btnViewFullImage.setOnClickListener(v -> showFullImageDialog(proofImageBase64));
-            } catch (Exception e) {
-                Log.e("REPAIR_DETAIL", "Failed to decode image", e);
-                ivProofImage.setImageResource(android.R.drawable.ic_menu_gallery);
-                btnViewFullImage.setVisibility(View.GONE);
-            }
-        } else {
-            ivProofImage.setImageResource(android.R.drawable.ic_menu_gallery);
-            btnViewFullImage.setVisibility(View.GONE);
+        tvRoomNumber.setText(request.getRoomId() != null ? request.getRoomId() : "N/A");
+        String issueType = request.getIssueType();
+        if (issueType == null || issueType.isEmpty()) {
+            issueType = request.getItemName();
         }
-
-        builder.setTitle("Repair Request Details")
-                .setView(dialogView)
-                .setPositiveButton("Close", null)
-                .show();
-    }
-
-    private void showFullImageDialog(String proofImageBase64) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.activity_full_image, null);
-        ImageView ivFullImage = dialogView.findViewById(R.id.fullImageView);
-
-        try {
-            byte[] imageBytes = Base64.decode(proofImageBase64, Base64.DEFAULT);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-            ivFullImage.setImageBitmap(bitmap);
-        } catch (Exception e) {
-            Log.e("REPAIR_DETAIL", "Failed to decode full image", e);
-            ivFullImage.setImageResource(android.R.drawable.ic_menu_gallery);
+        tvIssueType.setText(issueType != null ? issueType : "N/A");
+        String priority = request.getPriority();
+        if (priority == null || priority.isEmpty()) {
+            priority = request.getUrgency();
         }
+        tvPriority.setText(priority != null ? priority : "Medium");
+        setPriorityColor(tvPriority, priority);
+        tvDate.setText(request.getCreatedAt() > 0 ? sdf.format(new Date(request.getCreatedAt())) : "N/A");
+        String status = request.getStatus() != null ? request.getStatus() : "Pending";
+        tvStatus.setText(status);
+        setRepairStatusColor(tvStatus, status);
 
-        builder.setView(dialogView)
-                .setPositiveButton("Close", null)
-                .show();
+        btnView.setOnClickListener(v -> {
+            Intent intent = new Intent(ManagementActivity.this, AdminRepairDetailActivity.class);
+            intent.putExtra("REPAIR_ID", request.getDocumentId());
+            intent.putExtra("ROOM_ID", request.getRoomId());
+            intent.putExtra("ROOM_TYPE", request.getRoomType());
+            intent.putExtra("ISSUE_TYPE", request.getIssueType());
+            intent.putExtra("ITEM_NAME", request.getItemName());
+            intent.putExtra("PRIORITY", request.getPriority());
+            intent.putExtra("URGENCY", request.getUrgency());
+            intent.putExtra("DESCRIPTION", request.getDescription());
+            intent.putExtra("STATUS", request.getStatus());
+            intent.putExtra("STAFF_NAME", request.getStaffName());
+            intent.putExtra("STUDENT_NAME", request.getStudentName());
+            intent.putExtra("STUDENT_ID", request.getStudentId());
+            intent.putExtra("STUDENT_EMAIL", request.getStudentEmail());
+            intent.putExtra("PROOF_IMAGE", request.getProofImage());
+            intent.putExtra("AVAILABLE_TIME", request.getAvailableTime());
+            intent.putExtra("CONTACT_PERSON", request.getContactPerson());
+            intent.putExtra("COMPLETION_PHOTO", request.getCompletionPhoto());
+            intent.putExtra("CREATED_AT", request.getCreatedAt());
+            intent.putExtra("STARTED_AT", request.getStartedAt());
+            intent.putExtra("COMPLETED_AT", request.getCompletedAt());
+            startActivity(intent);
+        });
+        return itemView;
     }
 
-    private void showDeleteBookingConfirmDialog(BookingModel booking) {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete Booking")
-                .setMessage("Are you sure you want to delete booking for room " + booking.getRoomId() + "?\n\nThis action cannot be undone.")
-                .setPositiveButton("Delete", (dialog, which) -> deleteBooking(booking.getDocumentId()))
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void deleteBooking(String documentId) {
-        if (isProcessing) {
-            Toast.makeText(this, "Please wait...", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        isProcessing = true;
-
-        db.collection("Bookings").document(documentId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    isProcessing = false;
-                    Toast.makeText(this, "Booking deleted successfully", Toast.LENGTH_SHORT).show();
-                    loadBookings();
-                })
-                .addOnFailureListener(e -> {
-                    isProcessing = false;
-                    Log.e("DELETE_BOOKING", "Delete failed: " + e.getMessage());
-                    Toast.makeText(this, "Failed to delete: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
-    }
-
-    private String formatDate(long timestamp) {
-        if (timestamp <= 0) return "N/A";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        return sdf.format(new Date(timestamp));
-    }
-
-    private String formatDateTime(long timestamp) {
-        if (timestamp <= 0) return "N/A";
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-        return sdf.format(new Date(timestamp));
-    }
-
-    private int getStatusColor(String status) {
-        if (status == null) return getColor(android.R.color.darker_gray);
-
-        switch (status) {
-            case "Approved":
-            case "Completed":
-                return getColor(android.R.color.holo_green_dark);
-            case "Pending":
-                return getColor(android.R.color.holo_orange_dark);
-            case "Rejected":
-            case "Cancelled":
-                return getColor(android.R.color.holo_red_dark);
-            case "Paid":
-                return getColor(android.R.color.holo_blue_dark);
-            case "In Progress":
-                return getColor(android.R.color.holo_blue_dark);
-            default:
-                return getColor(android.R.color.darker_gray);
+    private void setBookingStatusColor(TextView tvStatus, String status) {
+        if ("Pending".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.pending_bg)));
+            tvStatus.setTextColor(getColor(R.color.pending_text));
+        } else if ("Approved".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.approved_bg)));
+            tvStatus.setTextColor(getColor(R.color.approved_text));
+        } else if ("Rejected".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.rejected_bg)));
+            tvStatus.setTextColor(getColor(R.color.rejected_text));
+        } else if ("Paid".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.paid_bg)));
+            tvStatus.setTextColor(getColor(R.color.paid_text));
         }
     }
 
-    private int getUrgencyColor(String urgency) {
-        if (urgency == null) return android.graphics.Color.parseColor("#64748B");
+    private void setRepairStatusColor(TextView tvStatus, String status) {
+        if ("Pending".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.pending_bg)));
+            tvStatus.setTextColor(getColor(R.color.pending_text));
+        } else if ("In Progress".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.approved_bg)));
+            tvStatus.setTextColor(getColor(R.color.approved_text));
+        } else if ("Completed".equalsIgnoreCase(status)) {
+            tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.completed_bg)));
+            tvStatus.setTextColor(getColor(R.color.completed_text));
+        }
+    }
 
-        switch (urgency.toLowerCase()) {
-            case "high":
-                return android.graphics.Color.parseColor("#EF4444");
-            case "medium":
-                return android.graphics.Color.parseColor("#F59E0B");
-            case "low":
-                return android.graphics.Color.parseColor("#10B981");
-            default:
-                return android.graphics.Color.parseColor("#64748B");
+    private void setPriorityColor(TextView tvPriority, String priority) {
+        if ("High".equalsIgnoreCase(priority)) {
+            tvPriority.setTextColor(getColor(android.R.color.holo_red_dark));
+        } else if ("Medium".equalsIgnoreCase(priority)) {
+            tvPriority.setTextColor(getColor(android.R.color.holo_orange_dark));
+        } else if ("Low".equalsIgnoreCase(priority)) {
+            tvPriority.setTextColor(getColor(android.R.color.holo_green_dark));
         }
     }
 
     private void setupBottomNavigation() {
+        if (bottomNavigation == null) return;
         bottomNavigation.setSelectedItemId(R.id.nav_management);
-
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-
             if (id == R.id.nav_management) {
                 return true;
             } else if (id == R.id.nav_home) {
-                startActivity(new Intent(this, AdminDashboardActivity.class));
+                Intent intent = new Intent(this, AdminDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_users) {
-                startActivity(new Intent(this, UserManagementActivity.class));
+                Intent intent = new Intent(this, UserManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             } else if (id == R.id.nav_rooms) {
-                startActivity(new Intent(this, RoomManagementActivity.class));
+                Intent intent = new Intent(this, RoomManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
                 finish();
                 return true;
             }
@@ -679,10 +650,10 @@ public class ManagementActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentTab.equals("Bookings")) {
-            loadBookings();
-        } else {
-            loadRepairRequests();
+        loadBookings();
+        loadRepairs();
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_management);
         }
     }
 }

@@ -1,43 +1,59 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class HistoryActivity extends AppCompatActivity {
 
-    private RecyclerView rvBookingHistory;
-    private BottomNavigationView bottomNavigation;
-    private TabLayout tabLayout;
-    private MaterialButton btnClearHistory;
+    private static final String PREF_NAME = "HistoryPrefs";
+    private static final String KEY_HIDDEN_IDS = "hidden_booking_ids";
 
-    // Reference pointer variable for Empty State placeholder layout
+    private LinearLayout ongoingOrdersContainer;
+    private LinearLayout historyOrdersContainer;
+    private TextView tabOngoing;
+    private TextView tabHistory;
     private TextView tvEmptyState;
-
-    private BookingAdapter adapter;
-    private List<Booking> allBookings;
-    private List<Booking> filteredList;
+    private BottomNavigationView bottomNavigationView;
+    private MaterialButton btnClearHistory;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private SharedPreferences sharedPreferences;
 
-    // 當前選擇的分頁名稱預設為 Ongoing
-    private String currentTabName = "Ongoing";
+    private List<Booking> allBookings = new ArrayList<>();
+    private List<Booking> ongoingBookings = new ArrayList<>();
+    private List<Booking> historyBookings = new ArrayList<>();
+
+    private Set<String> hiddenBookingIds = new HashSet<>();
+    private boolean isOngoingSelected = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,201 +62,344 @@ public class HistoryActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
+        loadHiddenIds();
 
         initViews();
-        setupRecyclerView();
         setupTabs();
         setupNavigation();
-        setupListeners();
+
+        tvEmptyState.setText("No bookings found");
+
+        fetchBookingsFromFirestore();
+    }
+
+    private void loadHiddenIds() {
+        hiddenBookingIds.clear();
+        String hiddenIdsString = sharedPreferences.getString(KEY_HIDDEN_IDS, "");
+        if (!hiddenIdsString.isEmpty()) {
+            String[] ids = hiddenIdsString.split(",");
+            for (String id : ids) {
+                if (!id.isEmpty()) {
+                    hiddenBookingIds.add(id);
+                }
+            }
+        }
+    }
+
+    private void saveHiddenIds() {
+        String hiddenIdsString = TextUtils.join(",", hiddenBookingIds);
+        sharedPreferences.edit().putString(KEY_HIDDEN_IDS, hiddenIdsString).apply();
     }
 
     private void initViews() {
-        rvBookingHistory = findViewById(R.id.rvBookingHistory);
-        bottomNavigation = findViewById(R.id.bottomNavigation);
-        tabLayout = findViewById(R.id.tabLayout);
-        btnClearHistory = findViewById(R.id.btnClearHistory);
+        ongoingOrdersContainer = findViewById(R.id.ongoingOrdersContainer);
+        historyOrdersContainer = findViewById(R.id.historyOrdersContainer);
+        tabOngoing = findViewById(R.id.tabOngoing);
+        tabHistory = findViewById(R.id.tabHistory);
         tvEmptyState = findViewById(R.id.tvEmptyState);
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        btnClearHistory = findViewById(R.id.btnClearHistory);
 
         if (btnClearHistory != null) {
             btnClearHistory.setVisibility(View.GONE);
         }
     }
 
-    private void setupRecyclerView() {
-        allBookings = new ArrayList<>();
-        filteredList = new ArrayList<>();
+    private void setupTabs() {
+        tabOngoing.setOnClickListener(v -> {
+            if (!isOngoingSelected) {
+                isOngoingSelected = true;
+                updateTabStyles();
+                displayOngoingOrders();
+            }
+        });
 
-        if (rvBookingHistory != null) {
-            rvBookingHistory.setLayoutManager(new LinearLayoutManager(this));
+        tabHistory.setOnClickListener(v -> {
+            if (isOngoingSelected) {
+                isOngoingSelected = false;
+                updateTabStyles();
+                displayHistoryOrders();
+            }
+        });
+    }
 
-            // ✅ 修正: 使用新的字段名
-            adapter = new BookingAdapter(filteredList, booking -> {
-                Intent intent = new Intent(HistoryActivity.this, BookingDetailsActivity.class);
-                passBookingDataIntent(intent, booking);
-                startActivity(intent);
-            });
+    private void updateTabStyles() {
+        GradientDrawable selectedBg = new GradientDrawable();
+        selectedBg.setColor(Color.parseColor("#800000"));
+        selectedBg.setCornerRadius(30f);
 
-            adapter.setOnPaymentClickListener(booking -> {
-                Intent intent = new Intent(HistoryActivity.this, PaymentActivity.class);
-                passBookingDataIntent(intent, booking);
-                startActivity(intent);
-            });
+        GradientDrawable unselectedBg = new GradientDrawable();
+        unselectedBg.setColor(Color.TRANSPARENT);
+        unselectedBg.setCornerRadius(30f);
 
-            rvBookingHistory.setAdapter(adapter);
+        if (isOngoingSelected) {
+            tabOngoing.setBackground(selectedBg);
+            tabOngoing.setTextColor(Color.WHITE);
+            tabHistory.setBackground(unselectedBg);
+            tabHistory.setTextColor(Color.parseColor("#A16A5E"));
+        } else {
+            tabHistory.setBackground(selectedBg);
+            tabHistory.setTextColor(Color.WHITE);
+            tabOngoing.setBackground(unselectedBg);
+            tabOngoing.setTextColor(Color.parseColor("#A16A5E"));
         }
     }
 
-    // ✅ 修正: 使用新的 getter 方法
-    private void passBookingDataIntent(Intent intent, Booking booking) {
-        intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
-        intent.putExtra("BOOKING_STATUS", booking.getBookingStatus());
-        intent.putExtra("ROOM_ID", booking.getRoomId());
-        intent.putExtra("ROOM_TYPE", booking.getRoomType());
-        intent.putExtra("ROOM_PRICE", String.valueOf(booking.getPrice()));
-        intent.putExtra("STUDENT_NAME", booking.getName());
-        intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
-        intent.putExtra("PHONE_NUMBER", booking.getPhone());
-        intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
-        intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
-        intent.putExtra("REJECT_REASON", booking.getRejectReason());
-    }
-
-    // ✅ 修正: 使用 uid 而不是 userId
-    private void fetchHistoryFromFirestore() {
-        if (mAuth.getCurrentUser() == null) return;
+    private void fetchBookingsFromFirestore() {
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         String currentUid = mAuth.getCurrentUser().getUid();
 
         db.collection("Bookings")
-                .whereEqualTo("uid", currentUid)  // 使用 uid 外键
+                .whereEqualTo("uid", currentUid)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     allBookings.clear();
+                    ongoingBookings.clear();
+                    historyBookings.clear();
+
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Booking booking = document.toObject(Booking.class);
+                        Booking booking = new Booking();
+
                         booking.setBookingId(document.getId());
+                        booking.setUid(document.getString("uid"));
+                        booking.setRoomId(document.getString("roomId"));
+                        booking.setRoomType(document.getString("roomType"));
+                        booking.setName(document.getString("name"));
+                        booking.setMatricNumber(document.getString("matricNumber"));
+                        booking.setPhone(document.getString("phone"));
+                        booking.setEmail(document.getString("email"));
+                        booking.setProgramme(document.getString("programme"));
+                        booking.setCheckInDate(document.getString("checkInDate"));
+                        booking.setLeaseDuration(document.getString("leaseDuration"));
+                        booking.setBookingStatus(document.getString("bookingStatus"));
+                        booking.setRejectReason(document.getString("rejectReason"));
+                        booking.setLocation(document.getString("location"));
+
+                        Double price = document.getDouble("price");
+                        booking.setPrice(price != null ? price : 0);
+
+                        Long createdAt = document.getLong("createdAt");
+                        booking.setCreatedAt(createdAt != null ? createdAt : System.currentTimeMillis());
+
                         allBookings.add(booking);
+
+                        String status = booking.getBookingStatus();
+                        if (status != null) {
+                            if (status.equalsIgnoreCase("Approved")) {
+                                ongoingBookings.add(booking);
+                            } else if (status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Rejected")) {
+                                if (!hiddenBookingIds.contains(booking.getBookingId())) {
+                                    historyBookings.add(booking);
+                                }
+                            }
+                        }
                     }
 
-                    evaluateCurrentTabState();
+                    updateTabStyles();
+
+                    if (isOngoingSelected) {
+                        displayOngoingOrders();
+                    } else {
+                        displayHistoryOrders();
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Firebase Loading Failed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to load bookings: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void setupTabs() {
-        if (tabLayout == null) return;
+    private void displayOngoingOrders() {
+        ongoingOrdersContainer.removeAllViews();
 
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                if (tab != null && tab.getText() != null) {
-                    currentTabName = tab.getText().toString().trim();
-                    filterBookingsByTab(currentTabName);
-                }
+        if (ongoingBookings.isEmpty()) {
+            showEmptyState(true);
+            if (btnClearHistory != null) {
+                btnClearHistory.setVisibility(View.GONE);
             }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {}
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-                if (tab != null && tab.getText() != null) {
-                    currentTabName = tab.getText().toString().trim();
-                    filterBookingsByTab(currentTabName);
-                }
-            }
-        });
-    }
-
-    private void evaluateCurrentTabState() {
-        if (tabLayout == null) {
-            filterBookingsByTab(currentTabName);
             return;
         }
 
-        int index = tabLayout.getSelectedTabPosition();
-        if (index != TabLayout.Tab.INVALID_POSITION && index >= 0) {
-            TabLayout.Tab currentTab = tabLayout.getTabAt(index);
-            if (currentTab != null && currentTab.getText() != null) {
-                currentTabName = currentTab.getText().toString().trim();
-            }
-        }
-        filterBookingsByTab(currentTabName);
-    }
-
-    // ✅ 修正: 使用 getBookingStatus()
-    private void filterBookingsByTab(String tabName) {
-        if (filteredList == null) filteredList = new ArrayList<>();
-        filteredList.clear();
+        showEmptyState(false);
+        ongoingOrdersContainer.setVisibility(View.VISIBLE);
+        historyOrdersContainer.setVisibility(View.GONE);
 
         if (btnClearHistory != null) {
-            if (tabName.equalsIgnoreCase("History")) {
-                btnClearHistory.setVisibility(View.VISIBLE);
-            } else {
-                btnClearHistory.setVisibility(View.GONE);
-            }
+            btnClearHistory.setVisibility(View.GONE);
         }
 
-        for (Booking b : allBookings) {
-            if (b.getBookingStatus() != null) {
-                String status = b.getBookingStatus().trim();
-
-                if (tabName.equalsIgnoreCase("Ongoing")) {
-                    // Ongoing 分頁：只顯示 Approved
-                    if (status.equalsIgnoreCase("Approved")) {
-                        filteredList.add(b);
-                    }
-                } else if (tabName.equalsIgnoreCase("History")) {
-                    // History 分頁：Paid 和 Rejected 通通放進來
-                    if (status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Rejected")) {
-                        filteredList.add(b);
-                    }
-                }
-            }
-        }
-
-        if (tvEmptyState != null) {
-            if (filteredList.isEmpty()) {
-                tvEmptyState.setVisibility(View.VISIBLE);
-                rvBookingHistory.setVisibility(View.GONE);
-            } else {
-                tvEmptyState.setVisibility(View.GONE);
-                rvBookingHistory.setVisibility(View.VISIBLE);
-            }
-        }
-
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
+        for (Booking booking : ongoingBookings) {
+            View orderView = createOrderItemView(booking);
+            ongoingOrdersContainer.addView(orderView);
         }
     }
 
-    // ✅ 修正: 使用 uid 和 getBookingStatus()
-    private void setupListeners() {
+    private void displayHistoryOrders() {
+        historyOrdersContainer.removeAllViews();
+
+        if (historyBookings.isEmpty()) {
+            showEmptyState(true);
+            if (btnClearHistory != null) {
+                btnClearHistory.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        showEmptyState(false);
+        ongoingOrdersContainer.setVisibility(View.GONE);
+        historyOrdersContainer.setVisibility(View.VISIBLE);
+
+        for (Booking booking : historyBookings) {
+            View orderView = createOrderItemView(booking);
+            historyOrdersContainer.addView(orderView);
+        }
+
+        if (btnClearHistory != null && !historyBookings.isEmpty()) {
+            btnClearHistory.setVisibility(View.VISIBLE);
+            setupClearHistoryButton();
+        } else if (btnClearHistory != null) {
+            btnClearHistory.setVisibility(View.GONE);
+        }
+    }
+
+    private View createOrderItemView(Booking booking) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_order_history, null);
+
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(Color.WHITE);
+        cardBg.setCornerRadius(16f);
+        cardBg.setStroke(1, Color.parseColor("#E0E0E0"));
+        itemView.setBackground(cardBg);
+
+        itemView.setPadding(16, 16, 16, 16);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.bottomMargin = 16;
+        itemView.setLayoutParams(params);
+
+        TextView tvRoomName = itemView.findViewById(R.id.tvRoomName);
+        TextView tvTotalPrice = itemView.findViewById(R.id.tvTotalPrice);
+        TextView tvDuration = itemView.findViewById(R.id.tvDuration);
+        TextView tvStatus = itemView.findViewById(R.id.tvStatus);
+        TextView tvDate = itemView.findViewById(R.id.tvDate);
+        TextView btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
+
+        String roomDisplay = booking.getRoomType() != null ? booking.getRoomType() : "Room";
+        String roomId = booking.getRoomId() != null ? booking.getRoomId() : "N/A";
+        tvRoomName.setText(roomDisplay + " - " + roomId);
+        tvTotalPrice.setText(booking.getDisplayPrice());
+
+        String duration = booking.getLeaseDuration() != null ? booking.getLeaseDuration() : "1 Semester";
+        tvDuration.setText("Duration: " + duration);
+
+        long createdAt = booking.getCreatedAt();
+        if (createdAt > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            String dateString = sdf.format(new Date(createdAt));
+            tvDate.setText("Applied: " + dateString);
+        } else {
+            tvDate.setText("Applied: N/A");
+        }
+
+        String status = booking.getBookingStatus();
+        if (status != null) {
+            GradientDrawable statusBg = new GradientDrawable();
+            statusBg.setCornerRadius(30f);
+
+            if (status.equalsIgnoreCase("Approved")) {
+                statusBg.setColor(Color.parseColor("#DCFCE7"));
+                tvStatus.setText("Approved");
+                tvStatus.setTextColor(Color.parseColor("#15803D"));
+                tvStatus.setBackground(statusBg);
+                tvStatus.setPadding(16, 8, 16, 8);
+            } else if (status.equalsIgnoreCase("Paid")) {
+                statusBg.setColor(Color.parseColor("#DBEAFE"));
+                tvStatus.setText("Paid");
+                tvStatus.setTextColor(Color.parseColor("#1E40AF"));
+                tvStatus.setBackground(statusBg);
+                tvStatus.setPadding(16, 8, 16, 8);
+            } else if (status.equalsIgnoreCase("Rejected")) {
+                statusBg.setColor(Color.parseColor("#FEE2E2"));
+                tvStatus.setText("Rejected");
+                tvStatus.setTextColor(Color.parseColor("#B91C1C"));
+                tvStatus.setBackground(statusBg);
+                tvStatus.setPadding(16, 8, 16, 8);
+            }
+        }
+
+        btnViewDetails.setOnClickListener(v -> {
+            Intent intent = new Intent(HistoryActivity.this, BookingDetailsActivity.class);
+            intent.putExtra("BOOKING_DOC_ID", booking.getBookingId());
+            intent.putExtra("BOOKING_STATUS", booking.getBookingStatus());
+            intent.putExtra("REJECT_REASON", booking.getRejectReason());
+            intent.putExtra("ROOM_ID", booking.getRoomId());
+            intent.putExtra("ROOM_TYPE", booking.getRoomType());
+            intent.putExtra("ROOM_LOCATION", booking.getLocation());
+            intent.putExtra("ROOM_PRICE", booking.getDisplayPrice());
+            intent.putExtra("STUDENT_NAME", booking.getName());
+            intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+            intent.putExtra("PHONE_NUMBER", booking.getPhone());
+            intent.putExtra("EMAIL", booking.getEmail());
+            intent.putExtra("PROGRAMME", booking.getProgramme());
+            intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
+            intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
+            intent.putExtra("CREATED_AT", booking.getCreatedAt());
+            startActivity(intent);
+        });
+
+        return itemView;
+    }
+
+    private void showEmptyState(boolean show) {
+        if (show) {
+            tvEmptyState.setVisibility(View.VISIBLE);
+            ongoingOrdersContainer.setVisibility(View.GONE);
+            historyOrdersContainer.setVisibility(View.GONE);
+        } else {
+            tvEmptyState.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupClearHistoryButton() {
         if (btnClearHistory == null) return;
 
         btnClearHistory.setOnClickListener(v -> {
-            // 只清空本地显示的列表，不删除 Firestore 中的数据
-            filteredList.clear();
-            adapter.notifyDataSetChanged();
-
-            // 显示空状态
-            if (tvEmptyState != null) {
-                tvEmptyState.setVisibility(View.VISIBLE);
-            }
-            if (rvBookingHistory != null) {
-                rvBookingHistory.setVisibility(View.GONE);
-            }
-
-            Toast.makeText(HistoryActivity.this, "History list cleared", Toast.LENGTH_SHORT).show();
+            new AlertDialog.Builder(this)
+                    .setTitle("Clear History")
+                    .setMessage("This will remove all history records from the display list. Data will remain in the database.")
+                    .setPositiveButton("Clear Display", (dialog, which) -> {
+                        // 将所有历史记录的 ID 加入隐藏列表
+                        for (Booking booking : historyBookings) {
+                            hiddenBookingIds.add(booking.getBookingId());
+                        }
+                        saveHiddenIds();
+                        // 清空显示列表
+                        historyBookings.clear();
+                        displayHistoryOrders();
+                        Toast.makeText(HistoryActivity.this, "History display cleared", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
     }
 
     private void setupNavigation() {
-        if (bottomNavigation == null) return;
-        bottomNavigation.setSelectedItemId(R.id.nav_history);
-        bottomNavigation.setOnItemSelectedListener(item -> {
+        if (bottomNavigationView == null) return;
+
+        bottomNavigationView.setSelectedItemId(R.id.nav_history);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_history) return true;
 
@@ -265,9 +424,10 @@ public class HistoryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        fetchHistoryFromFirestore();
-        if (bottomNavigation != null) {
-            bottomNavigation.setSelectedItemId(R.id.nav_history);
+        fetchBookingsFromFirestore();
+
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_history);
         }
     }
 }

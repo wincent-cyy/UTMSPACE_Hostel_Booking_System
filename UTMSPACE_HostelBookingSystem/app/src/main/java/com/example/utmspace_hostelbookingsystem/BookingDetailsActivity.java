@@ -3,11 +3,9 @@ package com.example.utmspace_hostelbookingsystem;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,28 +13,67 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class BookingDetailsActivity extends AppCompatActivity {
 
-    // Voucher Display Fields
-    private ImageButton btnBack;
-    private TextView tvDetailsTitle, tvStatusTag, tvRoomId, tvRoomType, tvPrice;
-    private TextView tvStudentName, tvMatric, tvPhoneNumber, tvCheckIn, tvLeaseDuration;
+    // Header Views
+    private LinearLayout ivBack;
+    private TextView tvBookingStatus;
+    private TextView tvBookingId;
 
-    // Rejection Layout Structural Elements
-    private LinearLayout layoutRejectReason;
-    private TextView tvRejectReasonContent;
+    // Room Information Views
+    private TextView tvRoomNumber;
+    private TextView tvRoomType;
+    private TextView tvRoomLocation;
+    private TextView tvRoomPrice;
 
-    // Bottom Action Bar Containers & Buttons
-    private LinearLayout layoutCompletedActions;
-    private Button btnCancelBooking, btnReturn, btnShare;
+    // Student Information Views
+    private TextView tvStudentName;
+    private TextView tvStudentId;
+    private TextView tvStudentPhone;
+    private TextView tvStudentEmail;
+    private TextView tvProgramme;
 
-    // Runtime Allocation Parameters
+    // Booking Information Views
+    private TextView tvApplicationDate;
+    private TextView tvDuration;
+    private TextView tvTotalAmount;
+
+    // Action Buttons
+    private LinearLayout btnCancelBooking;
+    private LinearLayout btnPayNow;
+    private LinearLayout btnContactSupport;
+
+    // Rejection Reason Views - ADDED
+    private LinearLayout rejectionReasonContainer;
+    private TextView tvRejectionReason;
+
+    // Data variables
     private String documentId;
     private String bookingStatus;
-    private String rejectReason;
+    private String rejectReason;  // ADDED
+    private String roomId;
+    private String roomType;
+    private String roomLocation;
+    private String roomPrice;
+    private String studentName;
+    private String matricNumber;
+    private String phoneNumber;
+    private String email;
+    private String programme;
+    private String checkInDate;
+    private String leaseDuration;
+    private Long createdAt;
+    private String totalAmount;
+
+    // Firebase
     private FirebaseFirestore db;
 
     @Override
@@ -44,52 +81,59 @@ public class BookingDetailsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking_details);
 
-        // Initialize Cloud Database Node
         db = FirebaseFirestore.getInstance();
 
-        // 1. Structural Binding Init
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
+
         initViews();
-
-        // 2. Map Inbound Application Intent Bundle Metrics
         getIntentData();
-
-        // 3. Inject Dynamic Aesthetic Themes depending on Verification State
-        configureVoucherThemeEngine();
-
-        // 4. Bind Activity Event Interceptors
+        populateUI();
         setupClickListeners();
+        configureStatusTheme();
 
-        // Handle System Back Button Press using modern Dispatcher Lifecycle
+        // Handle back press
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                handleSmartBackNavigation();
+                navigateBack();
             }
         });
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btnBack);
-        tvDetailsTitle = findViewById(R.id.tvDetailsTitle);
-        tvStatusTag = findViewById(R.id.tvStatusTag);
-        tvRoomId = findViewById(R.id.tvRoomId);
+        // Header
+        ivBack = findViewById(R.id.ivBack);
+        tvBookingStatus = findViewById(R.id.tvBookingStatus);
+        tvBookingId = findViewById(R.id.tvBookingId);
+
+        // Room Information
+        tvRoomNumber = findViewById(R.id.tvRoomNumber);
         tvRoomType = findViewById(R.id.tvRoomType);
-        tvPrice = findViewById(R.id.tvPrice);
+        tvRoomLocation = findViewById(R.id.tvRoomLocation);
+        tvRoomPrice = findViewById(R.id.tvRoomPrice);
 
+        // Student Information
         tvStudentName = findViewById(R.id.tvStudentName);
-        tvMatric = findViewById(R.id.tvMatric);
-        tvPhoneNumber = findViewById(R.id.tvPhoneNumber);
-        tvCheckIn = findViewById(R.id.tvCheckIn);
-        tvLeaseDuration = findViewById(R.id.tvLeaseDuration);
+        tvStudentId = findViewById(R.id.tvStudentId);
+        tvStudentPhone = findViewById(R.id.tvStudentPhone);
+        tvStudentEmail = findViewById(R.id.tvStudentEmail);
+        tvProgramme = findViewById(R.id.tvProgramme);
 
-        // Map Rejection Field Pairs safely from layout references
-        layoutRejectReason = findViewById(R.id.layoutRejectReason);
-        tvRejectReasonContent = findViewById(R.id.tvRejectReasonContent);
+        // Booking Information
+        tvApplicationDate = findViewById(R.id.tvApplicationDate);
+        tvDuration = findViewById(R.id.tvDuration);
+        tvTotalAmount = findViewById(R.id.tvTotalAmount);
 
+        // Action Buttons
         btnCancelBooking = findViewById(R.id.btnCancelBooking);
-        layoutCompletedActions = findViewById(R.id.layoutCompletedActions);
-        btnReturn = findViewById(R.id.btnReturn);
-        btnShare = findViewById(R.id.btnShare);
+        btnPayNow = findViewById(R.id.btnPayNow);
+        btnContactSupport = findViewById(R.id.btnContactSupport);
+
+        // Rejection Reason Views - ADDED
+        rejectionReasonContainer = findViewById(R.id.rejectionReasonContainer);
+        tvRejectionReason = findViewById(R.id.tvRejectionReason);
     }
 
     private void getIntentData() {
@@ -97,213 +141,233 @@ public class BookingDetailsActivity extends AppCompatActivity {
         if (intent != null) {
             documentId = intent.getStringExtra("BOOKING_DOC_ID");
             bookingStatus = intent.getStringExtra("BOOKING_STATUS");
-            rejectReason = intent.getStringExtra("REJECT_REASON");
+            rejectReason = intent.getStringExtra("REJECT_REASON");  // ADDED
+            roomId = intent.getStringExtra("ROOM_ID");
+            roomType = intent.getStringExtra("ROOM_TYPE");
+            roomLocation = intent.getStringExtra("ROOM_LOCATION");
+            roomPrice = intent.getStringExtra("ROOM_PRICE");
+            studentName = intent.getStringExtra("STUDENT_NAME");
+            matricNumber = intent.getStringExtra("MATRIC_NUMBER");
+            phoneNumber = intent.getStringExtra("PHONE_NUMBER");
+            email = intent.getStringExtra("EMAIL");
+            programme = intent.getStringExtra("PROGRAMME");
+            checkInDate = intent.getStringExtra("CHECK_IN_DATE");
+            leaseDuration = intent.getStringExtra("LEASE_DURATION");
+            totalAmount = intent.getStringExtra("TOTAL_AMOUNT");
+            createdAt = intent.getLongExtra("CREATED_AT", 0);
 
-            if (intent.getStringExtra("ROOM_ID") != null) tvRoomId.setText(intent.getStringExtra("ROOM_ID"));
-            if (intent.getStringExtra("ROOM_TYPE") != null) tvRoomType.setText(intent.getStringExtra("ROOM_TYPE"));
-
-            // ✅ 修复价格显示 - 格式化为 RM XX.XX
-            String roomPrice = intent.getStringExtra("ROOM_PRICE");
-            if (roomPrice != null && !roomPrice.isEmpty()) {
-                try {
-                    // 如果已经是 RM 格式，直接使用
-                    if (roomPrice.startsWith("RM")) {
-                        tvPrice.setText(roomPrice);
-                    } else {
-                        double price = Double.parseDouble(roomPrice);
-                        tvPrice.setText(String.format("RM %.2f", price));
-                    }
-                } catch (NumberFormatException e) {
-                    tvPrice.setText(roomPrice);
-                }
-            }
-
-            if (intent.getStringExtra("STUDENT_NAME") != null) tvStudentName.setText(intent.getStringExtra("STUDENT_NAME"));
-            if (intent.getStringExtra("MATRIC_NUMBER") != null) tvMatric.setText(intent.getStringExtra("MATRIC_NUMBER"));
-            if (intent.getStringExtra("PHONE_NUMBER") != null) tvPhoneNumber.setText(intent.getStringExtra("PHONE_NUMBER"));
-            if (intent.getStringExtra("CHECK_IN_DATE") != null) tvCheckIn.setText(intent.getStringExtra("CHECK_IN_DATE"));
-            if (intent.getStringExtra("LEASE_DURATION") != null) tvLeaseDuration.setText(intent.getStringExtra("LEASE_DURATION"));
+            // Debug logging
+            android.util.Log.d("BookingDetails", "=== Received Data ===");
+            android.util.Log.d("BookingDetails", "Reject Reason: " + rejectReason);  // ADDED
+            android.util.Log.d("BookingDetails", "Location: " + roomLocation);
+            android.util.Log.d("BookingDetails", "Email: " + email);
+            android.util.Log.d("BookingDetails", "Programme: " + programme);
+            android.util.Log.d("BookingDetails", "CreatedAt: " + createdAt);
         }
     }
 
-    private void configureVoucherThemeEngine() {
+    private void populateUI() {
+        // Booking ID
+        if (documentId != null && !documentId.isEmpty()) {
+            tvBookingId.setText(documentId);
+        } else {
+            tvBookingId.setText("N/A");
+        }
+
+        // Room Information
+        if (roomId != null && !roomId.isEmpty()) tvRoomNumber.setText(roomId);
+        if (roomType != null && !roomType.isEmpty()) tvRoomType.setText(roomType);
+        if (roomLocation != null && !roomLocation.isEmpty()) {
+            tvRoomLocation.setText(roomLocation);
+        } else {
+            tvRoomLocation.setText("Not specified");
+        }
+        if (roomPrice != null && !roomPrice.isEmpty()) {
+            tvRoomPrice.setText(roomPrice);
+            tvTotalAmount.setText(roomPrice);
+        }
+
+        // Student Information
+        if (studentName != null && !studentName.isEmpty()) tvStudentName.setText(studentName);
+        if (matricNumber != null && !matricNumber.isEmpty()) tvStudentId.setText(matricNumber);
+        if (phoneNumber != null && !phoneNumber.isEmpty()) tvStudentPhone.setText(phoneNumber);
+        if (email != null && !email.isEmpty()) {
+            tvStudentEmail.setText(email);
+        } else {
+            tvStudentEmail.setText("Not provided");
+        }
+        if (programme != null && !programme.isEmpty()) {
+            tvProgramme.setText(programme);
+        } else {
+            tvProgramme.setText("Not specified");
+        }
+
+        // Booking Information
+        if (createdAt != null && createdAt > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            String dateString = sdf.format(new Date(createdAt));
+            tvApplicationDate.setText(dateString);
+        } else {
+            tvApplicationDate.setText("N/A");
+        }
+
+        if (leaseDuration != null && !leaseDuration.isEmpty()) tvDuration.setText(leaseDuration);
+    }
+
+    private void showRejectionReasonIfNeeded() {
+        // Only show rejection reason if status is "Rejected" and reason exists
+        if ("rejected".equalsIgnoreCase(bookingStatus) && rejectReason != null && !rejectReason.isEmpty()) {
+            if (rejectionReasonContainer != null && tvRejectionReason != null) {
+                rejectionReasonContainer.setVisibility(View.VISIBLE);
+                tvRejectionReason.setText(rejectReason);
+            }
+        } else {
+            if (rejectionReasonContainer != null) {
+                rejectionReasonContainer.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void configureStatusTheme() {
         if (bookingStatus == null) {
             bookingStatus = "Pending";
         }
 
-        tvStatusTag.setText(bookingStatus.toUpperCase().trim());
-        GradientDrawable statusBgShape = (GradientDrawable) tvStatusTag.getBackground();
+        tvBookingStatus.setText(bookingStatus);
 
-        if (layoutRejectReason != null) {
-            layoutRejectReason.setVisibility(View.GONE);
-        }
+        GradientDrawable statusBg = new GradientDrawable();
+        statusBg.setCornerRadius(30f);
+        tvBookingStatus.setPadding(24, 12, 24, 12);
 
-        switch (bookingStatus.toLowerCase().trim()) {
+        switch (bookingStatus.toLowerCase()) {
             case "pending":
-                if (statusBgShape != null) statusBgShape.setColor(Color.parseColor("#F59E0B")); // Amber
-                tvPrice.setTextColor(Color.parseColor("#F59E0B"));
+                statusBg.setColor(Color.parseColor("#FEF3C7"));
+                tvBookingStatus.setBackground(statusBg);
+                tvBookingStatus.setTextColor(Color.parseColor("#D97706"));
+                tvRoomPrice.setTextColor(Color.parseColor("#D97706"));
+                tvTotalAmount.setTextColor(Color.parseColor("#D97706"));
 
                 btnCancelBooking.setVisibility(View.VISIBLE);
-                layoutCompletedActions.setVisibility(View.GONE);
+                btnPayNow.setVisibility(View.GONE);
                 break;
 
             case "approved":
-                if (statusBgShape != null) statusBgShape.setColor(Color.parseColor("#6366F1")); // Indigo Blue for action state
-                tvPrice.setTextColor(Color.parseColor("#6366F1"));
+                statusBg.setColor(Color.parseColor("#DCFCE7"));
+                tvBookingStatus.setBackground(statusBg);
+                tvBookingStatus.setTextColor(Color.parseColor("#15803D"));
+                tvRoomPrice.setTextColor(Color.parseColor("#15803D"));
+                tvTotalAmount.setTextColor(Color.parseColor("#15803D"));
 
                 btnCancelBooking.setVisibility(View.GONE);
-                layoutCompletedActions.setVisibility(View.VISIBLE);
-
-                // IMPROVEMENT: Transform share button into a dynamic payment pathway link
-                btnShare.setText("Proceed to Payment");
-                btnShare.setBackgroundColor(Color.parseColor("#6366F1"));
+                btnPayNow.setVisibility(View.VISIBLE);
                 break;
 
             case "paid":
-                if (statusBgShape != null) statusBgShape.setColor(Color.parseColor("#10B981")); // Emerald Green
-                tvPrice.setTextColor(Color.parseColor("#10B981"));
+                statusBg.setColor(Color.parseColor("#DBEAFE"));
+                tvBookingStatus.setBackground(statusBg);
+                tvBookingStatus.setTextColor(Color.parseColor("#1E40AF"));
+                tvRoomPrice.setTextColor(Color.parseColor("#1E40AF"));
+                tvTotalAmount.setTextColor(Color.parseColor("#1E40AF"));
 
                 btnCancelBooking.setVisibility(View.GONE);
-                layoutCompletedActions.setVisibility(View.VISIBLE);
-                btnShare.setText("Share Details");
-                btnShare.setBackgroundColor(Color.parseColor("#10B981")); // Match color with state
+                btnPayNow.setVisibility(View.GONE);
                 break;
 
             case "rejected":
-                if (statusBgShape != null) statusBgShape.setColor(Color.parseColor("#EF4444")); // Crimson Red
-                tvPrice.setTextColor(Color.parseColor("#EF4444"));
+                statusBg.setColor(Color.parseColor("#FEE2E2"));
+                tvBookingStatus.setBackground(statusBg);
+                tvBookingStatus.setTextColor(Color.parseColor("#B91C1C"));
+                tvRoomPrice.setTextColor(Color.parseColor("#B91C1C"));
+                tvTotalAmount.setTextColor(Color.parseColor("#B91C1C"));
 
                 btnCancelBooking.setVisibility(View.GONE);
-                layoutCompletedActions.setVisibility(View.VISIBLE);
-                // ✅ 修改按钮文字
-                btnShare.setText("Share Details");
-                btnShare.setBackgroundColor(Color.parseColor("#10B981")); // 匹配红色主题
+                btnPayNow.setVisibility(View.GONE);
 
-                if (layoutRejectReason != null && tvRejectReasonContent != null) {
-                    layoutRejectReason.setVisibility(View.VISIBLE);
-                    if (rejectReason != null && !rejectReason.trim().isEmpty()) {
-                        tvRejectReasonContent.setText(rejectReason.trim());
-                    } else {
-                        tvRejectReasonContent.setText("No explicit custom feedback was written by the administrator.");
-                    }
-                }
+                // Show rejection reason
+                showRejectionReasonIfNeeded();
+                break;
+
+            default:
+                statusBg.setColor(Color.parseColor("#F3F4F6"));
+                tvBookingStatus.setBackground(statusBg);
+                tvBookingStatus.setTextColor(Color.parseColor("#374151"));
                 break;
         }
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> handleSmartBackNavigation());
-        btnReturn.setOnClickListener(v -> handleSmartBackNavigation());
+        ivBack.setOnClickListener(v -> navigateBack());
+
         btnCancelBooking.setOnClickListener(v -> showCancellationDialog());
 
-        // IMPROVEMENT: Smart Action click dispatcher depending on current database status configuration state
-        btnShare.setOnClickListener(v -> {
-            if ("approved".equalsIgnoreCase(bookingStatus.trim())) {
-                navigateToPaymentGateway();
-            } else {
-                executeShareVoucherSheet();
-            }
-        });
+        btnPayNow.setOnClickListener(v -> navigateToPayment());
+
+        btnContactSupport.setOnClickListener(v -> showContactSupportDialog());
     }
 
-    private void navigateToPaymentGateway() {
-        Intent paymentIntent = new Intent(BookingDetailsActivity.this, PaymentActivity.class);
-
-        // Pack all variables matching requirements of PaymentActivity
-        paymentIntent.putExtra("BOOKING_DOC_ID", documentId);
-        paymentIntent.putExtra("ROOM_ID", tvRoomId.getText().toString());
-        paymentIntent.putExtra("ROOM_TYPE", tvRoomType.getText().toString());
-        paymentIntent.putExtra("ROOM_PRICE", tvPrice.getText().toString());
-
-        paymentIntent.putExtra("STUDENT_NAME", tvStudentName.getText().toString());
-        paymentIntent.putExtra("MATRIC_NUMBER", tvMatric.getText().toString());
-        paymentIntent.putExtra("PHONE_NUMBER", tvPhoneNumber.getText().toString());
-        paymentIntent.putExtra("CHECK_IN_DATE", tvCheckIn.getText().toString());
-        paymentIntent.putExtra("LEASE_DURATION", tvLeaseDuration.getText().toString());
-
-        startActivity(paymentIntent);
-    }
-
-    private void handleSmartBackNavigation() {
-        if (bookingStatus == null) bookingStatus = "Pending";
-
-        Intent targetIntent;
-        if (bookingStatus.equalsIgnoreCase("Pending")) {
-            targetIntent = new Intent(BookingDetailsActivity.this, BookingsActivity.class);
+    private void navigateBack() {
+        Intent intent;
+        if ("Pending".equalsIgnoreCase(bookingStatus)) {
+            intent = new Intent(BookingDetailsActivity.this, BookingsActivity.class);
         } else {
-            targetIntent = new Intent(BookingDetailsActivity.this, HistoryActivity.class);
+            intent = new Intent(BookingDetailsActivity.this, HistoryActivity.class);
         }
-
-        targetIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(targetIntent);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
         finish();
     }
 
     private void showCancellationDialog() {
-        Log.d("FIRESTORE_DELETE_DEBUG", "Evaluating documentId: " + documentId);
-
-        if (documentId == null || documentId.trim().isEmpty()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Extraction Error")
-                    .setMessage("Cannot verify this booking instance on the server. The database document key was missing.")
-                    .setPositiveButton("Go Back", (d, w) -> finish())
-                    .show();
+        if (documentId == null || documentId.isEmpty()) {
+            Toast.makeText(this, "Cannot cancel: Invalid booking ID", Toast.LENGTH_SHORT).show();
             return;
         }
 
         new AlertDialog.Builder(this)
-                .setTitle("Cancel My Application")
-                .setMessage("Are you absolutely sure you want to retract this hostel accommodation request? This data cannot be recovered.")
-                .setPositiveButton("Confirm Cancellation", (dialog, which) -> {
-                    btnCancelBooking.setEnabled(false);
-                    Toast.makeText(this, "Deleting from Firestore server...", Toast.LENGTH_SHORT).show();
-
-                    db.collection("Bookings").document(documentId.trim())
-                            .delete()
-                            .addOnSuccessListener(aVoid -> {
-                                Toast.makeText(BookingDetailsActivity.this, "Booking canceled successfully.", Toast.LENGTH_LONG).show();
-
-                                Intent intent = new Intent(BookingDetailsActivity.this, BookingsActivity.class);
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                btnCancelBooking.setEnabled(true);
-                                new AlertDialog.Builder(BookingDetailsActivity.this)
-                                        .setTitle("Firebase Transaction Exception")
-                                        .setMessage("Details: " + e.getLocalizedMessage() + "\n\nChecked Collection Key Path: Bookings/" + documentId.trim())
-                                        .setPositiveButton("Acknowledge", null)
-                                        .show();
-                            });
+                .setTitle("Cancel Application")
+                .setMessage("Are you sure you want to cancel this booking application? This action cannot be undone.")
+                .setPositiveButton("Yes, Cancel", (dialog, which) -> {
+                    cancelBooking();
                 })
-                .setNegativeButton("Keep Reservation", null)
+                .setNegativeButton("No, Keep", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
-    private void executeShareVoucherSheet() {
-        String roomId = tvRoomId.getText().toString();
-        String roomType = tvRoomType.getText().toString();
-        String currentStatus = tvStatusTag.getText().toString();
-        String residentName = tvStudentName.getText().toString();
+    private void cancelBooking() {
+        btnCancelBooking.setEnabled(false);
+        Toast.makeText(this, "Cancelling booking...", Toast.LENGTH_SHORT).show();
 
-        String shareBodyText = "🛏️ UTM Space Hostel Booking Voucher Record Receipt:\n\n" +
-                "• Status Profile: [" + currentStatus + "]\n" +
-                "• Resident: " + residentName + "\n" +
-                "• Room Identifier Tag: " + roomId + "\n" +
-                "• Layout Tier Type: " + roomType + "\n";
+        db.collection("Bookings").document(documentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Booking cancelled successfully", Toast.LENGTH_LONG).show();
+                    navigateBack();
+                })
+                .addOnFailureListener(e -> {
+                    btnCancelBooking.setEnabled(true);
+                    Toast.makeText(this, "Failed to cancel: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
 
-        if ("REJECTED".equalsIgnoreCase(currentStatus) && rejectReason != null && !rejectReason.isEmpty()) {
-            shareBodyText += "• Reason for Rejection: " + rejectReason + "\n";
-        }
+    private void navigateToPayment() {
+        Intent intent = new Intent(BookingDetailsActivity.this, PaymentActivity.class);
+        intent.putExtra("BOOKING_DOC_ID", documentId);
+        intent.putExtra("ROOM_ID", roomId);
+        intent.putExtra("ROOM_TYPE", roomType);
+        intent.putExtra("ROOM_PRICE", roomPrice);
+        intent.putExtra("STUDENT_NAME", studentName);
+        intent.putExtra("MATRIC_NUMBER", matricNumber);
+        intent.putExtra("PHONE_NUMBER", phoneNumber);
+        intent.putExtra("CHECK_IN_DATE", checkInDate);
+        intent.putExtra("LEASE_DURATION", leaseDuration);
+        startActivity(intent);
+    }
 
-        shareBodyText += "\nGenerated via official UTM Space Allocation Management Architecture System client terminal.";
-
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "UTM Space Booking Voucher Log Summary Copy");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, shareBodyText);
-
-        startActivity(Intent.createChooser(shareIntent, "Share Booking Record Summary Via:"));
+    private void showContactSupportDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Contact Support")
+                .setMessage("📧 Email: hostelhub@utm.my\n📞 Phone: 03-5556-9012\n\n🕐 Office Hours: Monday-Friday, 9am - 5pm")
+                .setPositiveButton("OK", null)
+                .show();
     }
 }

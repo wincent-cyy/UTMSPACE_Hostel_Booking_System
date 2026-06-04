@@ -4,33 +4,38 @@ public class Booking {
     // Primary Key
     private String bookingId;        // Document ID
 
-    // Foreign Keys (名字必须与源Collection完全一致)
-    private String uid;              // Foreign Key → Users.uid (名字一致)
-    private String roomId;           // Foreign Key → Rooms.roomId (名字一致)
+    // Foreign Keys
+    private String uid;              // Foreign Key → Users.uid
+    private String roomId;           // Foreign Key → Rooms.roomId
 
     // 从 Users 继承的快照数据
     private String name;
     private String matricNumber;
     private String phone;
+    private String email;            // 添加 email
+    private String programme;        // 添加 programme
+    private String currentSemester;  // 添加 currentSemester
 
-    // 从 Rooms 继承的快照数据 (预订时的房间快照，防止房间信息被修改后影响历史记录)
-    private String roomType;         // 从 Rooms.roomType 继承
-    private double price;            // 从 Rooms.price 继承
-    private String status;       // 从 Rooms.status 继承 (改名为 status 避免与 bookingStatus 混淆)
-    private String location;         // 从 Rooms.location 继承
+    // 从 Rooms 继承的快照数据
+    private String roomType;
+    private double price;
+    private String status;
+    private String location;
 
     // Booking specific fields
     private String checkInDate;
     private String leaseDuration;
-    private String bookingStatus;    // Pending, Approved, Rejected, Paid (预订流程状态)
+    private String bookingStatus;
     private String rejectReason;
     private String paymentMethod;
     private long paymentTimestamp;
     private long createdAt;
+    private int duration;            // 添加学期数 (1 or 2)
+    private double pricePerSemester; // 添加每学期价格
 
     public Booking() {}
 
-    // Getters
+    // ========== Getters ==========
     public String getBookingId() { return bookingId; }
     public String getUid() { return uid; }
     public String getRoomId() { return roomId; }
@@ -39,6 +44,9 @@ public class Booking {
     public String getName() { return name; }
     public String getMatricNumber() { return matricNumber; }
     public String getPhone() { return phone; }
+    public String getEmail() { return email; }
+    public String getProgramme() { return programme; }
+    public String getCurrentSemester() { return currentSemester; }
 
     // Rooms 继承字段
     public String getRoomType() { return roomType; }
@@ -54,8 +62,10 @@ public class Booking {
     public String getPaymentMethod() { return paymentMethod; }
     public long getPaymentTimestamp() { return paymentTimestamp; }
     public long getCreatedAt() { return createdAt; }
+    public int getDuration() { return duration; }
+    public double getPricePerSemester() { return pricePerSemester; }
 
-    // Setters
+    // ========== Setters ==========
     public void setBookingId(String bookingId) { this.bookingId = bookingId; }
     public void setUid(String uid) { this.uid = uid; }
     public void setRoomId(String roomId) { this.roomId = roomId; }
@@ -64,6 +74,9 @@ public class Booking {
     public void setName(String name) { this.name = name; }
     public void setMatricNumber(String matricNumber) { this.matricNumber = matricNumber; }
     public void setPhone(String phone) { this.phone = phone; }
+    public void setEmail(String email) { this.email = email; }
+    public void setProgramme(String programme) { this.programme = programme; }
+    public void setCurrentSemester(String currentSemester) { this.currentSemester = currentSemester; }
 
     // Rooms 继承字段
     public void setRoomType(String roomType) { this.roomType = roomType; }
@@ -79,21 +92,124 @@ public class Booking {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public void setPaymentTimestamp(long paymentTimestamp) { this.paymentTimestamp = paymentTimestamp; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+    public void setDuration(int duration) { this.duration = duration; }
+    public void setPricePerSemester(double pricePerSemester) { this.pricePerSemester = pricePerSemester; }
 
-    // 在 Booking.java 中添加这个方法
+    /**
+     * 获取显示价格
+     * 根据学期数计算总价格
+     */
     public String getDisplayPrice() {
-        double finalPrice = this.price;
+        double finalPrice = calculateTotalPrice();
+        return String.format("RM %.2f", finalPrice);
+    }
 
-        // 打印日志查看实际的值
-        android.util.Log.d("BookingDebug", "Original price: " + this.price);
-        android.util.Log.d("BookingDebug", "LeaseDuration: " + this.leaseDuration);
+    /**
+     * 获取总价格（数字）
+     */
+    public double getTotalPrice() {
+        return calculateTotalPrice();
+    }
 
-        // ✅ 检查判断条件是否匹配
-        if (this.leaseDuration != null && this.leaseDuration.equalsIgnoreCase("2 Semesters (Full Academic Year)")) {
-            finalPrice = this.price * 2;
-            android.util.Log.d("BookingDebug", "Price doubled to: " + finalPrice);
+    /**
+     * 计算总价格的核心方法
+     */
+    private double calculateTotalPrice() {
+        // 优先使用 duration + pricePerSemester (更可靠)
+        if (duration > 1 && pricePerSemester > 0) {
+            return pricePerSemester * duration;
         }
 
-        return String.format("RM %.2f", finalPrice);
+        // 方法2: 使用 leaseDuration 判断
+        if (leaseDuration != null) {
+            if (leaseDuration.equalsIgnoreCase("2 Semesters") ||
+                    leaseDuration.contains("2") ||
+                    leaseDuration.equalsIgnoreCase("2 Semesters")) {
+                return price * 2;
+            }
+        }
+
+        // 默认返回单学期价格
+        return price;
+    }
+
+    /**
+     * 获取状态显示文本（带中文支持）
+     */
+    public String getStatusDisplayText() {
+        if (bookingStatus == null) return "Pending";
+
+        switch (bookingStatus.toLowerCase()) {
+            case "pending": return "Pending";
+            case "approved": return "Approved";
+            case "rejected": return "Rejected";
+            case "paid": return "Paid";
+            default: return bookingStatus;
+        }
+    }
+
+    /**
+     * 判断是否可以取消
+     */
+    public boolean isCancellable() {
+        return "Pending".equalsIgnoreCase(bookingStatus);
+    }
+
+    /**
+     * 判断是否可以支付
+     */
+    public boolean isPayable() {
+        return "Approved".equalsIgnoreCase(bookingStatus);
+    }
+
+    /**
+     * 判断是否已支付
+     */
+    public boolean isPaid() {
+        return "Paid".equalsIgnoreCase(bookingStatus);
+    }
+
+    /**
+     * 判断是否被拒绝
+     */
+    public boolean isRejected() {
+        return "Rejected".equalsIgnoreCase(bookingStatus);
+    }
+
+    /**
+     * 获取房间显示名称
+     */
+    public String getRoomDisplayName() {
+        if (roomId != null && !roomId.isEmpty()) {
+            return roomId;
+        }
+        if (location != null && !location.isEmpty()) {
+            return location;
+        }
+        return "N/A";
+    }
+
+    /**
+     * 获取学生显示名称
+     */
+    public String getStudentDisplayName() {
+        if (name != null && !name.isEmpty()) {
+            return name;
+        }
+        if (matricNumber != null && !matricNumber.isEmpty()) {
+            return matricNumber;
+        }
+        return "N/A";
+    }
+
+    /**
+     * 获取格式化日期
+     */
+    public String getFormattedCreatedDate() {
+        if (createdAt > 0) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault());
+            return sdf.format(new java.util.Date(createdAt));
+        }
+        return "N/A";
     }
 }

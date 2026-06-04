@@ -1,521 +1,382 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
-    tools:context=".RoomDetailsActivity">
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
-    <!-- 1. Header Background Layer (Pinned at Very Top) -->
-    <View
-        android:id="@+id/topHeaderBg"
-        android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- 2. Toolbar Layer Header (Pinned & Non-Scrollable) -->
-    <RelativeLayout
-        android:id="@+id/toolbarLayer"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:paddingHorizontal="8dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Back"
-            android:padding="12dp"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="#FFFFFF" />
+        <LinearLayout
+            android:id="@+id/ivBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/back_button_background"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="#1E293B" />
+
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/tvDetailsTitle"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="Room Detail"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
+            android:layout_weight="1"
+            android:text="Room Details"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#800000"
+            android:gravity="center"
+            android:fontFamily="sans-serif" />
 
-    <!-- 3. Fixed Room Image Card & Price Tag Container (Non-Scrollable Anchor Point) -->
-    <!-- 3. Fixed Room Image Card & Price Tag Container with Arrows -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/roomImageCard"
+    </LinearLayout>
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbarLayer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <!-- Change ImageView to ViewPager2 -->
-            <androidx.viewpager2.widget.ViewPager2
-                android:id="@+id/viewPagerImages"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-            <!-- Left Arrow -->
-            <ImageButton
-                android:id="@+id/btnPrevImage"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_gravity="center_vertical|start"
-                android:layout_marginStart="12dp"
-                android:background="@drawable/broadcast_arrow"
-                android:padding="8dp"
-                android:visibility="gone" />
-
-            <!-- Right Arrow -->
-            <ImageButton
-                android:id="@+id/btnNextImage"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_gravity="center_vertical|end"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/broadcast_arrow"
-                android:padding="8dp"
-                android:rotation="180"
-                android:visibility="gone" />
-
-            <!-- Price Tag -->
-            <TextView
-                android:id="@+id/tvRoomPriceTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_margin="16dp"
-                android:background="@drawable/input_field_rounded"
-                android:backgroundTint="#6366F1"
-                android:paddingHorizontal="14dp"
-                android:paddingVertical="6dp"
-                android:text="RM 450 / Semester"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:textSize="14sp"/>
-        </FrameLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- 4. Main Scrollable Content Area (Only lower cards move) -->
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="16dp"
-        android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/roomImageCard"
-        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingBottom="24dp">
+            android:orientation="vertical">
 
-            <!-- Room Meta Information Block Card -->
-            <androidx.cardview.widget.CardView
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerImages"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp" />
+
+                <TextView
+                    android:id="@+id/tvImageCounter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|bottom"
+                    android:layout_margin="16dp"
+                    android:background="#80000080"
+                    android:padding="4dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="1/3"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/dotsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:background="#FFFFFF"
+                android:layout_margin="16dp"
+                android:layout_marginTop="0dp"
+                android:elevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:id="@+id/tvRoomNumber"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentStart="true"
-                            android:text="Room A-302"
-                            android:textColor="#0F172A"
-                            android:textSize="22sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvRoomStatusBadge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:background="@drawable/input_field_rounded"
-                            android:backgroundTint="#DCFCE7"
-                            android:paddingHorizontal="12dp"
-                            android:paddingVertical="4dp"
-                            android:text="Available"
-                            android:textColor="#15803D"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </RelativeLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <TextView
-                        android:id="@+id/tvRoomType"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tvRoomTitle"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Premium Single Studio Room"
-                        android:textColor="#475569"
-                        android:textSize="15sp"
-                        android:layout_marginBottom="16dp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#F1F5F9"
-                        android:layout_marginBottom="16dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Overview Description"
-                        android:textColor="#0F172A"
-                        android:textSize="14sp"
+                        android:layout_weight="1"
+                        android:text="Single Room"
+                        android:textSize="20sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
+                        android:textColor="#3C2A24"
+                        android:fontFamily="sans-serif" />
 
                     <TextView
-                        android:id="@+id/tvRoomDescription"
-                        android:layout_width="match_parent"
+                        android:id="@+id/tvRoomStatus"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Comfortable residential space located near the campus facilities, complete with private study desk configurations, high speed networking options and continuous HVAC air ventilation monitoring."
-                        android:textColor="#64748B"
-                        android:textSize="13sp"
-                        android:lineSpacingMultiplier="1.2"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+                        android:text="Available"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#10B981"
+                        android:background="#E8F5E9"
+                        android:padding="4dp"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
 
-            <!-- Expanded Facilities/Amenities Block Section -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvRoomLocation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Block A, Level 2 · Near Library"
+                    android:textSize="13sp"
+                    android:textColor="#AA7A6C"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:id="@+id/tvRoomPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="RM 1500 / Semester"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="sans-serif" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#EEDDD5"
+                    android:layout_marginVertical="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Description"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#3C2A24"
+                    android:fontFamily="sans-serif" />
+
+                <TextView
+                    android:id="@+id/tvRoomDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="A comfortable and well-maintained room located within the university campus."
+                    android:textSize="14sp"
+                    android:textColor="#5B6E8C"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="4dp"
+                    android:fontFamily="sans-serif" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_deck"
+                        app:tint="#800000" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Included Facilities"
-                        android:textColor="#0F172A"
+                        android:text=" Room Facilities"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="16dp" />
-
-                    <GridLayout
-                        android:id="@+id/gridFacilities"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:columnCount="2"
-                        android:alignmentMode="alignMargins"
-                        android:columnOrderPreserved="false">
-
-                        <!-- Facility 1: Wi-Fi -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="High Speed Wi-Fi"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 2: Aircon -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Air Conditioner"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 3: Bathroom -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Private Bathroom"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 4: Study Desk -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Study Desk &amp; Chair"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 5: Single Bed -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Comfortable Bed"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 6: Wardrobe -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Clothes Wardrobe"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 7: Water Heater -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Water Heater"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 8: Fridge -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Mini Fridge"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 9: Laundry Machine -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Washing Machine"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-
-                        <!-- Facility 10: Kitchen -->
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_columnWeight="1"
-                            android:orientation="horizontal"
-                            android:layout_marginBottom="12dp"
-                            android:gravity="center_vertical">
-                            <ImageView
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
-                                android:src="@drawable/check_icon"
-                                app:tint="#22C55E"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Shared Kitchen"
-                                android:textColor="#475569"
-                                android:textSize="13sp"/>
-                        </LinearLayout>
-                    </GridLayout>
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif" />
 
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/featuresContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_spa"
+                        app:tint="#800000" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" Amenities &amp; Services"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif" />
+
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/amenitiesContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_people"
+                        app:tint="#800000" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" Current Occupancy"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvOccupancy"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="2 / 4 beds occupied"
+                    android:textSize="14sp"
+                    android:textColor="#5B6E8C"
+                    android:layout_marginTop="8dp"
+                    android:background="#F8FAFC"
+                    android:padding="12dp"
+                    android:fontFamily="sans-serif" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_info"
+                        app:tint="#800000" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" Hostel Rules"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="sans-serif" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="• Check-in: After 14:00 / Check-out: Before 12:00\n• Quiet hours: 11:00 PM - 7:00 AM\n• Visitors allowed until 10:00 PM\n• No smoking inside the room\n• Guests must register at reception\n• Late payment fee: RM 50 per week"
+                    android:textSize="13sp"
+                    android:textColor="#5B6E8C"
+                    android:background="#F8FAFC"
+                    android:padding="14dp"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="4dp"
+                    android:fontFamily="sans-serif" />
+
+                <LinearLayout
+                    android:id="@+id/btnBookNow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/primary_button_background"
+                    android:padding="14dp"
+                    android:gravity="center"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:id="@+id/tvBookButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Apply Now"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="sans-serif" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+    </ScrollView>
 
-    <!-- 5. Bottom Sticky Action Navigation Bar Area (Fixed at Bottom) -->
-    <LinearLayout
-        android:id="@+id/bottomActionBar"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#FFFFFF"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
-        android:elevation="16dp"
-        android:weightSum="3"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:cardCornerRadius="0dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#FFFFFF">
 
-        <Button
-            android:id="@+id/btnDetailsBack"
-            android:layout_width="0dp"
-            android:layout_height="54dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="Back"
-            android:textColor="#475569"
-            android:backgroundTint="#F1F5F9"
-            app:cornerRadius="12dp"
-            android:textStyle="bold"
-            android:textSize="14sp" />
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigationView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            app:menu="@menu/student_nav_menu"
+            app:itemIconTint="@drawable/nav_item_active"
+            app:itemTextColor="@drawable/nav_item_active"
+            app:itemRippleColor="@android:color/transparent"
+            app:elevation="0dp" />
 
-        <Button
-            android:id="@+id/btnApply"
-            android:layout_width="0dp"
-            android:layout_height="54dp"
-            android:layout_weight="2"
-            android:text="Apply Now"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#6366F1"
-            app:cornerRadius="12dp"
-            android:textStyle="bold"
-            android:textSize="15sp"
-            android:textAllCaps="false"/>
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

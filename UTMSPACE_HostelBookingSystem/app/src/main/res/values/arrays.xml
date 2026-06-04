@@ -5,4 +5,17 @@
         <item>staff</item>
         <item>technician</item>
     </array>
+
+    <string-array name="bank_list">
+        <item>Select Bank</item>
+        <item>Maybank</item>
+        <item>CIMB Bank</item>
+        <item>Public Bank</item>
+        <item>RHB Bank</item>
+        <item>Hong Leong Bank</item>
+        <item>AmBank</item>
+        <item>Bank Islam</item>
+        <item>Bank Rakyat</item>
+        <item>BSN</item>
+    </string-array>
 </resources>

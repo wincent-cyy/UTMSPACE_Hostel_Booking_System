@@ -1,23 +1,14 @@
 package com.example.utmspace_hostelbookingsystem;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
-import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.material.imageview.ShapeableImageView;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.List;
 
@@ -25,17 +16,15 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     private List<User> userList;
     private OnUserActionListener listener;
-    private FirebaseFirestore db;
 
     public interface OnUserActionListener {
-        void onEdit(User user);
-        void onDelete(User user);
+        void onViewDetails(User user);
+        void onEditUser(User user);
     }
 
     public UserAdapter(List<User> userList, OnUserActionListener listener) {
         this.userList = userList;
         this.listener = listener;
-        this.db = FirebaseFirestore.getInstance();
     }
 
     @NonNull
@@ -48,109 +37,82 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
+        if (userList == null || position >= userList.size()) return;
         User user = userList.get(position);
+        if (user == null) return;
 
-        holder.tvUserName.setText(user.getName() != null ? user.getName().toUpperCase() : "N/A");
-        holder.tvUserEmail.setText(user.getEmail() != null ? user.getEmail() : "N/A");
+        // User Name
+        String userName = user.getName();
+        holder.tvUserName.setText(userName != null ? userName : "N/A");
 
-        // 传入 user 对象
-        loadMatricNumberFromBookings(user, holder.tvUserDetail);
+        // User Email
+        String userEmail = user.getEmail();
+        holder.tvUserEmail.setText(userEmail != null ? userEmail : "N/A");
 
-        // ✅ 圆角矩形背景
-        GradientDrawable rectDrawable = new GradientDrawable();
-        rectDrawable.setShape(GradientDrawable.RECTANGLE);
-        rectDrawable.setCornerRadius(20);  // 圆角半径
+        // User Phone
+        String userPhone = user.getPhone();
+        holder.tvUserPhone.setText(userPhone != null ? userPhone : "N/A");
 
+        // User Role Badge - 使用你指定的颜色
         String role = user.getRole();
         if (role != null) {
             switch (role.toLowerCase()) {
                 case "student":
-                    rectDrawable.setColor(Color.parseColor("#6366F1"));
-                    holder.tvRoleBadge.setText("Student");
+                    holder.tvUserRole.setText("Student");
+                    holder.tvUserRole.setBackgroundColor(Color.parseColor("#10B981")); // 绿色
                     break;
                 case "staff":
-                    rectDrawable.setColor(Color.parseColor("#10B981"));
-                    holder.tvRoleBadge.setText("Staff");
+                    holder.tvUserRole.setText("Staff");
+                    holder.tvUserRole.setBackgroundColor(Color.parseColor("#3B82F6")); // 蓝色
                     break;
                 case "technician":
-                    rectDrawable.setColor(Color.parseColor("#F59E0B"));
-                    holder.tvRoleBadge.setText("Technician");
+                    holder.tvUserRole.setText("Technician");
+                    holder.tvUserRole.setBackgroundColor(Color.parseColor("#F59E0B")); // 橙色
+                    break;
+                case "admin":
+                    holder.tvUserRole.setText("Admin");
+                    holder.tvUserRole.setBackgroundColor(Color.parseColor("#800000")); // 深红色
                     break;
                 default:
-                    rectDrawable.setColor(Color.parseColor("#94A3B8"));
-                    holder.tvRoleBadge.setText(role);
+                    holder.tvUserRole.setText(role);
+                    holder.tvUserRole.setBackgroundColor(Color.parseColor("#10B981")); // 默认绿色
                     break;
             }
-        }
-        holder.tvRoleBadge.setBackground(rectDrawable);
-
-        // Load profile picture
-        String profilePictureBase64 = user.getProfilePictureBase64();
-        if (profilePictureBase64 != null && !profilePictureBase64.isEmpty()) {
-            try {
-                byte[] decodedBytes = Base64.decode(profilePictureBase64, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-                holder.ivAvatar.setImageBitmap(bitmap);
-            } catch (Exception e) {
-                holder.ivAvatar.setImageResource(R.drawable.profile_pic);
-            }
         } else {
-            holder.ivAvatar.setImageResource(R.drawable.profile_pic);
+            holder.tvUserRole.setText("Student");
+            holder.tvUserRole.setBackgroundColor(Color.parseColor("#10B981")); // 默认绿色
         }
 
-        holder.btnEdit.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onEdit(user);
-            }
-        });
+        // 设置文字颜色为白色
+        holder.tvUserRole.setTextColor(Color.WHITE);
 
-        holder.btnDelete.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDelete(user);
-            }
-        });
-    }
+        // 设置圆角背景
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+        drawable.setCornerRadius(30f);
+        drawable.setColor(holder.tvUserRole.getCurrentTextColor());
+        holder.tvUserRole.setBackground(drawable);
+        holder.tvUserRole.setPadding(24, 8, 24, 8);
 
-    private void loadMatricNumberFromBookings(User user, TextView tvUserDetail) {
-        String role = user.getRole();
-
-        // 如果是 Staff 或 Technician，直接显示 Phone
-        if ("staff".equalsIgnoreCase(role) || "technician".equalsIgnoreCase(role)) {
-            String phone = user.getPhone();
-            if (phone != null && !phone.isEmpty()) {
-                tvUserDetail.setText("Phone: " + phone);
-            } else {
-                tvUserDetail.setText("Phone: N/A");
-            }
-            return;
+        // View Details button
+        if (holder.btnViewDetails != null) {
+            holder.btnViewDetails.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onViewDetails(user);
+                }
+            });
         }
 
-        // 只有 Student 才从 Bookings 获取 Matric Number
-        db.collection("Bookings")
-                .whereEqualTo("uid", user.getUid())
-                .limit(1)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                            String matricNumber = doc.getString("matricNumber");
-                            if (matricNumber != null && !matricNumber.isEmpty()) {
-                                tvUserDetail.setText("Matric: " + matricNumber);
-                            } else {
-                                String phone = user.getPhone();
-                                tvUserDetail.setText("Phone: " + (phone != null ? phone : "N/A"));
-                            }
-                            break;
-                        }
-                    } else {
-                        String phone = user.getPhone();
-                        tvUserDetail.setText("Phone: " + (phone != null ? phone : "N/A"));
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    String phone = user.getPhone();
-                    tvUserDetail.setText("Phone: " + (phone != null ? phone : "N/A"));
-                });
+        // Edit User button
+        if (holder.btnEditUser != null) {
+            holder.btnEditUser.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEditUser(user);
+                }
+            });
+        }
+
+        // 整个卡片不可点击
+        holder.itemView.setClickable(false);
     }
 
     @Override
@@ -158,20 +120,27 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return userList != null ? userList.size() : 0;
     }
 
+    public void updateList(List<User> newList) {
+        this.userList = newList;
+        notifyDataSetChanged();
+    }
+
     static class UserViewHolder extends RecyclerView.ViewHolder {
-        ShapeableImageView ivAvatar;
-        TextView tvUserName, tvUserEmail, tvUserDetail, tvRoleBadge;
-        Button btnEdit, btnDelete;
+        TextView tvUserName;
+        TextView tvUserEmail;
+        TextView tvUserPhone;
+        TextView tvUserRole;
+        LinearLayout btnViewDetails;
+        LinearLayout btnEditUser;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivAvatar = itemView.findViewById(R.id.ivAvatar);
             tvUserName = itemView.findViewById(R.id.tvUserName);
             tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
-            tvUserDetail = itemView.findViewById(R.id.tvUserDetail);
-            tvRoleBadge = itemView.findViewById(R.id.tvRoleBadge);
-            btnEdit = itemView.findViewById(R.id.btnEdit);
-            btnDelete = itemView.findViewById(R.id.btnDelete);
+            tvUserPhone = itemView.findViewById(R.id.tvUserPhone);
+            tvUserRole = itemView.findViewById(R.id.tvUserRole);
+            btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
+            btnEditUser = itemView.findViewById(R.id.btnEditUser);
         }
     }
 }

@@ -1,348 +1,468 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F1F5F9"
-    tools:context=".StudentDashboardActivity">
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
-    <!-- 1. Header Background Layer -->
-    <View
-        android:id="@+id/topHeaderBg"
-        android:layout_width="match_parent"
-        android:layout_height="240dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- 2. Fixed Vertical Content Container (Replaced NestedScrollView with a standard LinearLayout) -->
-    <LinearLayout
+    <!-- Scrollable Content -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:orientation="vertical"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
 
-        <!-- Profile and Search Section -->
         <LinearLayout
-            android:id="@+id/headerTextLayer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="20dp">
 
-            <RelativeLayout
+            <!-- Header Section: Username + Avatar -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="28dp">
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Good Morning,"
-                        android:textColor="#C7D2FE"
-                        android:textSize="14sp" />
+                        android:text="Welcome back 👋"
+                        android:textSize="14sp"
+                        android:textColor="#5B6E8C"
+                        android:fontFamily="sans-serif-medium" />
 
                     <TextView
                         android:id="@+id/tvStudentName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Alex Johnson"
-                        android:textColor="#FFFFFF"
-                        android:textSize="26sp"
-                        android:textStyle="bold" />
+                        android:text="Alex Chen"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#800000"
+                        android:letterSpacing="-0.02"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif" />
                 </LinearLayout>
 
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/ivProfilePicture"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_alignParentEnd="true"
-                    android:padding="2dp"
-                    android:src="@drawable/profile_pic"
-                    app:shapeAppearanceOverlay="@style/CircleImage"
-                    app:strokeColor="#FFFFFF"
-                    app:strokeWidth="2dp" />
-            </RelativeLayout>
+                <LinearLayout
+                    android:id="@+id/profileAvatar"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/avatar_background"
+                    android:gravity="center"
+                    android:padding="10dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-            <!-- Search Bar with Filter Button -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
-                    android:layout_height="54dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="8dp"
-                    app:cardBackgroundColor="#FFFFFF">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:paddingStart="20dp">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@android:drawable/ic_menu_search"
-                            app:tint="#6366F1" />
-
-                        <EditText
-                            android:id="@+id/etSearchRoom"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@android:color/transparent"
-                            android:hint="Find a room ..."
-                            android:paddingStart="12dp"
-                            android:textSize="15sp"
-                            android:textColor="#1E293B"
-                            android:textColorHint="#94A3B8"
-                            android:inputType="text"/>
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFilter"
-                    style="@style/Widget.Material3.Button.OutlinedButton.Icon"
-                    android:layout_width="54dp"
-                    android:layout_height="54dp"
-                    android:layout_marginStart="12dp"
-                    android:padding="0dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:insetLeft="0dp"
-                    android:insetRight="0dp"
-                    app:strokeColor="#80FFFFFF"
-                    app:strokeWidth="1dp"
-                    app:backgroundTint="#33FFFFFF"
-                    app:cornerRadius="16dp"
-                    app:icon="@android:drawable/ic_menu_sort_by_size"
-                    app:iconTint="#FFFFFF"
-                    app:iconSize="35dp"
-                    app:iconGravity="textStart"
-                    tools:ignore="SpeakableTextPresentCheck" />
+                    <ImageView
+                        android:id="@+id/ivProfilePicture"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_account_circle" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Search Results Layout -->
+            <!-- Search Bar -->
             <LinearLayout
-                android:id="@+id/searchResultsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp"
-                android:visibility="gone"/>
-        </LinearLayout>
+                android:background="@drawable/search_bar_background"
+                android:padding="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="28dp">
 
-        <!-- News Banner Section -->
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/newsViewPager"
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="10dp" />
+                <ImageView
+                    android:id="@+id/ivSearchIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="#7E8B9E" />
 
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/bannerIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="12dp"
-            android:layout_marginTop="8dp"
-            android:layout_gravity="center"
-            android:background="@android:color/transparent"
-            app:tabMinWidth="12dp"
-            app:tabMaxWidth="12dp"
-            app:tabBackground="@drawable/indicator_selector"
-            app:tabIndicatorHeight="0dp" />
+                <EditText
+                    android:id="@+id/etSearchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:background="@null"
+                    android:hint="Search room number or location..."
+                    android:textSize="15sp"
+                    android:inputType="text"
+                    android:fontFamily="sans-serif" />
 
-        <!-- Room Categories Section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+                <ImageView
+                    android:id="@+id/ivFilterIcon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_tune"
+                    app:tint="#800000" />
+            </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Room Categories"
-                android:textColor="#1E293B"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <!-- KEEPS HORIZONTAL SCROLL ALIVE -->
+            <!-- Auto Scroll Banner -->
             <HorizontalScrollView
+                android:id="@+id/bannerScrollView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:scrollbars="none">
+                android:scrollbars="none"
+                android:layout_marginBottom="28dp">
 
                 <LinearLayout
+                    android:id="@+id/bannerContainer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <!-- Single Room Card -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardSingle"
-                        android:layout_width="170dp"
-                        android:layout_height="205dp"
-                        android:layout_margin="8dp"
+                    <!-- Banner Item 1 - 整个可点击 -->
+                    <LinearLayout
+                        android:id="@+id/bannerItem1"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/ad_banner_background"
+                        android:padding="16dp"
+                        android:layout_marginEnd="12dp"
                         android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?android:attr/selectableItemBackground"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/bannerImage1"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/single_room" />
+
+                        <TextView
+                            android:id="@+id/bannerTitle1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Limited Offer · Promo Week"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginTop="12dp" />
+
+                        <TextView
+                            android:id="@+id/bannerSubtitle1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Book double room with 30% off"
+                            android:textSize="12sp"
+                            android:textColor="#BDD3FF"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                    <!-- Banner Item 2 -->
+                    <LinearLayout
+                        android:id="@+id/bannerItem2"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/ad_banner_background"
+                        android:padding="16dp"
+                        android:layout_marginEnd="12dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/bannerImage2"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/double_room" />
+
+                        <TextView
+                            android:id="@+id/bannerTitle2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Double Room Special"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginTop="12dp" />
+
+                        <TextView
+                            android:id="@+id/bannerSubtitle2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Get free breakfast included"
+                            android:textSize="12sp"
+                            android:textColor="#BDD3FF"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                    <!-- Banner Item 3 -->
+                    <LinearLayout
+                        android:id="@+id/bannerItem3"
+                        android:layout_width="300dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/ad_banner_background"
+                        android:padding="16dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/bannerImage3"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/quad_room" />
+
+                        <TextView
+                            android:id="@+id/bannerTitle3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Early Bird Discount"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginTop="12dp" />
+
+                        <TextView
+                            android:id="@+id/bannerSubtitle3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Save up to 50% today"
+                            android:textSize="12sp"
+                            android:textColor="#BDD3FF"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Room Categories Title -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Room Categories"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#0F172A"
+                    android:letterSpacing="-0.02" />
+
+                <TextView
+                    android:id="@+id/tvViewAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="View all →"
+                    android:textSize="13sp"
+                    android:textColor="#800000"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <!-- Horizontal Scrollable Room Category Cards -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingBottom="12dp">
+
+                    <!-- Single Room - Selected State -->
+                    <LinearLayout
+                        android:id="@+id/roomCardSingle"
+                        android:layout_width="140dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/room_card_active"
+                        android:layout_marginEnd="16dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/imgSingleRoom"
+                            android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/single_room"
+                            android:background="#FFFFFF" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="135dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/single_room" />
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="12dp">
 
                             <TextView
+                                android:id="@+id/tvSingleTitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="10dp"
-                                android:paddingEnd="12dp"
-                                android:text="Single Room"
-                                android:textColor="#1E293B"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
+                                android:text="Single"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF" />
 
                             <TextView
+                                android:id="@+id/tvSinglePrice"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="8dp"
-                                android:text="RM 1500/sem"
-                                android:textColor="#6366F1"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                android:text="RM 1200 / Person"
+                                android:textSize="11sp"
+                                android:textColor="#FFFFFF"
+                                android:background="#33FFFFFF"
+                                android:padding="4dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:layout_marginTop="6sp" />
                         </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                    </LinearLayout>
 
-                    <!-- Double Room Card -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardDouble"
-                        android:layout_width="170dp"
-                        android:layout_height="205dp"
-                        android:layout_margin="8dp"
+                    <!-- Double Room -->
+                    <LinearLayout
+                        android:id="@+id/roomCardDouble"
+                        android:layout_width="140dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/room_card_normal"
+                        android:layout_marginEnd="16dp"
                         android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?android:attr/selectableItemBackground"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/imgDoubleRoom"
+                            android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/double_room"
+                            android:background="#F5F5F5" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="135dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/double_room" />
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="12dp">
 
                             <TextView
+                                android:id="@+id/tvDoubleTitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="10dp"
-                                android:paddingEnd="12dp"
-                                android:text="Double Room"
-                                android:textColor="#1E293B"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
+                                android:text="Double"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#1E293B" />
 
                             <TextView
+                                android:id="@+id/tvDoublePrice"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="8dp"
-                                android:text="RM 1200/sem"
-                                android:textColor="#6366F1"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                android:text="RM 600 / Person"
+                                android:textSize="11sp"
+                                android:textColor="#800000"
+                                android:background="#EEF3FF"
+                                android:padding="4dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:layout_marginTop="6sp" />
                         </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                    </LinearLayout>
 
-                    <!-- Quad Room Card -->
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/cardQuad"
-                        android:layout_width="170dp"
-                        android:layout_height="205dp"
-                        android:layout_margin="8dp"
+                    <!-- Quad Room -->
+                    <LinearLayout
+                        android:id="@+id/roomCardQuad"
+                        android:layout_width="140dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/room_card_normal"
+                        android:layout_marginEnd="16dp"
                         android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?android:attr/selectableItemBackground"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        android:focusable="true">
+
+                        <ImageView
+                            android:id="@+id/imgQuadRoom"
+                            android:layout_width="match_parent"
+                            android:layout_height="100dp"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/quad_room"
+                            android:background="#F5F5F5" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="135dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/quad_room" />
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="12dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="12dp">
 
                             <TextView
+                                android:id="@+id/tvQuadTitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="10dp"
-                                android:paddingEnd="12dp"
-                                android:text="Quad Room"
-                                android:textColor="#1E293B"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
+                                android:text="Quad"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#1E293B" />
 
                             <TextView
+                                android:id="@+id/tvQuadPrice"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:paddingStart="12dp"
-                                android:paddingTop="8dp"
-                                android:text="RM 800/sem"
-                                android:textColor="#6366F1"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                android:text="RM 800 / Person"
+                                android:textSize="11sp"
+                                android:textColor="#800000"
+                                android:background="#EEF3FF"
+                                android:padding="4dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:layout_marginTop="6sp" />
                         </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                    </LinearLayout>
+
                 </LinearLayout>
             </HorizontalScrollView>
         </LinearLayout>
-    </LinearLayout>
+    </ScrollView>
 
-    <!-- 3. Bottom Navigation -->
+    <!-- Bottom Navigation Bar -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        style="@style/BottomNavStyle"
+        android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="#FFFFFF"
-        app:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/student_nav_menu" />
+        android:layout_height="wrap_content"
+        android:background="@drawable/bottom_nav_background"
+        app:menu="@menu/student_nav_menu"
+        app:itemIconTint="@drawable/nav_item_active"
+        app:itemTextColor="@drawable/nav_item_active"
+        app:itemRippleColor="@android:color/transparent"
+        app:elevation="0dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

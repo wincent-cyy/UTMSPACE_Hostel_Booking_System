@@ -1,132 +1,161 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:elevation="2dp"
+    android:layout_marginBottom="10dp"
+    android:padding="16dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Top Row: Name and Role -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
 
-        <!-- Avatar -->
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/ivAvatar"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/profile_pic"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:shapeAppearanceOverlay="@style/CircleImage" />
-
-        <!-- User Name -->
         <TextView
             android:id="@+id/tvUserName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginEnd="12dp"
-            android:textColor="#1E293B"
+            android:layout_weight="1"
+            android:text="John Doe"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tvRoleBadge"
-            app:layout_constraintStart_toEndOf="@id/ivAvatar"
-            app:layout_constraintTop_toTopOf="@id/ivAvatar"
-            tools:text="John Doe" />
+            android:textColor="#3C2A24"
+            android:fontFamily="sans-serif" />
 
-        <!-- Role Badge -->
         <TextView
-            android:id="@+id/tvRoleBadge"
+            android:id="@+id/tvUserRole"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/rounded_bg"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:textColor="#FFFFFF"
+            android:text="Student"
             android:textSize="11sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/ivAvatar"
-            tools:text="Student" />
+            android:padding="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif" />
 
-        <!-- Email -->
+    </LinearLayout>
+
+    <!-- Email -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_mail"
+            app:tint="#AA7A6C" />
+
         <TextView
             android:id="@+id/tvUserEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="4dp"
-            android:textColor="#64748B"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="john@example.com"
             android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivAvatar"
-            app:layout_constraintTop_toBottomOf="@id/tvUserName"
-            tools:text="john@example.com" />
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
 
-        <!-- Matric Number / Phone -->
+    </LinearLayout>
+
+    <!-- Phone -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_phone"
+            app:tint="#AA7A6C" />
+
         <TextView
-            android:id="@+id/tvUserDetail"
+            android:id="@+id/tvUserPhone"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="2dp"
-            android:textColor="#94A3B8"
-            android:textSize="11sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivAvatar"
-            app:layout_constraintTop_toBottomOf="@id/tvUserEmail"
-            tools:text="Matric: A24DW1234" />
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="+60 12 345 6789"
+            android:textSize="12sp"
+            android:textColor="#5B6E8C"
+            android:fontFamily="sans-serif" />
 
-        <!-- Divider -->
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="12dp"
-            android:background="#F1F5F9"
-            app:layout_constraintTop_toBottomOf="@id/tvUserDetail" />
+    </LinearLayout>
 
-        <!-- Action Buttons -->
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E8E0D8"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
         <LinearLayout
-            android:id="@+id/actionButtons"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="end"
-            android:orientation="horizontal"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider">
+            android:id="@+id/btnViewDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/outline_button_background"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="8dp">
 
-            <Button
-                android:id="@+id/btnEdit"
+            <TextView
                 android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:backgroundTint="#6366F1"
-                android:text="Edit"
-                android:textColor="#FFFFFF"
+                android:layout_height="wrap_content"
+                android:text="View"
                 android:textSize="12sp"
-                android:paddingHorizontal="16dp"
-                app:cornerRadius="6dp" />
-
-            <Button
-                android:id="@+id/btnDelete"
-                android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:layout_marginStart="8dp"
-                android:backgroundTint="#EF4444"
-                android:text="Delete"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:paddingHorizontal="16dp"
-                app:cornerRadius="6dp" />
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:fontFamily="sans-serif" />
 
         </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</com.google.android.material.card.MaterialCardView>
+        <LinearLayout
+            android:id="@+id/btnEditUser"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/primary_button_background"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Edit"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

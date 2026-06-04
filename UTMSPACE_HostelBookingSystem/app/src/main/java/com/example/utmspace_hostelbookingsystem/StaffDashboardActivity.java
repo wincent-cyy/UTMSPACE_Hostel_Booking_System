@@ -3,39 +3,54 @@ package com.example.utmspace_hostelbookingsystem;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Base64;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class StaffDashboardActivity extends AppCompatActivity {
 
+    private static final String TAG = "StaffDashboard";
+
+    // UI Elements
     private BottomNavigationView bottomNavigationView;
     private TextView tvStaffName;
     private ShapeableImageView ivProfilePicture;
+    private LinearLayout profileAvatar;
+    private LinearLayout cardTotalBookings;  // Total Bookings 卡片容器
+    private LinearLayout cardActiveIssues;    // Active Issues 卡片容器
     private TextView tvTotalBookings, tvRoomIssues, tvOccupiedRooms, tvVacantRooms;
+    private LinearLayout recentBookingsContainer;
 
+    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private FirebaseUser currentUser;
-    private Handler searchHandler = new Handler(Looper.getMainLooper());
-    private Runnable searchRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,50 +62,89 @@ public class StaffDashboardActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         currentUser = mAuth.getCurrentUser();
 
-        // Initialize views
-        bottomNavigationView = findViewById(R.id.bottomNavigation);
-        tvStaffName = findViewById(R.id.tvStaffName);
-        ivProfilePicture = findViewById(R.id.ivProfilePicture);
-        tvTotalBookings = findViewById(R.id.tvTotalBookings);
-        tvRoomIssues = findViewById(R.id.tvRoomIssues);
-        tvOccupiedRooms = findViewById(R.id.tvOccupiedRooms);
-        tvVacantRooms = findViewById(R.id.tvVacantRooms);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
+        }
 
-        // 在 initViews 或 setupClickListeners 中添加
-        View btnRepairList = findViewById(R.id.btnRepairList);
-        btnRepairList.setOnClickListener(v -> {
-            Intent intent = new Intent(StaffDashboardActivity.this, StaffRepairTrackingActivity.class);
-            startActivity(intent);
-        });
+        // Initialize views
+        initViews();
 
         // Load staff name and profile picture
         loadStaffData();
 
         // Setup navigation
         setupNavigation();
-        setupProfilePictureClick();
-        setupRoomSearch();
+        setupProfileClick();
+
+        // Load dashboard data
         loadDashboardStats();
+        loadRecentBookings();
     }
 
-    private void setupProfilePictureClick() {
+    private void initViews() {
+        bottomNavigationView = findViewById(R.id.bottomNavigation);
+        tvStaffName = findViewById(R.id.tvStaffName);
+        profileAvatar = findViewById(R.id.profileAvatar);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
+
+        // 卡片容器
+        cardTotalBookings = findViewById(R.id.cardTotalBookings);
+        cardActiveIssues = findViewById(R.id.cardActiveIssues);
+
+        tvTotalBookings = findViewById(R.id.tvTotalBookings);
+        tvRoomIssues = findViewById(R.id.tvRoomIssues);
+        tvOccupiedRooms = findViewById(R.id.tvOccupiedRooms);
+        tvVacantRooms = findViewById(R.id.tvVacantRooms);
+        recentBookingsContainer = findViewById(R.id.recentBookingsContainer);
+
+        View btnRepairList = findViewById(R.id.btnRepairList);
+        btnRepairList.setOnClickListener(v -> {
+            Intent intent = new Intent(StaffDashboardActivity.this, StaffRepairTrackingActivity.class);
+            startActivity(intent);
+        });
+
+        // 设置卡片点击事件
+        setupCardClickListeners();
+    }
+
+    private void setupCardClickListeners() {
+        // Total Bookings 卡片点击 - 跳转到 BookingManagementActivity
+        if (cardTotalBookings != null) {
+            cardTotalBookings.setOnClickListener(v -> {
+                Intent intent = new Intent(StaffDashboardActivity.this, BookingManagementActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+            });
+        }
+
+        // Active Issues 卡片点击 - 跳转到 StaffRepairTrackingActivity
+        if (cardActiveIssues != null) {
+            cardActiveIssues.setOnClickListener(v -> {
+                Intent intent = new Intent(StaffDashboardActivity.this, StaffRepairTrackingActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(intent);
+            });
+        }
+    }
+
+    private void setupProfileClick() {
+        // Click on avatar to go to Profile page
+        profileAvatar.setOnClickListener(v -> {
+            Intent intent = new Intent(StaffDashboardActivity.this, ProfileActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+        });
+
         ivProfilePicture.setOnClickListener(v -> {
-            String userId = currentUser.getUid();
-            db.collection("Users").document(userId).get()
-                    .addOnSuccessListener(doc -> {
-                        String imgBase64 = doc.getString("profilePictureBase64");
-                        if (imgBase64 != null && !imgBase64.isEmpty()) {
-                            showFullScreenImage(imgBase64);
-                        } else {
-                            Toast.makeText(this, "No profile picture set", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+            Intent intent = new Intent(StaffDashboardActivity.this, ProfileActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
         });
     }
 
     private void showFullScreenImage(String base64String) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = getLayoutInflater().inflate(R.layout.activity_full_image, null);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_full_image, null);
         ShapeableImageView fullImageView = dialogView.findViewById(R.id.fullImageView);
 
         try {
@@ -108,83 +162,202 @@ public class StaffDashboardActivity extends AppCompatActivity {
         fullImageView.setOnClickListener(v -> dialog.dismiss());
     }
 
-    private void setupRoomSearch() {
-        EditText etSearchRoom = findViewById(R.id.etSearchRoom);
-
-        etSearchRoom.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (searchRunnable != null) {
-                    searchHandler.removeCallbacks(searchRunnable);
-                }
-
-                String query = s.toString();
-                searchRunnable = () -> {
-                    if (!query.isEmpty()) {
-                        String cleanQuery = query.toLowerCase().trim();
-                        boolean isValidRoomFormat = cleanQuery.matches("^[A-Za-z]-?\\d+$") ||
-                                cleanQuery.matches("^[A-Za-z]\\d+$");
-
-                        if (isValidRoomFormat) {
-                            Intent intent = new Intent(StaffDashboardActivity.this, StaffRoomListActivity.class);
-                            intent.putExtra("SEARCH_ROOM", cleanQuery);
-                            startActivity(intent);
-                        } else {
-                            Toast.makeText(StaffDashboardActivity.this,
-                                    "Please enter a valid Room Number (e.g., A-101, A101)",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                };
-                searchHandler.postDelayed(searchRunnable, 500);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-    }
-
     private void loadDashboardStats() {
-        // 获取总预订数
+        // Total Bookings (all time)
         db.collection("Bookings").get()
-                .addOnSuccessListener(query -> tvTotalBookings.setText(String.valueOf(query.size())));
+                .addOnSuccessListener(query -> {
+                    tvTotalBookings.setText(String.valueOf(query.size()));
+                })
+                .addOnFailureListener(e -> tvTotalBookings.setText("0"));
 
-        // 获取维修中的房间数（condition 为 "Under Maintenance" 或 "Needs Repair"）
-        // 改为查询 status 为 "Maintenance"
+        // Active Issues (Maintenance rooms)
         db.collection("Rooms")
                 .whereEqualTo("status", "Maintenance")
                 .get()
-                .addOnSuccessListener(query -> tvRoomIssues.setText(String.valueOf(query.size())));
+                .addOnSuccessListener(query -> {
+                    tvRoomIssues.setText(String.valueOf(query.size()));
+                })
+                .addOnFailureListener(e -> tvRoomIssues.setText("0"));
 
-        // 获取满房和空房数量
+        // Full and Available rooms - Show numbers only, no "Rooms" text
         db.collection("Rooms").get()
                 .addOnSuccessListener(query -> {
                     int full = 0;
                     int available = 0;
                     for (DocumentSnapshot doc : query.getDocuments()) {
                         String status = doc.getString("status");
-
                         if ("Full".equalsIgnoreCase(status)) {
                             full++;
                         } else if ("Available".equalsIgnoreCase(status)) {
                             available++;
                         }
                     }
-                    tvOccupiedRooms.setText(full + " Rooms");
-                    tvVacantRooms.setText(available + " Rooms");
+                    tvOccupiedRooms.setText(String.valueOf(full));
+                    tvVacantRooms.setText(String.valueOf(available));
                 })
                 .addOnFailureListener(e -> {
-                    tvOccupiedRooms.setText("0 Rooms");
-                    tvVacantRooms.setText("0 Rooms");
+                    tvOccupiedRooms.setText("0");
+                    tvVacantRooms.setText("0");
                 });
+    }
+
+    private void loadRecentBookings() {
+        // Calculate date 7 days ago
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, -7);
+        Date sevenDaysAgo = calendar.getTime();
+        long sevenDaysAgoTimestamp = sevenDaysAgo.getTime();
+
+        // Query all bookings from last 7 days
+        db.collection("Bookings")
+                .whereGreaterThanOrEqualTo("createdAt", sevenDaysAgoTimestamp)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(10)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    // 先清除所有现有视图
+                    recentBookingsContainer.removeAllViews();
+
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        addEmptyStateView("No recent bookings found");
+                        return;
+                    }
+
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                    int count = 0;
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        if (count >= 5) break;
+
+                        View bookingView = createRecentBookingView(document, sdf);
+                        if (bookingView != null) {
+                            recentBookingsContainer.addView(bookingView);
+                            count++;
+                        }
+                    }
+
+                    if (count == 0) {
+                        addEmptyStateView("No recent bookings");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to load recent bookings: " + e.getMessage());
+                    recentBookingsContainer.removeAllViews();
+                    addErrorStateView("Failed to load recent bookings: " + e.getMessage());
+                });
+    }
+
+    private void addEmptyStateView(String message) {
+        TextView emptyText = new TextView(this);
+        emptyText.setText(message);
+        emptyText.setTextSize(13);
+        emptyText.setTextColor(getColor(R.color.tabInactiveText));
+        emptyText.setPadding(16, 24, 16, 24);
+        emptyText.setGravity(android.view.Gravity.CENTER);
+        recentBookingsContainer.addView(emptyText);
+    }
+
+    private void addErrorStateView(String message) {
+        TextView errorText = new TextView(this);
+        errorText.setText(message);
+        errorText.setTextSize(13);
+        errorText.setTextColor(getColor(R.color.tabInactiveText));
+        errorText.setPadding(16, 24, 16, 24);
+        errorText.setGravity(android.view.Gravity.CENTER);
+        recentBookingsContainer.addView(errorText);
+    }
+
+    private View createRecentBookingView(QueryDocumentSnapshot document, SimpleDateFormat sdf) {
+        View itemView = LayoutInflater.from(this).inflate(R.layout.item_booking_card, null);
+        if (itemView == null) return null;
+
+        // 添加底部边距，让卡片之间有间距
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.bottomMargin = 16;  // 16dp 间距
+        itemView.setLayoutParams(params);
+
+        // 使用布局中正确的 ID
+        TextView tvRoomType = itemView.findViewById(R.id.tvRoomType);
+        TextView tvRoomId = itemView.findViewById(R.id.tvRoomId);
+        TextView tvStudentName = itemView.findViewById(R.id.tvStudentName);
+        TextView tvBookingDate = itemView.findViewById(R.id.tvBookingDate);
+        TextView tvStatus = itemView.findViewById(R.id.tvStatus);
+
+        // 从 Firestore 获取数据
+        String roomType = document.getString("roomType");
+        String roomId = document.getString("roomId");
+        String studentName = document.getString("name");
+        Long createdAt = document.getLong("createdAt");
+        String status = document.getString("bookingStatus");
+
+        // 设置房间类型
+        if (tvRoomType != null) {
+            tvRoomType.setText(roomType != null ? roomType : "Room");
+        }
+
+        // 设置房间号
+        if (tvRoomId != null) {
+            tvRoomId.setText(roomId != null ? roomId : "N/A");
+        }
+
+        // 设置学生姓名
+        if (tvStudentName != null) {
+            tvStudentName.setText(studentName != null ? studentName : "Student");
+        }
+
+        // 设置申请日期
+        if (tvBookingDate != null) {
+            if (createdAt != null && createdAt > 0) {
+                tvBookingDate.setText(sdf.format(new Date(createdAt)));
+            } else {
+                tvBookingDate.setText("N/A");
+            }
+        }
+
+        // 设置状态和颜色
+        if (tvStatus != null) {
+            String statusText = status != null ? status : "Pending";
+            tvStatus.setText(statusText);
+
+            if ("Pending".equalsIgnoreCase(statusText)) {
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.pending_bg)));
+                tvStatus.setTextColor(getColor(R.color.pending_text));
+            } else if ("Approved".equalsIgnoreCase(statusText)) {
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.approved_bg)));
+                tvStatus.setTextColor(getColor(R.color.approved_text));
+            } else if ("Rejected".equalsIgnoreCase(statusText)) {
+                tvStatus.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.rejected_bg)));
+                tvStatus.setTextColor(getColor(R.color.rejected_text));
+            }
+        }
+
+        // 点击事件 - 跳转到 StaffActionActivity
+        final String finalDocumentId = document.getId();
+        final String finalRoomId = roomId;
+        final String finalRoomType = roomType;
+        final String finalStudentName = studentName;
+        final String finalStatus = status;
+
+        itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(StaffDashboardActivity.this, StaffActionActivity.class);
+            intent.putExtra("BOOKING_DOC_ID", finalDocumentId);
+            intent.putExtra("BOOKING_STATUS", finalStatus);
+            intent.putExtra("ROOM_ID", finalRoomId);
+            intent.putExtra("ROOM_TYPE", finalRoomType);
+            intent.putExtra("STUDENT_NAME", finalStudentName);
+            startActivity(intent);
+        });
+
+        return itemView;
     }
 
     private void loadStaffData() {
         if (currentUser == null) {
             tvStaffName.setText("Staff Member");
+            setDefaultAvatar();
             return;
         }
 
@@ -192,66 +365,75 @@ public class StaffDashboardActivity extends AppCompatActivity {
         db.collection("Users").document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        // Get staff name from different possible field names
+                        // Get staff name
                         String name = documentSnapshot.getString("name");
-                        String firstName = documentSnapshot.getString("firstName");
-                        String lastName = documentSnapshot.getString("lastName");
-
-                        // Set staff name
                         if (name != null && !name.isEmpty()) {
                             tvStaffName.setText(name);
-                        } else if (firstName != null && lastName != null) {
-                            tvStaffName.setText(firstName + " " + lastName);
-                        } else if (firstName != null) {
-                            tvStaffName.setText(firstName);
                         } else {
                             tvStaffName.setText("Staff Member");
                         }
 
-                        // Load profile picture from Base64 (matches your ProfileActivity)
-                        String profilePictureBase64 = documentSnapshot.getString("profilePictureBase64");
-                        if (profilePictureBase64 != null && !profilePictureBase64.isEmpty()) {
-                            loadProfileImageFromBase64(profilePictureBase64);
+                        // Load profile picture
+                        String profileImageBase64 = documentSnapshot.getString("profileImageBase64");
+                        if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
+                            loadProfileImageFromBase64(profileImageBase64);
                         } else {
-                            // Try old field name as fallback
-                            String profileImageUrl = documentSnapshot.getString("profileImageUrl");
-                            if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
-                                // Note: This would require Glide, but we're avoiding it
-                                // Just set default for now
-                                ivProfilePicture.setImageResource(R.drawable.profile_pic);
-                            } else {
-                                ivProfilePicture.setImageResource(R.drawable.profile_pic);
-                            }
+                            setDefaultAvatar();
                         }
                     } else {
                         tvStaffName.setText("Staff Member");
-                        ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                        setDefaultAvatar();
                     }
                 })
                 .addOnFailureListener(e -> {
                     tvStaffName.setText("Staff Member");
-                    ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                    setDefaultAvatar();
                     Toast.makeText(this, "Failed to load user data", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void setDefaultAvatar() {
+        // Use Glide to load default avatar as circle
+        Glide.with(this)
+                .load(R.drawable.ic_account_circle)
+                .circleCrop()
+                .into(ivProfilePicture);
+        ivProfilePicture.setVisibility(View.VISIBLE);
+        profileAvatar.setBackgroundResource(R.drawable.avatar_background);
     }
 
     private void loadProfileImageFromBase64(String base64String) {
         try {
             byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+
             if (bitmap != null) {
-                ivProfilePicture.setImageBitmap(bitmap);
+                // 计算目标尺寸 - 放大头像
+                int targetWidth = 200;
+                int targetHeight = 200;
+
+                // 缩放 Bitmap
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true);
+
+                // 使用 Glide 加载缩放后的图片为圆形
+                Glide.with(this)
+                        .load(scaledBitmap)
+                        .circleCrop()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .into(ivProfilePicture);
+                ivProfilePicture.setVisibility(View.VISIBLE);
+                profileAvatar.setBackground(null);
+                Log.d(TAG, "Image loaded successfully as circle");
             } else {
-                ivProfilePicture.setImageResource(R.drawable.profile_pic);
+                setDefaultAvatar();
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            ivProfilePicture.setImageResource(R.drawable.profile_pic);
+            Log.e(TAG, "Error loading image: " + e.getMessage());
+            setDefaultAvatar();
         }
     }
 
     private void setupNavigation() {
-        // Set home as default selected
         bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -282,11 +464,10 @@ public class StaffDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh staff data when returning to dashboard (in case profile was updated)
         loadStaffData();
         loadDashboardStats();
+        loadRecentBookings();
 
-        // Keep home selected in bottom navigation
         if (bottomNavigationView != null) {
             bottomNavigationView.setSelectedItemId(R.id.nav_staff_home);
         }

@@ -1,343 +1,397 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
-    tools:context=".EditInfoActivity">
+    android:orientation="vertical"
+    android:background="#F5F0EB">
 
-    <!-- 1. FIXED HEADER BG WITH BACK ARROW -->
-    <View
-        android:id="@+id/headerBg"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:background="@drawable/dashboard_gradient"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Clickable Back Arrow Container -->
-    <FrameLayout
-        android:id="@+id/btnBack"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="44dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:focusable="true"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="#FFFFFF" />
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/tvHeaderTitle"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Personal Information"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/btnBack"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/btnBack" />
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="8dp">
 
-    <!-- 2. SCROLLABLE FORM FIELD CONTAINER -->
-    <androidx.core.widget.NestedScrollView
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/ivBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/back_button_background"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginStart="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="#1E293B" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Edit Profile"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:gravity="center"
+                android:fontFamily="sans-serif" />
+
+            <LinearLayout
+                android:id="@+id/btnSave"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:background="@drawable/save_button_background"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:gravity="center"
+                android:layout_marginEnd="16dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Save"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="sans-serif" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:overScrollMode="never"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headerBg">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:padding="16dp">
 
-            <!-- READ-ONLY INFORMATION CARD (Gmail Style) -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:letterSpacing="0.1"
-                android:text="System Verified Info"
-                android:textAllCaps="true"
-                android:textColor="#6366F1"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <androidx.cardview.widget.CardView
+            <!-- Profile Picture Section -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp">
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="24dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_horizontal">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:id="@+id/btnChangePhoto"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/avatar_background"
+                    android:gravity="center"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="12dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                    <!-- Read-Only Field: Account ID (Adjusted from Student ID) -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Account User ID"
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvReadOnlyStudentId"
-                        android:layout_width="match_parent"
+                    <ImageView
+                        android:id="@+id/ivProfilePicture"
+                        android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="#F1F5F9"
-                        android:gravity="center_vertical"
-                        android:paddingHorizontal="16dp"
-                        android:text="USR-2026-9941"
-                        android:textColor="#64748B"
-                        android:textSize="15sp" />
+                        android:src="@drawable/ic_account_circle" />
 
-                    <!-- Read-Only Field: Email Address -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Registered Email"
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvReadOnlyEmail"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="#F1F5F9"
-                        android:gravity="center_vertical"
-                        android:paddingHorizontal="16dp"
-                        android:text="alex.t@serviceapp.com"
-                        android:textColor="#64748B"
-                        android:textSize="15sp" />
-
-                    <!-- NEW Read-Only Field: Member Since -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Account Created On"
-                        android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvReadOnlyJoinDate"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="#F1F5F9"
-                        android:gravity="center_vertical"
-                        android:paddingHorizontal="16dp"
-                        android:text="12 May 2026"
-                        android:textColor="#64748B"
-                        android:textSize="15sp" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
-            <!-- EDITABLE INFORMATION CARD -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:letterSpacing="0.1"
-                android:text="Editable Details"
-                android:textAllCaps="true"
-                android:textColor="#6366F1"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap to change photo"
+                    android:textSize="12sp"
+                    android:textColor="#AA7A6C"
+                    android:fontFamily="sans-serif" />
 
-            <androidx.cardview.widget.CardView
+            </LinearLayout>
+
+            <!-- Basic Information Section -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp">
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="20dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                    <!-- Editable Field: Full Name -->
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="20dp"
+                        android:background="#800000" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Full Name"
-                        android:textColor="#475569"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:text=" Basic Information"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="sans-serif" />
 
-                    <EditText
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etFullName"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@android:color/transparent"
-                        android:hint="Enter your full name"
-                        android:importantForAutofill="no"
-                        android:inputType="textPersonName"
-                        android:paddingHorizontal="4dp"
-                        android:text="Alex Thompson"
-                        android:textColor="#1E293B"
-                        android:textSize="15sp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#E2E8F0" />
-
-                    <!-- Editable Field: Phone Number -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Phone Number"
-                        android:textColor="#475569"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:hint="Full Name"
+                        android:inputType="textPersonName"
+                        android:fontFamily="sans-serif" />
 
-                    <EditText
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPhoneNumber"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@android:color/transparent"
-                        android:hint="+60 12-345 6789"
-                        android:importantForAutofill="no"
+                        android:layout_height="wrap_content"
+                        android:hint="Phone Number"
                         android:inputType="phone"
-                        android:paddingHorizontal="4dp"
-                        android:textColor="#1E293B"
-                        android:textSize="15sp" />
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Email Address"
+                        android:inputType="textEmailAddress"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- Role Information Section -->
+            <LinearLayout
+                android:id="@+id/roleInformationSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="20dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
                     <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#E2E8F0" />
+                        android:layout_width="4dp"
+                        android:layout_height="20dp"
+                        android:background="#800000" />
 
-                    <!-- NEW Editable Field: Emergency Contact -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Emergency Contact Number"
-                        android:textColor="#475569"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etEmergencyPhone"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@android:color/transparent"
-                        android:hint="+60 17-765 4321"
-                        android:importantForAutofill="no"
-                        android:inputType="phone"
-                        android:paddingHorizontal="4dp"
-                        android:textColor="#1E293B"
-                        android:textSize="15sp" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#E2E8F0" />
-
-                    <!-- NEW Selector Field: Gender Selection -->
-                    <!-- Styled cleanly like an input block, perfect to open an AlertDialog dropdown menu selection via Java onClick -->
-                    <RelativeLayout
-                        android:id="@+id/layoutSelectGender"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?attr/selectableItemBackground">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Gender"
-                                android:textColor="#475569"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvGenderValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="48dp"
-                                android:gravity="center_vertical"
-                                android:paddingHorizontal="4dp"
-                                android:text="Male"
-                                android:textColor="#1E293B"
-                                android:textSize="15sp" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:text="▼"
-                            android:textColor="#94A3B8"
-                            android:textSize="12sp" />
-                    </RelativeLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#E2E8F0" />
+                        android:text=" Role Information"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="sans-serif" />
 
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
-            <!-- 3. SAVE CHANGES ACTION BUTTON -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveChanges"
+                <!-- Field 1: Student/Staff ID -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilField1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etStudentId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Student / Staff ID"
+                        android:inputType="text"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Field 2: Programme/Department -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilField2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etProgramme"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Programme / Department"
+                        android:inputType="text"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Field 3: Semester/Year -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilField3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSemester"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Semester / Year"
+                        android:inputType="text"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- Technician Section (Hidden by default) -->
+            <LinearLayout
+                android:id="@+id/technicianSection"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="32dp"
-                android:backgroundTint="#6366F1"
-                android:text="Save Changes"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:cornerRadius="16dp"
-                app:elevation="4dp" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="20dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="20dp"
+                        android:background="#800000" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" Technician Information"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#3C2A24"
+                        android:layout_marginStart="10dp"
+                        android:fontFamily="sans-serif" />
+
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSpecialization"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Specialization"
+                        android:inputType="text"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="0dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#800000"
+                    app:hintTextColor="#800000">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWorkshop"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Workshop Location"
+                        android:inputType="text"
+                        android:fontFamily="sans-serif" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+    </ScrollView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
