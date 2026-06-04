@@ -3,6 +3,8 @@ package com.example.utmspace_hostelbookingsystem;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,6 +16,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -21,8 +24,8 @@ import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.CircleCrop;
-import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -188,7 +191,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private void loadAdminData() {
         if (currentUserId == null) {
             tvAdminName.setText("Admin");
-            setDefaultAvatar();
+            resetToDefaultAvatar();
             return;
         }
 
@@ -203,47 +206,69 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
                             loadProfileImageFromBase64(profileImageBase64);
                         } else {
-                            setDefaultAvatar();
+                            resetToDefaultAvatar();
                         }
                     } else {
                         tvAdminName.setText("Admin");
-                        setDefaultAvatar();
+                        resetToDefaultAvatar();
                     }
                 })
                 .addOnFailureListener(e -> {
                     tvAdminName.setText("Admin");
-                    setDefaultAvatar();
+                    resetToDefaultAvatar();
                 });
     }
 
-    private void setDefaultAvatar() {
-        Glide.with(this)
-                .load(R.drawable.ic_account_circle)
-                .apply(RequestOptions.bitmapTransform(new CircleCrop()))
-                .into(ivProfilePicture);
-        ivProfilePicture.setVisibility(View.VISIBLE);
+    /**
+     * FIXED: 重置为默认头像 - 参考 Student Dashboard 的方式
+     */
+    private void resetToDefaultAvatar() {
         if (profileAvatar != null) {
             profileAvatar.setBackgroundResource(R.drawable.avatar_background);
         }
+        if (ivProfilePicture != null) {
+            ivProfilePicture.setVisibility(View.VISIBLE);
+            ivProfilePicture.setImageResource(R.drawable.ic_account_circle);
+        }
     }
 
+    /**
+     * FIXED: 加载头像图片 - 参考 Student Dashboard 的方式，将图片设置为 profileAvatar 的背景
+     */
     private void loadProfileImageFromBase64(String base64String) {
         try {
             byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
             if (bitmap != null) {
+                // 使用 Glide 加载圆形图片并设置为 profileAvatar 的背景
                 Glide.with(this)
                         .load(bitmap)
-                        .apply(RequestOptions.bitmapTransform(new CircleCrop()))
-                        .into(ivProfilePicture);
-                if (profileAvatar != null) {
-                    profileAvatar.setBackground(null);
-                }
+                        .circleCrop()
+                        .into(new CustomTarget<Drawable>() {
+                            @Override
+                            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                                if (profileAvatar != null) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                        profileAvatar.setBackground(resource);
+                                    } else {
+                                        profileAvatar.setBackgroundDrawable(resource);
+                                    }
+                                    // 隐藏 ImageView，只显示 LinearLayout 背景
+                                    if (ivProfilePicture != null) {
+                                        ivProfilePicture.setVisibility(View.GONE);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+                        });
             } else {
-                setDefaultAvatar();
+                resetToDefaultAvatar();
             }
         } catch (Exception e) {
-            setDefaultAvatar();
+            resetToDefaultAvatar();
         }
     }
 

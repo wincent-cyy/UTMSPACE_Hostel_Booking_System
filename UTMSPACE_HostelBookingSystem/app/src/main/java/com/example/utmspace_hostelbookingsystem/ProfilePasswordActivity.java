@@ -1,5 +1,6 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -44,12 +45,29 @@ public class ProfilePasswordActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         initViews();
         setupClickListeners();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void initViews() {
@@ -184,5 +202,12 @@ public class ProfilePasswordActivity extends AppCompatActivity {
     // Get password requirements as a string
     public static String getPasswordRequirements() {
         return "Password must be at least 7 characters and contain both letters and numbers";
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

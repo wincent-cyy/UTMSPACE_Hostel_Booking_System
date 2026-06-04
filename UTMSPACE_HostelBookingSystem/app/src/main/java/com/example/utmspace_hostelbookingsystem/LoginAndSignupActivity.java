@@ -21,6 +21,7 @@ import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
@@ -132,9 +133,8 @@ public class LoginAndSignupActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // IMPROVED: Set status bar and navigation bar to white for full background coverage
+        setupSystemBars();
 
         // Initialize Progress Dialog
         progressDialog = new ProgressDialog(this);
@@ -166,6 +166,32 @@ public class LoginAndSignupActivity extends AppCompatActivity {
 
         // Load saved Remember Me state
         loadRememberMeState();
+    }
+
+    /**
+     * IMPROVED: Setup system bars (status bar and navigation bar) to match white background
+     * This ensures the entire screen has consistent white color
+     */
+    private void setupSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Set status bar and navigation bar to white
+            getWindow().setStatusBarColor(Color.WHITE);
+            getWindow().setNavigationBarColor(Color.WHITE);
+
+            // Make status bar icons dark (for white background)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                decorView.setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |  // Dark status bar icons
+                                View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR // Dark navigation bar icons (API 27+)
+                );
+            }
+
+            // For Android 10+ ensure edge-to-edge experience
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                getWindow().setDecorFitsSystemWindows(false);
+            }
+        }
     }
 
     private void initAnimations() {

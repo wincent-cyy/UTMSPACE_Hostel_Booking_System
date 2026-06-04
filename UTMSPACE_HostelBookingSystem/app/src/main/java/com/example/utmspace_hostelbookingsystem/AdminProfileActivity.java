@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -102,9 +102,8 @@ public class AdminProfileActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         if (mAuth.getCurrentUser() != null) {
             currentUserId = mAuth.getCurrentUser().getUid();
@@ -119,6 +118,24 @@ public class AdminProfileActivity extends AppCompatActivity {
         setupClickListeners();
         loadAdminData();
         setupTextWatchers();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void initViews() {
@@ -266,26 +283,48 @@ public class AdminProfileActivity extends AppCompatActivity {
                         Uri resultUri = UCrop.getOutput(result.getData());
                         if (resultUri != null) {
                             try {
-                                // Load bitmap from URI
+                                // Load bitmap from URI - 保持原始尺寸用于显示
                                 BitmapFactory.Options options = new BitmapFactory.Options();
                                 options.inPreferredConfig = Bitmap.Config.RGB_565;
                                 Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(resultUri), null, options);
 
                                 if (bitmap != null) {
-                                    // Create a new bitmap for encoding
-                                    Bitmap encodedBitmap = Bitmap.createScaledBitmap(bitmap, 200, 200, true);
+                                    // FIXED: 不缩放图片，保持原始尺寸用于 Base64 编码
+                                    // 只需要确保图片不会太大（最大 500px）
+                                    int maxSize = 500;
+                                    int width = bitmap.getWidth();
+                                    int height = bitmap.getHeight();
+                                    int finalWidth = width;
+                                    int finalHeight = height;
 
-                                    // Display the image (circular using Glide)
-                                    displayProfileImageCircular(resultUri);
+                                    if (width > maxSize || height > maxSize) {
+                                        if (width > height) {
+                                            finalWidth = maxSize;
+                                            finalHeight = (int) ((float) height / width * maxSize);
+                                        } else {
+                                            finalHeight = maxSize;
+                                            finalWidth = (int) ((float) width / height * maxSize);
+                                        }
+                                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true);
+                                        bitmap.recycle();
+                                        bitmap = scaledBitmap;
+                                    }
+
+                                    // 直接使用 bitmap 显示圆形头像
+                                    displayProfileImageWithBitmap(bitmap);
 
                                     // Encode to Base64
-                                    currentProfileImageBase64 = bitmapToShortBase64(encodedBitmap);
+                                    currentProfileImageBase64 = bitmapToBase64(bitmap);
+
+                                    // 显示保存按钮
+                                    if (btnSaveChanges != null) {
+                                        btnSaveChanges.setVisibility(View.VISIBLE);
+                                    }
 
                                     Toast.makeText(this, "Photo updated! Remember to save.", Toast.LENGTH_SHORT).show();
 
-                                    // Recycle bitmaps
+                                    // Recycle bitmap
                                     bitmap.recycle();
-                                    encodedBitmap.recycle();
                                 }
                             } catch (IOException e) {
                                 Log.e(TAG, "Error loading cropped image: " + e.getMessage());
@@ -315,7 +354,7 @@ public class AdminProfileActivity extends AppCompatActivity {
 
             UCrop uCrop = UCrop.of(sourceUri, destinationUri);
             uCrop = uCrop.withAspectRatio(1, 1);
-            uCrop = uCrop.withMaxResultSize(200, 200);
+            uCrop = uCrop.withMaxResultSize(500, 500);  // FIXED: 增加到 500x500
             uCrop = uCrop.withOptions(getUCropOptions());
 
             cropLauncher.launch(uCrop.getIntent(this));
@@ -328,11 +367,10 @@ public class AdminProfileActivity extends AppCompatActivity {
     private UCrop.Options getUCropOptions() {
         UCrop.Options options = new UCrop.Options();
         options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
-        options.setCompressionQuality(50);
+        options.setCompressionQuality(80);  // FIXED: 提高压缩质量
         options.setFreeStyleCropEnabled(false);
         options.setHideBottomControls(false);
         options.setToolbarTitle("Crop Image");
-        options.setCircleDimmedLayer(true); // Enable circular cropping guide
 
         int maroonColor = 0xFF800000;
         options.setToolbarColor(maroonColor);
@@ -342,10 +380,18 @@ public class AdminProfileActivity extends AppCompatActivity {
         return options;
     }
 
-    private void displayProfileImageCircular(Uri imageUri) {
-        // Load image with Glide for circular display
+    /**
+     * FIXED: 使用 Glide 显示圆形头像到 btnChangePhoto (LinearLayout 背景)
+     */
+    private void displayProfileImageWithBitmap(Bitmap bitmap) {
+        if (bitmap == null || bitmap.isRecycled()) {
+            resetToDefaultAvatar();
+            return;
+        }
+
+        // 使用 Glide 加载圆形图片并设置为 btnChangePhoto 的背景
         Glide.with(this)
-                .load(imageUri)
+                .load(bitmap)
                 .circleCrop()
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
@@ -371,8 +417,6 @@ public class AdminProfileActivity extends AppCompatActivity {
             byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
             if (bitmap != null && !bitmap.isRecycled()) {
-                // Convert bitmap to URI for Glide
-                // Store in cache and load with Glide for circular display
                 displayProfileImageWithBitmap(bitmap);
             } else {
                 resetToDefaultAvatar();
@@ -382,37 +426,13 @@ public class AdminProfileActivity extends AppCompatActivity {
         }
     }
 
-    private void displayProfileImageWithBitmap(Bitmap bitmap) {
-        // Load with Glide for circular display
-        Glide.with(this)
-                .load(bitmap)
-                .circleCrop()
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
-                .into(new CustomTarget<Drawable>() {
-                    @Override
-                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                            btnChangePhoto.setBackground(resource);
-                        } else {
-                            btnChangePhoto.setBackgroundDrawable(resource);
-                        }
-                        ivProfilePicture.setVisibility(View.GONE);
-                    }
-
-                    @Override
-                    public void onLoadCleared(@Nullable Drawable placeholder) {
-                    }
-                });
-    }
-
-    private String bitmapToShortBase64(Bitmap bitmap) {
+    private String bitmapToBase64(Bitmap bitmap) {
         if (bitmap == null || bitmap.isRecycled()) {
             return "";
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 40, baos);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);  // FIXED: 提高质量到 70
         byte[] imageBytes = baos.toByteArray();
         String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
 
@@ -644,5 +664,12 @@ public class AdminProfileActivity extends AppCompatActivity {
         if (btnSaveChanges != null) {
             btnSaveChanges.setOnClickListener(v -> saveAdminInfo());
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

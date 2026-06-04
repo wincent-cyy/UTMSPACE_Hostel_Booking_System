@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -114,9 +115,8 @@ public class EditInfoActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         currentUser = mAuth.getCurrentUser();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         if (currentUser == null) {
             Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
@@ -134,6 +134,26 @@ public class EditInfoActivity extends AppCompatActivity {
         setupClickListeners();
         makeBasicInfoReadOnly();
         loadUserData();
+    }
+
+    /**
+     * FIXED: Only change status bar color without affecting layout
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+            // DO NOT call setDecorFitsSystemWindows or setNavigationBarColor
+            // This prevents layout from being pushed under the status bar
+        }
     }
 
     private void initViews() {
@@ -769,5 +789,12 @@ public class EditInfoActivity extends AppCompatActivity {
                     btnSave.setEnabled(true);
                     btnSave.setAlpha(1.0f);
                 });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

@@ -1,6 +1,7 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -73,15 +74,41 @@ public class AllRoomsActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // Set status bar to white with dark icons
+        setupStatusBar();
 
         initViews();
         setupSwipeRefresh();
         setupListeners();
         setupRecyclerView();
         loadAllRooms();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Set navigation bar color to white
+            getWindow().setNavigationBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                decorView.setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |
+                                View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                );
+            }
+
+            // For Android 10+ ensure edge-to-edge experience
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                getWindow().setDecorFitsSystemWindows(false);
+            }
+        }
     }
 
     private void initViews() {
@@ -283,9 +310,11 @@ public class AllRoomsActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
+        // FIXED: Pass roomId instead of documentId to RoomDetailsActivity
         roomAdapter = new RoomAdapter(filteredRooms, room -> {
             Intent intent = new Intent(AllRoomsActivity.this, RoomDetailsActivity.class);
-            intent.putExtra("room_id", room.getDocumentId());
+            // Use roomId (the actual room identifier) instead of documentId
+            intent.putExtra("room_id", room.getRoomId());
             intent.putExtra("room_type", room.getRoomType());
             startActivity(intent);
         });
@@ -300,7 +329,7 @@ public class AllRoomsActivity extends AppCompatActivity {
                     allRooms.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         RoomModel room = doc.toObject(RoomModel.class);
-                        room.setDocumentId(doc.getId());
+                        room.setDocumentId(doc.getId());  // Keep for reference if needed
                         allRooms.add(room);
                     }
                     filterAndDisplayRooms();
@@ -392,5 +421,12 @@ public class AllRoomsActivity extends AppCompatActivity {
         if (rvRoomList != null) {
             rvRoomList.setVisibility(View.VISIBLE);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

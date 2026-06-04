@@ -5,9 +5,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -16,6 +18,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
@@ -23,6 +26,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -30,6 +34,7 @@ import java.util.Map;
 
 public class PaymentActivity extends AppCompatActivity {
 
+    private static final String TAG = "PaymentActivity";
     private static final String CHANNEL_ID = "payment_channel";
     private static final int NOTIFICATION_ID = 1001;
 
@@ -95,9 +100,8 @@ public class PaymentActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // Set white status bar without affecting layout
+        setupStatusBar();
 
         // 创建通知渠道
         createNotificationChannel();
@@ -107,6 +111,24 @@ public class PaymentActivity extends AppCompatActivity {
         setupPaymentMethodToggle();
         setupWalletSelection();
         setupClickListeners();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void initViews() {
@@ -365,21 +387,29 @@ public class PaymentActivity extends AppCompatActivity {
     }
 
     /**
-     * 更新房间的当前入住人数 +1
+     * FIXED: 更新房间的当前入住人数 +1
+     * 使用 roomId 字段查询，而不是直接使用文档 ID
      */
     private void updateRoomOccupancy() {
         if (roomId == null || roomId.isEmpty()) {
+            Log.e(TAG, "Cannot update occupancy: roomId is null or empty");
             return;
         }
 
-        db.collection("Rooms").document(roomId)
+        // 通过 roomId 字段查询房间文档
+        db.collection("Rooms")
+                .whereEqualTo("roomId", roomId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        Integer currentOccupancy = documentSnapshot.getLong("currentOccupancy") != null
-                                ? documentSnapshot.getLong("currentOccupancy").intValue() : 0;
-                        int maxCapacity = documentSnapshot.getLong("maxCapacity") != null
-                                ? documentSnapshot.getLong("maxCapacity").intValue() : 1;
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        // 获取第一个匹配的文档
+                        DocumentSnapshot roomDoc = queryDocumentSnapshots.getDocuments().get(0);
+                        String documentId = roomDoc.getId();  // 获取实际的文档 ID
+
+                        Integer currentOccupancy = roomDoc.getLong("currentOccupancy") != null
+                                ? roomDoc.getLong("currentOccupancy").intValue() : 0;
+                        Integer maxCapacity = roomDoc.getLong("maxCapacity") != null
+                                ? roomDoc.getLong("maxCapacity").intValue() : 1;
 
                         int newOccupancy = currentOccupancy + 1;
 
@@ -388,19 +418,29 @@ public class PaymentActivity extends AppCompatActivity {
                             Map<String, Object> updates = new HashMap<>();
                             updates.put("currentOccupancy", newOccupancy);
 
-                            db.collection("Rooms").document(roomId)
+                            // 使用实际的文档 ID 进行更新
+                            db.collection("Rooms").document(documentId)
                                     .update(updates)
                                     .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Room occupancy updated from " + currentOccupancy + " to " + newOccupancy);
                                         Toast.makeText(PaymentActivity.this, "Room occupancy updated", Toast.LENGTH_SHORT).show();
                                     })
                                     .addOnFailureListener(e -> {
+                                        Log.e(TAG, "Failed to update occupancy: " + e.getMessage());
                                         Toast.makeText(PaymentActivity.this, "Failed to update occupancy: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                     });
+                        } else {
+                            Log.w(TAG, "Cannot update occupancy: Room is full. Current: " + currentOccupancy + ", Max: " + maxCapacity);
+                            Toast.makeText(PaymentActivity.this, "Room is already at maximum capacity", Toast.LENGTH_SHORT).show();
                         }
+                    } else {
+                        Log.e(TAG, "Room not found for roomId: " + roomId);
+                        Toast.makeText(PaymentActivity.this, "Room not found: " + roomId, Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    // 静默失败
+                    Log.e(TAG, "Error finding room: " + e.getMessage());
+                    Toast.makeText(PaymentActivity.this, "Error finding room: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -436,7 +476,7 @@ public class PaymentActivity extends AppCompatActivity {
                     // 显示成功 Toast
                     Toast.makeText(PaymentActivity.this, "Payment successful!", Toast.LENGTH_LONG).show();
 
-                    // 更新房间入住人数 +1
+                    // 更新房间入住人数 +1 (现在使用 roomId 字段查询)
                     updateRoomOccupancy();
 
                     // 显示系统通知（不跳转）
@@ -462,5 +502,12 @@ public class PaymentActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(PaymentActivity.this, "Payment failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,10 +14,14 @@ import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -24,6 +29,8 @@ import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -48,6 +55,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigation;
     private CardView btnViewRepairs;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView mainScrollView;  // ADDED: Reference to main ScrollView
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -82,6 +90,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvTechnicianName = findViewById(R.id.tvTechnicianName);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        mainScrollView = findViewById(R.id.scrollView);  // ADDED: Find ScrollView
 
         // Statistics cards
         tvPendingRepairs = findViewById(R.id.tvPendingRepairs);
@@ -107,21 +116,74 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
             swipeRefreshLayout.setOnRefreshListener(() -> {
                 refreshData();
             });
+
+            // FIXED: 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (mainScrollView != null) {
+                mainScrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && mainScrollView != null) {
+                        swipeRefreshLayout.setEnabled(mainScrollView.getScrollY() == 0);
+                    }
+                });
+            }
         }
     }
 
     private void refreshData() {
-        // 重新加载所有数据
-        loadTechnicianData();
-        loadDashboardStats();
-        loadRecentRepairs();
+        // FIXED: Scroll to top first before refreshing
+        scrollToTop();
 
-        // 停止刷新动画
+        // Small delay to ensure scroll completes before refresh starts
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
-                swipeRefreshLayout.setRefreshing(false);
+            // 重新加载所有数据
+            loadTechnicianData();
+            loadDashboardStats();
+            loadRecentRepairs();
+
+            // 停止刷新动画
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+            }, 1000);
+        }, 150);
+    }
+
+    /**
+     * FIXED: Scroll to top of the dashboard
+     * This ensures the refresh happens from the top of the page
+     */
+    private void scrollToTop() {
+        if (mainScrollView != null) {
+            mainScrollView.post(() -> {
+                mainScrollView.smoothScrollTo(0, 0);
+            });
+        } else {
+            // Fallback: find any ScrollView in the view hierarchy
+            View rootView = findViewById(android.R.id.content);
+            ScrollView foundScrollView = findScrollView(rootView);
+            if (foundScrollView != null) {
+                foundScrollView.smoothScrollTo(0, 0);
             }
-        }, 1500);
+        }
+    }
+
+    /**
+     * Recursively find ScrollView in view hierarchy
+     */
+    private ScrollView findScrollView(View view) {
+        if (view instanceof ScrollView) {
+            return (ScrollView) view;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                ScrollView result = findScrollView(viewGroup.getChildAt(i));
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     private void setupProfileClick() {
@@ -142,7 +204,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
     private void loadTechnicianData() {
         if (currentUser == null) {
             tvTechnicianName.setText("Technician");
-            setDefaultAvatar();
+            resetToDefaultAvatar();
             return;
         }
 
@@ -156,47 +218,69 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                         if (profileImageBase64 != null && !profileImageBase64.isEmpty()) {
                             loadProfileImageFromBase64(profileImageBase64);
                         } else {
-                            setDefaultAvatar();
+                            resetToDefaultAvatar();
                         }
                     } else {
                         tvTechnicianName.setText("Technician");
-                        setDefaultAvatar();
+                        resetToDefaultAvatar();
                     }
                 })
                 .addOnFailureListener(e -> {
                     tvTechnicianName.setText("Technician");
-                    setDefaultAvatar();
+                    resetToDefaultAvatar();
                 });
     }
 
-    private void setDefaultAvatar() {
-        Glide.with(this)
-                .load(R.drawable.ic_account_circle)
-                .circleCrop()
-                .into(ivProfilePicture);
-        ivProfilePicture.setVisibility(View.VISIBLE);
+    /**
+     * 重置为默认头像 - 参考 Student Dashboard 的方式
+     */
+    private void resetToDefaultAvatar() {
         if (profileAvatar != null) {
             profileAvatar.setBackgroundResource(R.drawable.avatar_background);
         }
+        if (ivProfilePicture != null) {
+            ivProfilePicture.setVisibility(View.VISIBLE);
+            ivProfilePicture.setImageResource(R.drawable.ic_account_circle);
+        }
     }
 
+    /**
+     * 加载头像图片 - 参考 Student Dashboard 的方式，将图片设置为 profileAvatar 的背景
+     */
     private void loadProfileImageFromBase64(String base64String) {
         try {
             byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
             if (bitmap != null) {
+                // 使用 Glide 加载圆形图片并设置为 profileAvatar 的背景
                 Glide.with(this)
                         .load(bitmap)
                         .circleCrop()
-                        .into(ivProfilePicture);
-                if (profileAvatar != null) {
-                    profileAvatar.setBackground(null);
-                }
+                        .into(new CustomTarget<Drawable>() {
+                            @Override
+                            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                                if (profileAvatar != null) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                        profileAvatar.setBackground(resource);
+                                    } else {
+                                        profileAvatar.setBackgroundDrawable(resource);
+                                    }
+                                    // 隐藏 ImageView，只显示 LinearLayout 背景
+                                    if (ivProfilePicture != null) {
+                                        ivProfilePicture.setVisibility(View.GONE);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onLoadCleared(@Nullable Drawable placeholder) {
+                            }
+                        });
             } else {
-                setDefaultAvatar();
+                resetToDefaultAvatar();
             }
         } catch (Exception e) {
-            setDefaultAvatar();
+            resetToDefaultAvatar();
         }
     }
 

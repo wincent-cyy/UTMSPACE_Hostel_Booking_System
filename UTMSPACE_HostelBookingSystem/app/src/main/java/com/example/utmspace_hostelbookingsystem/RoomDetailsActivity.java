@@ -1,6 +1,7 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -76,12 +77,11 @@ public class RoomDetailsActivity extends AppCompatActivity {
             currentUserId = currentUser.getUid();
         }
 
+        // FIXED: Only change status bar color, no other window modifications
+        setupStatusBar();
+
         initViews();
         getIntentData();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
 
         if (roomId != null && !roomId.isEmpty()) {
             loadRoomDetailsFromFirestore();
@@ -91,6 +91,26 @@ public class RoomDetailsActivity extends AppCompatActivity {
         }
 
         setupClickListeners();
+    }
+
+    /**
+     * FIXED: Only change status bar color without affecting layout
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+            // DO NOT call setDecorFitsSystemWindows or setNavigationBarColor
+            // This prevents layout from being pushed under the status bar
+        }
     }
 
     private void initViews() {
@@ -574,6 +594,8 @@ public class RoomDetailsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
         if (imageResources.size() > 1) {
             startAutoScroll();
         }

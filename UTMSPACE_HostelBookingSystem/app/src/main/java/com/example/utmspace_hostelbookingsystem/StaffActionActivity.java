@@ -2,6 +2,7 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,14 +61,31 @@ public class StaffActionActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         initViews();
         getIntentData();
         loadBookingDetails();
         setupClickListeners();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void initViews() {
@@ -371,5 +389,12 @@ public class StaffActionActivity extends AppCompatActivity {
         db.collection("Notifications").add(notification)
                 .addOnSuccessListener(docRef -> Log.d(TAG, "Notification sent"))
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to send notification", e));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

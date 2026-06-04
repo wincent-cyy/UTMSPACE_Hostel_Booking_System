@@ -1,6 +1,7 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -75,12 +76,11 @@ public class RoomListActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
+        // IMPROVED: Set status bar to white with dark icons
+        setupStatusBar();
+
         initViews();
         setupSwipeRefresh();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
 
         currentActiveRoomType = getIntent().getStringExtra("ROOM_TYPE");
         if (currentActiveRoomType != null && !currentActiveRoomType.isEmpty()) {
@@ -92,6 +92,33 @@ public class RoomListActivity extends AppCompatActivity {
         }
 
         setupListeners();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Set navigation bar color to white
+            getWindow().setNavigationBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                decorView.setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |  // Dark status bar icons
+                                View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR // Dark navigation bar icons (API 27+)
+                );
+            }
+
+            // For Android 10+ ensure edge-to-edge experience
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                getWindow().setDecorFitsSystemWindows(false);
+            }
+        }
     }
 
     private void initViews() {
@@ -510,5 +537,12 @@ public class RoomListActivity extends AppCompatActivity {
                 rvRoomList.setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

@@ -77,9 +77,8 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         loadHiddenIds();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         initViews();
         setupSwipeRefresh();
@@ -88,6 +87,24 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         setupNavigation();
         setupClickListeners();
         fetchRepairRequests();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void loadHiddenIds() {
@@ -564,6 +581,8 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
         fetchRepairRequests();
 
         if (bottomNavigation != null) {

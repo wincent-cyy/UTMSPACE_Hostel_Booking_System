@@ -1,6 +1,7 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -8,6 +9,7 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -51,11 +53,13 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_technician_repair_request);
 
+        // 解决键盘弹出问题 - 防止导航栏上移
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         initViews();
         setupSwipeRefresh();
@@ -63,6 +67,48 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         setupSearchFilter();
         setupBottomNavigation();
         loadRepairRequests();
+
+        // FIXED: 监听键盘显示/隐藏，自动隐藏导航栏
+        setupKeyboardListener();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
+    }
+
+    /**
+     * FIXED: 监听键盘显示/隐藏，当键盘弹出时隐藏底部导航栏
+     */
+    private void setupKeyboardListener() {
+        if (etSearch == null) return;
+
+        etSearch.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // 键盘弹出时隐藏底部导航栏
+                if (bottomNavigation != null) {
+                    bottomNavigation.setVisibility(View.GONE);
+                }
+            } else {
+                // 键盘隐藏时显示底部导航栏
+                if (bottomNavigation != null) {
+                    bottomNavigation.setVisibility(View.VISIBLE);
+                }
+            }
+        });
     }
 
     private void initViews() {
@@ -101,6 +147,11 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         }
         if (ivClearSearch != null) {
             ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Clear focus from search to hide keyboard and show navigation
+        if (etSearch != null) {
+            etSearch.clearFocus();
         }
 
         // Reload data
@@ -163,6 +214,11 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
                 etSearch.setText("");
                 currentSearchQuery = "";
                 applyFilters();
+                // 清除焦点以隐藏键盘和显示导航栏
+                etSearch.clearFocus();
+                if (bottomNavigation != null) {
+                    bottomNavigation.setVisibility(View.VISIBLE);
+                }
             });
         }
     }
@@ -280,6 +336,8 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
         loadRepairRequests();
 
         if (bottomNavigation != null) {

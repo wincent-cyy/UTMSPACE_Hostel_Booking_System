@@ -2,9 +2,11 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
+import android.text.Spanned;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -72,9 +74,8 @@ public class ApplyActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
-        }
+        // FIXED: Set white status bar without affecting layout
+        setupStatusBar();
 
         initViews();
         setupInputFilters();
@@ -84,6 +85,24 @@ public class ApplyActivity extends AppCompatActivity {
 
         loadUserInfo();
         loadRoomInfo();
+    }
+
+    /**
+     * Setup status bar to be white with dark icons
+     */
+    private void setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Only set status bar color to white
+            getWindow().setStatusBarColor(Color.WHITE);
+
+            // Make status bar icons dark for visibility on white background
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                View decorView = getWindow().getDecorView();
+                int flags = decorView.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                decorView.setSystemUiVisibility(flags);
+            }
+        }
     }
 
     private void initViews() {
@@ -107,16 +126,21 @@ public class ApplyActivity extends AppCompatActivity {
     }
 
     private void setupInputFilters() {
-        InputFilter nameFilter = (source, start, end, dest, dstart, dend) -> {
-            for (int i = start; i < end; i++) {
-                char c = source.charAt(i);
-                if (!Character.isLetter(c) && !Character.isSpaceChar(c)) {
-                    return "";
+        // IMPROVED: Name filter - Only allows uppercase letters and spaces, automatically converts to uppercase
+        InputFilter uppercaseNameFilter = new InputFilter() {
+            @Override
+            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+                StringBuilder filtered = new StringBuilder();
+                for (int i = start; i < end; i++) {
+                    char c = source.charAt(i);
+                    if (Character.isLetter(c) || Character.isSpaceChar(c)) {
+                        filtered.append(Character.toUpperCase(c));
+                    }
                 }
+                return filtered.toString();
             }
-            return null;
         };
-        etStudentName.setFilters(new InputFilter[]{nameFilter, new InputFilter.LengthFilter(50)});
+        etStudentName.setFilters(new InputFilter[]{uppercaseNameFilter, new InputFilter.LengthFilter(50)});
 
         InputFilter phoneFilter = (source, start, end, dest, dstart, dend) -> {
             for (int i = start; i < end; i++) {
@@ -251,7 +275,7 @@ public class ApplyActivity extends AppCompatActivity {
                         String semester = documentSnapshot.getString("semester");
                         String studentId = documentSnapshot.getString("studentId");
 
-                        if (name != null) etStudentName.setText(name);
+                        if (name != null) etStudentName.setText(name.toUpperCase());
                         if (studentId != null) etStudentId.setText(studentId);
                         if (phone != null) etPhoneNumber.setText(phone);
                         if (email != null) etEmail.setText(email);
@@ -267,9 +291,9 @@ public class ApplyActivity extends AppCompatActivity {
     private void loadRoomInfo() {
         if (selectedRoomId == null) return;
 
-        // 方式2：通过 roomId 字段查询，而不是 document ID
+        // 通过 roomId 字段查询
         db.collection("Rooms")
-                .whereEqualTo("roomId", selectedRoomId)  // 使用 roomId 字段查询
+                .whereEqualTo("roomId", selectedRoomId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!queryDocumentSnapshots.isEmpty()) {
@@ -385,7 +409,7 @@ public class ApplyActivity extends AppCompatActivity {
     }
 
     private void validateAndSubmit() {
-        String name = etStudentName.getText().toString().trim();
+        String name = etStudentName.getText().toString().trim().toUpperCase();
         String matric = etStudentId.getText().toString().trim().toUpperCase();
         String phone = etPhoneNumber.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
@@ -401,6 +425,13 @@ public class ApplyActivity extends AppCompatActivity {
         // Validation
         if (name.isEmpty()) {
             etStudentName.setError("Name is required");
+            etStudentName.requestFocus();
+            return;
+        }
+
+        // Name validation - only letters and spaces
+        if (!Pattern.matches("^[A-Z\\s]+$", name)) {
+            etStudentName.setError("Name can only contain letters and spaces");
             etStudentName.requestFocus();
             return;
         }
@@ -588,5 +619,12 @@ public class ApplyActivity extends AppCompatActivity {
                     btnSubmitApplication.setEnabled(true);
                     Toast.makeText(ApplyActivity.this, "Submission failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Ensure status bar stays white when activity resumes
+        setupStatusBar();
     }
 }

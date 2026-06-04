@@ -11,11 +11,13 @@ import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +55,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
     // Swipe Refresh
     private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView mainScrollView;  // ADDED: Reference to main ScrollView
 
     // Banner elements
     private HorizontalScrollView bannerScrollView;
@@ -129,6 +132,11 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // Swipe Refresh
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
+        // ADDED: Find the main ScrollView (assuming it has this ID, adjust if different)
+        mainScrollView = findViewById(R.id.mainScrollView);
+        // If your ScrollView has a different ID, use that instead
+        // If no ScrollView ID exists, we'll create one programmatically
+
         // Search
         etSearchInput = findViewById(R.id.etSearchInput);
         ivSearchIcon = findViewById(R.id.ivSearchIcon);
@@ -198,30 +206,94 @@ public class StudentDashboardActivity extends AppCompatActivity {
     }
 
     private void refreshDashboard() {
-        // Reload all dashboard data
-        loadUserData();
-        loadBannerImages();
-        loadCategoryImages();
+        // IMPROVED: Scroll to top first before refreshing
+        scrollToTop();
 
-        // Reset banner scroll position
-        if (bannerScrollView != null && bannerRunnable != null) {
-            currentBannerIndex = 0;
-            bannerScrollView.scrollTo(0, 0);
-            bannerHandler.removeCallbacks(bannerRunnable);
-            isBannerScrolling = false;
-            bannerHandler.postDelayed(bannerRunnable, 2000);
+        // Small delay to ensure scroll completes before refresh animation starts
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            // Reload all dashboard data
+            loadUserData();
+            loadBannerImages();
+            loadCategoryImages();
+
+            // Reset banner scroll position
+            if (bannerScrollView != null && bannerRunnable != null) {
+                currentBannerIndex = 0;
+                bannerScrollView.scrollTo(0, 0);
+                bannerHandler.removeCallbacks(bannerRunnable);
+                isBannerScrolling = false;
+                bannerHandler.postDelayed(bannerRunnable, 2000);
+            }
+
+            // Reset active category to Single (default)
+            setActiveCategory("Single");
+
+            // Stop refresh animation after data is loaded
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (swipeRefreshLayout != null) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
+                Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+            }, 1000);
+        }, 100);
+    }
+
+    /**
+     * IMPROVED: Scroll to top of the dashboard
+     * This ensures the refresh happens from the top of the page
+     */
+    private void scrollToTop() {
+        // Try to find the main ScrollView
+        if (mainScrollView == null) {
+            // If not found, try to find any ScrollView in the layout
+            mainScrollView = findViewById(android.R.id.content).findViewById(android.R.id.list);
+
+            // If still null, look for ScrollView programmatically
+            if (mainScrollView == null) {
+                View rootView = findViewById(android.R.id.content);
+                if (rootView instanceof ScrollView) {
+                    mainScrollView = (ScrollView) rootView;
+                } else {
+                    // Search for ScrollView in the view hierarchy
+                    mainScrollView = findScrollView(rootView);
+                }
+            }
         }
 
-        // Reset active category to Single (default)
-        setActiveCategory("Single");
-
-        // Stop refresh animation after data is loaded
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (swipeRefreshLayout != null) {
-                swipeRefreshLayout.setRefreshing(false);
+        // Scroll to top if ScrollView exists
+        if (mainScrollView != null) {
+            mainScrollView.smoothScrollTo(0, 0);
+        } else {
+            // Fallback: Scroll banner and other views to top
+            if (bannerScrollView != null) {
+                bannerScrollView.scrollTo(0, 0);
             }
-            Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
-        }, 1000);
+            // Also try to scroll the window to top
+            final View rootView = findViewById(android.R.id.content);
+            if (rootView != null) {
+                rootView.requestFocus();
+                rootView.scrollTo(0, 0);
+            }
+        }
+    }
+
+    /**
+     * Recursively find ScrollView in view hierarchy
+     */
+    private ScrollView findScrollView(View view) {
+        if (view instanceof ScrollView) {
+            return (ScrollView) view;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) view;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                ScrollView result = findScrollView(viewGroup.getChildAt(i));
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     private void loadBannerImages() {
