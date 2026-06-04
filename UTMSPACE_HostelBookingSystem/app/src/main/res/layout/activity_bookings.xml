@@ -1,116 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F0EB">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:paddingTop="40dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pending Applications"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#800000"
-            android:layout_marginStart="20dp"
-            android:fontFamily="sans-serif" />
-
-        <View
-            android:layout_width="60dp"
-            android:layout_height="3dp"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="8dp"
-            android:background="#800000" />
-
-    </LinearLayout>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:background="#F5F0EB"
+        android:fitsSystemWindows="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:paddingTop="40dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pending Applications"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:layout_marginStart="20dp"
+                android:fontFamily="sans-serif" />
+
+            <View
+                android:layout_width="60dp"
+                android:layout_height="3dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="8dp"
+                android:background="#800000" />
+
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <TextView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Waiting for Review"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Waiting for Review"
+                        android:textSize="14sp"
+                        android:textColor="#AA7A6C"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:id="@+id/tvPendingCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#800000"
+                        android:background="#FEF3F2"
+                        android:padding="4dp"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                </LinearLayout>
+
+                <!-- RecyclerView for pending bookings -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPendingBookings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="4dp"
+                    android:clipToPadding="false" />
+
+                <!-- Empty State -->
+                <TextView
+                    android:id="@+id/emptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No pending applications"
                     android:textSize="14sp"
                     android:textColor="#AA7A6C"
+                    android:gravity="center"
+                    android:padding="40dp"
+                    android:visibility="gone"
                     android:fontFamily="sans-serif" />
 
-                <TextView
-                    android:id="@+id/tvPendingCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="#800000"
-                    android:background="#FEF3F2"
-                    android:padding="4dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp" />
-
             </LinearLayout>
+        </ScrollView>
 
-            <!-- 修改：將 LinearLayout 改為 RecyclerView -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPendingBookings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="4dp"
-                android:clipToPadding="false" />
+        <!-- Bottom Navigation Bar -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bottom_nav_background"
+            app:menu="@menu/student_nav_menu"
+            app:itemIconTint="@drawable/nav_item_active"
+            app:itemTextColor="@drawable/nav_item_active"
+            app:itemRippleColor="@android:color/transparent"
+            app:elevation="0dp" />
 
-            <!-- 修改：ID 改為 emptyState（與 Java 匹配） -->
-            <TextView
-                android:id="@+id/emptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="No pending applications"
-                android:textSize="14sp"
-                android:textColor="#AA7A6C"
-                android:gravity="center"
-                android:padding="40dp"
-                android:visibility="gone"
-                android:fontFamily="sans-serif" />
-
-        </LinearLayout>
-    </ScrollView>
-
-    <!-- 修改：ID 改為 bottomNavigation（與 Java 匹配） -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bottom_nav_background"
-        app:menu="@menu/student_nav_menu"
-        app:itemIconTint="@drawable/nav_item_active"
-        app:itemTextColor="@drawable/nav_item_active"
-        app:itemRippleColor="@android:color/transparent"
-        app:elevation="0dp" />
-
-</LinearLayout>
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -19,12 +19,14 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -41,6 +43,8 @@ public class UserManagementActivity extends AppCompatActivity {
     private LinearLayout userListContainer;
     private LinearLayout emptyState;
     private TextView tvUserCount;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     private TextView chipAll, chipStudent, chipStaff, chipTechnician, chipAdmin;
     private BottomNavigationView bottomNavigation;
@@ -57,6 +61,7 @@ public class UserManagementActivity extends AppCompatActivity {
 
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +78,7 @@ public class UserManagementActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupFilterChips();
         setupSearchFilter();
         loadUsers();
@@ -86,6 +92,8 @@ public class UserManagementActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.emptyState);
         tvUserCount = findViewById(R.id.tvUserCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
 
         chipAll = findViewById(R.id.chipAll);
         chipStudent = findViewById(R.id.chipStudent);
@@ -95,6 +103,59 @@ public class UserManagementActivity extends AppCompatActivity {
 
         allUsersList = new ArrayList<>();
         filteredList = new ArrayList<>();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset filters and search
+        currentRoleFilter = "All";
+        currentSearchQuery = "";
+
+        if (etSearchUser != null) {
+            etSearchUser.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Update chips UI
+        updateChipStyles(chipAll);
+
+        // Reload users
+        loadUsers();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupFilterChips() {
@@ -194,6 +255,10 @@ public class UserManagementActivity extends AppCompatActivity {
     }
 
     private void loadUsers() {
+        if (isLoading) return;
+
+        isLoading = true;
+
         db.collection("Users")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -215,9 +280,18 @@ public class UserManagementActivity extends AppCompatActivity {
                         allUsersList.add(user);
                     }
                     applyFilters();
+                    isLoading = false;
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load users: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    isLoading = false;
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -323,7 +397,6 @@ public class UserManagementActivity extends AppCompatActivity {
 
         tvUserRole.setBackground(drawable);
         tvUserRole.setTextColor(Color.WHITE);
-        // 使用 TextView 的 setPadding 方法
         tvUserRole.setPadding(24, 8, 24, 8);
 
         // View Details 和 Edit 按钮都跳转到 AdminEditUserActivity
@@ -343,7 +416,6 @@ public class UserManagementActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // 整个卡片不可点击
         itemView.setClickable(false);
 
         return itemView;

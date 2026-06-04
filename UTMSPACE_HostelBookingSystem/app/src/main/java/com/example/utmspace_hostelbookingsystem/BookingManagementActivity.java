@@ -12,6 +12,7 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -42,6 +44,8 @@ public class BookingManagementActivity extends AppCompatActivity {
     private RecyclerView rvBookings;
     private TextView tvEmptyState;
     private BottomNavigationView bottomNavigation;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     // Firebase
     private FirebaseFirestore db;
@@ -74,6 +78,7 @@ public class BookingManagementActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
         initViews();
+        setupSwipeRefresh();
         setupRecyclerView();
         setupSearchFunction();
         setupListeners();
@@ -90,6 +95,42 @@ public class BookingManagementActivity extends AppCompatActivity {
         rvBookings = findViewById(R.id.rvBookings);
         tvEmptyState = findViewById(R.id.tvEmptyState);
         bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        // 重新加载所有预订数据
+        fetchAllBookings();
+
+        // 停止刷新动画
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            Toast.makeText(this, "Bookings refreshed", Toast.LENGTH_SHORT).show();
+        }, 1500);
     }
 
     private void setupRecyclerView() {
@@ -239,9 +280,17 @@ public class BookingManagementActivity extends AppCompatActivity {
                     }
 
                     applyFilters();
+
+                    // Stop refresh if still refreshing
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load bookings: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -250,20 +299,20 @@ public class BookingManagementActivity extends AppCompatActivity {
         View sheetView = getLayoutInflater().inflate(R.layout.dialog_staff_filter, null);
         bottomSheetDialog.setContentView(sheetView);
 
-        // Status buttons - 使用 TextView
+        // Status buttons
         TextView btnStatusAll = sheetView.findViewById(R.id.btnStatusAll);
         TextView btnStatusPending = sheetView.findViewById(R.id.btnStatusPending);
         TextView btnStatusApproved = sheetView.findViewById(R.id.btnStatusApproved);
         TextView btnStatusRejected = sheetView.findViewById(R.id.btnStatusRejected);
         TextView btnStatusPaid = sheetView.findViewById(R.id.btnStatusPaid);
 
-        // Room Type buttons - 使用 TextView
+        // Room Type buttons
         TextView btnRoomAll = sheetView.findViewById(R.id.btnRoomAll);
         TextView btnRoomSingle = sheetView.findViewById(R.id.btnRoomSingle);
         TextView btnRoomDouble = sheetView.findViewById(R.id.btnRoomDouble);
         TextView btnRoomQuad = sheetView.findViewById(R.id.btnRoomQuad);
 
-        // Action buttons - 使用 TextView（因为你的 XML 中用的是 TextView）
+        // Action buttons
         TextView btnClear = sheetView.findViewById(R.id.btnClearFilters);
         TextView btnApply = sheetView.findViewById(R.id.btnApplyFilters);
 

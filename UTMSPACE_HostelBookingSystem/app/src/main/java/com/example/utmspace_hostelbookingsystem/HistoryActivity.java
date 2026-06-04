@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +18,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -43,6 +46,7 @@ public class HistoryActivity extends AppCompatActivity {
     private TextView tvEmptyState;
     private BottomNavigationView bottomNavigationView;
     private MaterialButton btnClearHistory;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
@@ -71,6 +75,7 @@ public class HistoryActivity extends AppCompatActivity {
         loadHiddenIds();
 
         initViews();
+        setupSwipeRefresh();
         setupTabs();
         setupNavigation();
 
@@ -105,10 +110,35 @@ public class HistoryActivity extends AppCompatActivity {
         tvEmptyState = findViewById(R.id.tvEmptyState);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         btnClearHistory = findViewById(R.id.btnClearHistory);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         if (btnClearHistory != null) {
             btnClearHistory.setVisibility(View.GONE);
         }
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        // Reload data
+        loadHiddenIds();
+        fetchBookingsFromFirestore();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupTabs() {
@@ -154,6 +184,9 @@ public class HistoryActivity extends AppCompatActivity {
     private void fetchBookingsFromFirestore() {
         if (mAuth.getCurrentUser() == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
             return;
         }
 
@@ -197,7 +230,10 @@ public class HistoryActivity extends AppCompatActivity {
                         if (status != null) {
                             if (status.equalsIgnoreCase("Approved")) {
                                 ongoingBookings.add(booking);
-                            } else if (status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Rejected")) {
+                            } else if (status.equalsIgnoreCase("Paid") ||
+                                    status.equalsIgnoreCase("Rejected") ||
+                                    status.equalsIgnoreCase("Completed") ||
+                                    status.equalsIgnoreCase("Cancelled")) {
                                 if (!hiddenBookingIds.contains(booking.getBookingId())) {
                                     historyBookings.add(booking);
                                 }
@@ -212,9 +248,17 @@ public class HistoryActivity extends AppCompatActivity {
                     } else {
                         displayHistoryOrders();
                     }
+
+                    // Stop refresh if still refreshing
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load bookings: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -240,6 +284,7 @@ public class HistoryActivity extends AppCompatActivity {
         for (Booking booking : ongoingBookings) {
             View orderView = createOrderItemView(booking);
             ongoingOrdersContainer.addView(orderView);
+            addDivider(ongoingOrdersContainer);
         }
     }
 
@@ -258,9 +303,15 @@ public class HistoryActivity extends AppCompatActivity {
         ongoingOrdersContainer.setVisibility(View.GONE);
         historyOrdersContainer.setVisibility(View.VISIBLE);
 
-        for (Booking booking : historyBookings) {
+        for (int i = 0; i < historyBookings.size(); i++) {
+            Booking booking = historyBookings.get(i);
             View orderView = createOrderItemView(booking);
             historyOrdersContainer.addView(orderView);
+
+            // Add divider between cards (except last one)
+            if (i < historyBookings.size() - 1) {
+                addDivider(historyOrdersContainer);
+            }
         }
 
         if (btnClearHistory != null && !historyBookings.isEmpty()) {
@@ -269,6 +320,16 @@ public class HistoryActivity extends AppCompatActivity {
         } else if (btnClearHistory != null) {
             btnClearHistory.setVisibility(View.GONE);
         }
+    }
+
+    private void addDivider(LinearLayout container) {
+        View divider = new View(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                12
+        );
+        divider.setLayoutParams(params);
+        container.addView(divider);
     }
 
     private View createOrderItemView(Booking booking) {
@@ -286,7 +347,7 @@ public class HistoryActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        params.bottomMargin = 16;
+        params.bottomMargin = 0;
         itemView.setLayoutParams(params);
 
         TextView tvRoomName = itemView.findViewById(R.id.tvRoomName);
@@ -318,25 +379,40 @@ public class HistoryActivity extends AppCompatActivity {
             GradientDrawable statusBg = new GradientDrawable();
             statusBg.setCornerRadius(30f);
 
-            if (status.equalsIgnoreCase("Approved")) {
-                statusBg.setColor(Color.parseColor("#DCFCE7"));
-                tvStatus.setText("Approved");
-                tvStatus.setTextColor(Color.parseColor("#15803D"));
-                tvStatus.setBackground(statusBg);
-                tvStatus.setPadding(16, 8, 16, 8);
-            } else if (status.equalsIgnoreCase("Paid")) {
-                statusBg.setColor(Color.parseColor("#DBEAFE"));
-                tvStatus.setText("Paid");
-                tvStatus.setTextColor(Color.parseColor("#1E40AF"));
-                tvStatus.setBackground(statusBg);
-                tvStatus.setPadding(16, 8, 16, 8);
-            } else if (status.equalsIgnoreCase("Rejected")) {
-                statusBg.setColor(Color.parseColor("#FEE2E2"));
-                tvStatus.setText("Rejected");
-                tvStatus.setTextColor(Color.parseColor("#B91C1C"));
-                tvStatus.setBackground(statusBg);
-                tvStatus.setPadding(16, 8, 16, 8);
+            switch (status.toLowerCase()) {
+                case "approved":
+                    statusBg.setColor(Color.parseColor("#DCFCE7"));
+                    tvStatus.setText("Approved");
+                    tvStatus.setTextColor(Color.parseColor("#15803D"));
+                    break;
+                case "paid":
+                    statusBg.setColor(Color.parseColor("#DBEAFE"));
+                    tvStatus.setText("Paid");
+                    tvStatus.setTextColor(Color.parseColor("#1E40AF"));
+                    break;
+                case "rejected":
+                    statusBg.setColor(Color.parseColor("#FEE2E2"));
+                    tvStatus.setText("Rejected");
+                    tvStatus.setTextColor(Color.parseColor("#B91C1C"));
+                    break;
+                case "completed":
+                    statusBg.setColor(Color.parseColor("#DCFCE7"));
+                    tvStatus.setText("Completed");
+                    tvStatus.setTextColor(Color.parseColor("#15803D"));
+                    break;
+                case "cancelled":
+                    statusBg.setColor(Color.parseColor("#FEE2E2"));
+                    tvStatus.setText("Cancelled");
+                    tvStatus.setTextColor(Color.parseColor("#B91C1C"));
+                    break;
+                default:
+                    statusBg.setColor(Color.parseColor("#FEF3C7"));
+                    tvStatus.setText(status);
+                    tvStatus.setTextColor(Color.parseColor("#D97706"));
+                    break;
             }
+            tvStatus.setBackground(statusBg);
+            tvStatus.setPadding(16, 8, 16, 8);
         }
 
         btnViewDetails.setOnClickListener(v -> {

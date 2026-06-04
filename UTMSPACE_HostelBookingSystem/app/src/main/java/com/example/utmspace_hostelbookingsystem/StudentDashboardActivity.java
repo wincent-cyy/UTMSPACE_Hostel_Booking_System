@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -49,6 +50,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private EditText etSearchInput;
     private ImageView ivSearchIcon, ivFilterIcon;
     private TextView tvViewAll;
+
+    // Swipe Refresh
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // Banner elements
     private HorizontalScrollView bannerScrollView;
@@ -93,6 +97,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // Initialize UI Views
         initViews();
 
+        // Setup Swipe Refresh
+        setupSwipeRefresh();
+
         // Setup Functions
         setupNavigation();
         setupCategoryClicks();
@@ -118,6 +125,9 @@ public class StudentDashboardActivity extends AppCompatActivity {
         tvStudentName = findViewById(R.id.tvStudentName);
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         profileAvatar = findViewById(R.id.profileAvatar);
+
+        // Swipe Refresh
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         // Search
         etSearchInput = findViewById(R.id.etSearchInput);
@@ -174,6 +184,44 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         // Load category images
         loadCategoryImages();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshDashboard();
+            });
+        }
+    }
+
+    private void refreshDashboard() {
+        // Reload all dashboard data
+        loadUserData();
+        loadBannerImages();
+        loadCategoryImages();
+
+        // Reset banner scroll position
+        if (bannerScrollView != null && bannerRunnable != null) {
+            currentBannerIndex = 0;
+            bannerScrollView.scrollTo(0, 0);
+            bannerHandler.removeCallbacks(bannerRunnable);
+            isBannerScrolling = false;
+            bannerHandler.postDelayed(bannerRunnable, 2000);
+        }
+
+        // Reset active category to Single (default)
+        setActiveCategory("Single");
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+        }, 1000);
     }
 
     private void loadBannerImages() {

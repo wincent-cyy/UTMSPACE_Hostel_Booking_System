@@ -1,192 +1,201 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F0EB">
+    android:layout_height="match_parent">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:paddingTop="40dp"
-        android:paddingBottom="8dp">
+        android:background="#F5F0EB"
+        android:fitsSystemWindows="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Booking Management"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#800000"
-            android:layout_marginStart="20dp"
-            android:fontFamily="sans-serif" />
-
-        <View
-            android:layout_width="60dp"
-            android:layout_height="3dp"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="8dp"
-            android:background="#800000" />
-
-    </LinearLayout>
-
-    <!-- Search and Filter Bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
-
-        <!-- Search Bar -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/search_bar_background"
-            android:padding="12dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_marginEnd="12dp">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_search"
-                app:tint="#7E8B9E" />
-
-            <EditText
-                android:id="@+id/etSearchBooking"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:background="@null"
-                android:hint="Search by room number or student name..."
-                android:textSize="14sp"
-                android:inputType="text"
-                android:fontFamily="sans-serif" />
-
-            <ImageView
-                android:id="@+id/ivClearSearch"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:src="@drawable/ic_close"
-                app:tint="#7E8B9E"
-                android:visibility="gone" />
-
-        </LinearLayout>
-
-        <!-- Filter Button -->
-        <LinearLayout
-            android:id="@+id/btnFilter"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/filter_button_background"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_tune"
-                app:tint="#800000" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- Counter and Clear Filter Row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="All Applications"
-            android:textSize="14sp"
-            android:textColor="#AA7A6C"
-            android:fontFamily="sans-serif" />
-
-        <TextView
-            android:id="@+id/tvBookingCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#800000"
-            android:background="#FEF3F2"
-            android:padding="4dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp" />
-
-    </LinearLayout>
-
-    <!-- Booking List Container -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
-
+        <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:paddingTop="0dp">
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:paddingTop="40dp"
+            android:paddingBottom="8dp">
 
-            <!-- RecyclerView for Bookings -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvBookings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="4dp"
-                android:clipToPadding="false" />
-
-            <!-- Empty State -->
             <TextView
-                android:id="@+id/tvEmptyState"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="No bookings found"
-                android:textSize="14sp"
-                android:textColor="#AA7A6C"
-                android:gravity="center"
-                android:padding="40dp"
-                android:visibility="gone"
+                android:text="Booking Management"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:layout_marginStart="20dp"
                 android:fontFamily="sans-serif" />
 
+            <View
+                android:layout_width="60dp"
+                android:layout_height="3dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="8dp"
+                android:background="#800000" />
+
         </LinearLayout>
-    </ScrollView>
 
-    <!-- Bottom Navigation Bar -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bottom_nav_background"
-        app:menu="@menu/staff_nav_menu"
-        app:itemIconTint="@drawable/nav_item_active"
-        app:itemTextColor="@drawable/nav_item_active"
-        app:itemRippleColor="@android:color/transparent"
-        app:elevation="0dp" />
+        <!-- Search and Filter Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
 
-</LinearLayout>
+            <!-- Search Bar -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/search_bar_background"
+                android:padding="12dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginEnd="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="#7E8B9E" />
+
+                <EditText
+                    android:id="@+id/etSearchBooking"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@null"
+                    android:hint="Search by room number or student name..."
+                    android:textSize="14sp"
+                    android:inputType="text"
+                    android:fontFamily="sans-serif" />
+
+                <ImageView
+                    android:id="@+id/ivClearSearch"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_close"
+                    app:tint="#7E8B9E"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- Filter Button -->
+            <LinearLayout
+                android:id="@+id/btnFilter"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/filter_button_background"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_tune"
+                    app:tint="#800000" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Counter and Clear Filter Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="All Applications"
+                android:textSize="14sp"
+                android:textColor="#AA7A6C"
+                android:fontFamily="sans-serif" />
+
+            <TextView
+                android:id="@+id/tvBookingCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:background="#FEF3F2"
+                android:padding="4dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp" />
+
+        </LinearLayout>
+
+        <!-- Booking List Container -->
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:paddingTop="0dp">
+
+                <!-- RecyclerView for Bookings -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvBookings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="4dp"
+                    android:clipToPadding="false" />
+
+                <!-- Empty State -->
+                <TextView
+                    android:id="@+id/tvEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No bookings found"
+                    android:textSize="14sp"
+                    android:textColor="#AA7A6C"
+                    android:gravity="center"
+                    android:padding="40dp"
+                    android:visibility="gone"
+                    android:fontFamily="sans-serif" />
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Bottom Navigation Bar -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bottom_nav_background"
+            app:menu="@menu/staff_nav_menu"
+            app:itemIconTint="@drawable/nav_item_active"
+            app:itemTextColor="@drawable/nav_item_active"
+            app:itemRippleColor="@android:color/transparent"
+            app:elevation="0dp" />
+
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

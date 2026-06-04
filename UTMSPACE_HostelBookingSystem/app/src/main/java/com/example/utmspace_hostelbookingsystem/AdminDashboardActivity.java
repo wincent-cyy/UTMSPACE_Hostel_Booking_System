@@ -6,15 +6,19 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
@@ -52,12 +56,17 @@ public class AdminDashboardActivity extends AppCompatActivity {
     // Bottom Navigation
     private BottomNavigationView bottomNavigation;
 
+    // Swipe Refresh
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
+
     // Firebase
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String currentUserId;
 
     private Handler handler = new Handler();
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +85,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupProfileClick();
         setupClickListeners();
         setupBottomNavigation();
@@ -87,6 +97,8 @@ public class AdminDashboardActivity extends AppCompatActivity {
         profileAvatar = findViewById(R.id.profileAvatar);
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvAdminName = findViewById(R.id.tvAdminName);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
 
         // Statistics
         tvTotalUsers = findViewById(R.id.tvTotalUsers);
@@ -112,6 +124,50 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         // Bottom Navigation
         bottomNavigation = findViewById(R.id.bottomNavigation);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshDashboard();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshDashboard() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        isLoading = true;
+
+        // 重新加载所有数据
+        loadAdminData();
+        loadDashboardStats();
+
+        // 停止刷新动画
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            isLoading = false;
+            Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+        }, 1500);
     }
 
     private void setupProfileClick() {

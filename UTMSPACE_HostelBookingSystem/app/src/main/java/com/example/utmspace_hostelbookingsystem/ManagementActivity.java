@@ -19,11 +19,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -61,6 +63,8 @@ public class ManagementActivity extends AppCompatActivity {
     private TextView tvEmptyTitle, tvEmptySubtitle;
 
     private BottomNavigationView bottomNavigation;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     // Firebase
     private FirebaseFirestore db;
@@ -75,6 +79,7 @@ public class ManagementActivity extends AppCompatActivity {
     private String currentBookingFilter = "All";
     private String currentRepairFilter = "All";
     private String currentSearchQuery = "";
+    private boolean isLoading = false;
 
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
@@ -93,6 +98,7 @@ public class ManagementActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupTabs();
         setupFilterChips();
         setupSearchFunction();
@@ -126,6 +132,67 @@ public class ManagementActivity extends AppCompatActivity {
         tvEmptyTitle = findViewById(R.id.tvEmptyTitle);
         tvEmptySubtitle = findViewById(R.id.tvEmptySubtitle);
         bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset search
+        currentSearchQuery = "";
+        if (etSearchGlobal != null) {
+            etSearchGlobal.setText("");
+        }
+        if (ivClearSearchGlobal != null) {
+            ivClearSearchGlobal.setVisibility(View.GONE);
+        }
+
+        // Reset filters based on current tab
+        if (currentTab.equals("Bookings")) {
+            currentBookingFilter = "All";
+            updateBookingChipStyles(chipAllBookings);
+        } else {
+            currentRepairFilter = "All";
+            updateRepairChipStyles(chipAllRepairs);
+        }
+
+        // Reload data
+        loadBookings();
+        loadRepairs();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            Toast.makeText(this, "Data refreshed", Toast.LENGTH_SHORT).show();
+        }, 1500);
     }
 
     private void setupTabs() {
@@ -313,6 +380,8 @@ public class ManagementActivity extends AppCompatActivity {
     }
 
     private void loadBookings() {
+        if (isLoading) return;
+
         db.collection("Bookings")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -340,9 +409,16 @@ public class ManagementActivity extends AppCompatActivity {
                     if (currentTab.equals("Bookings")) {
                         applyBookingFilters();
                     }
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load bookings: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -387,9 +463,16 @@ public class ManagementActivity extends AppCompatActivity {
                     if (currentTab.equals("Repairs")) {
                         applyRepairFilters();
                     }
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load repair requests: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 

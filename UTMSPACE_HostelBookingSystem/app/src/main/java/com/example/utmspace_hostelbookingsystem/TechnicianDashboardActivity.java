@@ -21,6 +21,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -45,7 +46,8 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
     private TextView tvPendingRepairs, tvInProgress, tvCompleted, tvTotalRepairs;
     private LinearLayout recentRepairsContainer;
     private BottomNavigationView bottomNavigation;
-    private CardView btnViewRepairs;  // 移除 btnMySchedule
+    private CardView btnViewRepairs;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -66,6 +68,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupProfileClick();
         setupClickListeners();
         setupBottomNavigation();
@@ -78,6 +81,7 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         profileAvatar = findViewById(R.id.profileAvatar);
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvTechnicianName = findViewById(R.id.tvTechnicianName);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         // Statistics cards
         tvPendingRepairs = findViewById(R.id.tvPendingRepairs);
@@ -90,10 +94,34 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
 
         // Action buttons
         btnViewRepairs = findViewById(R.id.btnViewRepairs);
-        // btnMySchedule 已移除
 
         // Bottom navigation
         bottomNavigation = findViewById(R.id.bottomNavigation);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        // 重新加载所有数据
+        loadTechnicianData();
+        loadDashboardStats();
+        loadRecentRepairs();
+
+        // 停止刷新动画
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupProfileClick() {
@@ -372,8 +400,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
-
-        // btnMySchedule 已移除
     }
 
     private void setupBottomNavigation() {

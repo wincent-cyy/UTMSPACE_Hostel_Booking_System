@@ -17,6 +17,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -47,6 +49,8 @@ public class RoomManagementActivity extends AppCompatActivity {
     private TextView tvRoomCount;
     private BottomNavigationView bottomNavigation;
     private FloatingActionButton fabAddRoom;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     private TextView chipAll, chipSingle, chipDouble, chipQuad;
 
@@ -63,6 +67,7 @@ public class RoomManagementActivity extends AppCompatActivity {
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
     private boolean isProcessing = false;
+    private boolean isLoading = false;
 
     // Room type options
     private String[] roomTypes = {"Single Room", "Double Room", "Quad Room"};
@@ -82,6 +87,7 @@ public class RoomManagementActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupFilterChips();
         setupSearchFilter();
         loadRooms();
@@ -97,6 +103,8 @@ public class RoomManagementActivity extends AppCompatActivity {
         tvRoomCount = findViewById(R.id.tvRoomCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         fabAddRoom = findViewById(R.id.fabAddRoom);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
 
         chipAll = findViewById(R.id.chipAll);
         chipSingle = findViewById(R.id.chipSingle);
@@ -105,6 +113,60 @@ public class RoomManagementActivity extends AppCompatActivity {
 
         allRoomsList = new ArrayList<>();
         filteredList = new ArrayList<>();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset filters and search
+        currentTypeFilter = "All";
+        currentSearchQuery = "";
+
+        if (etSearchRoom != null) {
+            etSearchRoom.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Update chips UI
+        updateChipStyles(chipAll);
+
+        // Reload rooms
+        loadRooms();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            Toast.makeText(this, "Rooms refreshed", Toast.LENGTH_SHORT).show();
+        }, 1500);
     }
 
     private void setupFilterChips() {
@@ -197,6 +259,10 @@ public class RoomManagementActivity extends AppCompatActivity {
     }
 
     private void loadRooms() {
+        if (isLoading) return;
+
+        isLoading = true;
+
         db.collection("Rooms")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -217,9 +283,18 @@ public class RoomManagementActivity extends AppCompatActivity {
                         allRoomsList.add(room);
                     }
                     applyFilters();
+                    isLoading = false;
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load rooms: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    isLoading = false;
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -367,8 +442,6 @@ public class RoomManagementActivity extends AppCompatActivity {
         etRoomType.setFocusable(false);
         etRoomType.setClickable(true);
         etRoomType.setOnClickListener(v -> showRoomTypePickerDialog(etRoomType, etMaxCapacity, etCurrentOccupancy));
-
-        // Location is now a regular text field - no click listener needed
 
         AlertDialog dialog = builder.setView(dialogView)
                 .setCancelable(false)

@@ -3,6 +3,8 @@ package com.example.utmspace_hostelbookingsystem;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -16,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -32,7 +35,8 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     private RecyclerView rvRepairRequests;
     private LinearLayout emptyState;
     private TextView tvRequestCount;
-    private BottomNavigationView bottomNavigation;  // 添加底部导航
+    private BottomNavigationView bottomNavigation;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private FirebaseFirestore db;
     private TechnicianRepairAdapter adapter;
@@ -40,6 +44,7 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     private List<RepairRequest> filteredList;
 
     private String currentSearchQuery = "";
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,9 +58,10 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupRecyclerView();
         setupSearchFilter();
-        setupBottomNavigation();  // 添加底部导航设置
+        setupBottomNavigation();
         loadRepairRequests();
     }
 
@@ -65,7 +71,47 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
         rvRepairRequests = findViewById(R.id.rvRepairList);
         emptyState = findViewById(R.id.emptyState);
         tvRequestCount = findViewById(R.id.tvRequestCount);
-        bottomNavigation = findViewById(R.id.bottomNavigation);  // 初始化底部导航
+        bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset search
+        currentSearchQuery = "";
+        if (etSearch != null) {
+            etSearch.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Reload data
+        loadRepairRequests();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupRecyclerView() {
@@ -101,7 +147,6 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 currentSearchQuery = s.toString().toLowerCase().trim();
 
-                // Show/hide clear button
                 if (ivClearSearch != null) {
                     ivClearSearch.setVisibility(currentSearchQuery.isEmpty() ? View.GONE : View.VISIBLE);
                 }
@@ -113,7 +158,6 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Clear search button
         if (ivClearSearch != null) {
             ivClearSearch.setOnClickListener(v -> {
                 etSearch.setText("");
@@ -124,6 +168,10 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     }
 
     private void loadRepairRequests() {
+        if (isLoading) return;
+
+        isLoading = true;
+
         db.collection("RepairRequests")
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
@@ -147,9 +195,18 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
                         allRequestsList.add(request);
                     }
                     applyFilters();
+                    isLoading = false;
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load requests: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    isLoading = false;
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -191,7 +248,6 @@ public class TechnicianRepairRequestActivity extends AppCompatActivity {
     private void setupBottomNavigation() {
         if (bottomNavigation == null) return;
 
-        // 设置当前选中的为 nav_request
         bottomNavigation.setSelectedItemId(R.id.nav_request);
 
         bottomNavigation.setOnItemSelectedListener(item -> {

@@ -7,11 +7,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -29,6 +32,8 @@ import java.util.List;
 
 public class StaffRoomListActivity extends AppCompatActivity {
 
+    private static final String TAG = "StaffRoomList";
+
     // UI Elements
     private RecyclerView rvRoomList;
     private EditText etSearchRoom;
@@ -36,6 +41,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
     private LinearLayout emptyState;
     private TextView tvRoomCount;
     private BottomNavigationView bottomNavigation;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // Filter chips
     private TextView chipAll, chipAvailable, chipFull, chipMaintenance;
@@ -56,6 +62,9 @@ public class StaffRoomListActivity extends AppCompatActivity {
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
 
+    // Loading state
+    private boolean isLoading = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,6 +80,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupFilterChips();
         setupRecyclerView();
         setupSearchFunction();
@@ -85,6 +95,7 @@ public class StaffRoomListActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.emptyState);
         tvRoomCount = findViewById(R.id.tvRoomCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         // Filter chips
         chipAll = findViewById(R.id.chipAll);
@@ -92,13 +103,54 @@ public class StaffRoomListActivity extends AppCompatActivity {
         chipFull = findViewById(R.id.chipFull);
         chipMaintenance = findViewById(R.id.chipMaintenance);
 
-        // 设置搜索框焦点监听，在键盘弹出时保持布局
+        // 设置搜索框焦点监听
         etSearchRoom.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
-                // 当搜索框获得焦点时，滚动到顶部
                 rvRoomList.postDelayed(() -> rvRoomList.smoothScrollToPosition(0), 100);
             }
         });
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setProgressBackgroundColorSchemeColor(
+                    ContextCompat.getColor(this, R.color.cardBackground)
+            );
+
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                Log.d(TAG, "Swipe refresh triggered");
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset filters
+        currentStatusFilter = "All";
+        currentSearchQuery = "";
+
+        if (etSearchRoom != null) {
+            etSearchRoom.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Update chips UI
+        updateChipStyles(chipAll);
+
+        // Reload rooms
+        fetchAllRooms();
     }
 
     private void setupFilterChips() {
@@ -128,13 +180,11 @@ public class StaffRoomListActivity extends AppCompatActivity {
     }
 
     private void updateChipStyles(TextView selectedChip) {
-        // Reset all chips to unselected
         resetChipStyle(chipAll);
         resetChipStyle(chipAvailable);
         resetChipStyle(chipFull);
         resetChipStyle(chipMaintenance);
 
-        // Set selected chip style
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
@@ -163,11 +213,27 @@ public class StaffRoomListActivity extends AppCompatActivity {
     }
 
     private void fetchAllRooms() {
+        if (isLoading) {
+            Log.d(TAG, "Already loading, skipping");
+            return;
+        }
+
+        isLoading = true;
+        Log.d(TAG, "Loading rooms from Firestore");
+
+        // 显示加载状态
+        showLoadingState();
+
+        long startTime = System.currentTimeMillis();
+
         db.collection("Rooms")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    allRooms.clear();
+                    long endTime = System.currentTimeMillis();
+                    Log.d(TAG, "Query completed in: " + (endTime - startTime) + " ms");
+                    Log.d(TAG, "Found " + queryDocumentSnapshots.size() + " rooms");
 
+                    allRooms.clear();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         RoomModel room = document.toObject(RoomModel.class);
                         room.setDocumentId(document.getId());
@@ -175,10 +241,54 @@ public class StaffRoomListActivity extends AppCompatActivity {
                     }
 
                     applyFilters();
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
+                    isLoading = false;
                 })
                 .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to load rooms: " + e.getMessage());
                     Toast.makeText(this, "Failed to load rooms: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
+                    isLoading = false;
+
+                    // 显示错误状态
+                    showErrorState();
                 });
+    }
+
+    private void showLoadingState() {
+        runOnUiThread(() -> {
+            if (emptyState != null) {
+                emptyState.setVisibility(View.VISIBLE);
+                TextView emptyText = emptyState.findViewById(R.id.tvEmptyTitle);
+                if (emptyText != null) {
+                    emptyText.setText("Loading rooms...");
+                }
+            }
+            if (rvRoomList != null) {
+                rvRoomList.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void showErrorState() {
+        runOnUiThread(() -> {
+            if (emptyState != null) {
+                emptyState.setVisibility(View.VISIBLE);
+                TextView emptyText = emptyState.findViewById(R.id.tvEmptyTitle);
+                if (emptyText != null) {
+                    emptyText.setText("Failed to load rooms\nPull down to retry");
+                }
+            }
+            if (rvRoomList != null) {
+                rvRoomList.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void setupSearchFunction() {
@@ -194,7 +304,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
 
                 String query = s.toString();
 
-                // Show/hide clear button
                 if (ivClearSearch != null) {
                     ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
                 }
@@ -210,7 +319,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Clear search button
         if (ivClearSearch != null) {
             ivClearSearch.setOnClickListener(v -> {
                 etSearchRoom.setText("");
@@ -255,19 +363,37 @@ public class StaffRoomListActivity extends AppCompatActivity {
             }
         }
 
-        // Update adapter
-        adapter.notifyDataSetChanged();
+        // Update UI
+        runOnUiThread(() -> {
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+            updateRoomCount();
+            updateEmptyState();
+        });
+    }
 
-        // Update room count
-        updateRoomCount();
+    private void updateRoomCount() {
+        if (tvRoomCount != null) {
+            tvRoomCount.setText(filteredRooms.size() + " rooms");
+        }
+    }
 
-        // Update empty state - 添加 null 检查
+    private void updateEmptyState() {
         if (filteredRooms.isEmpty()) {
             if (rvRoomList != null) {
                 rvRoomList.setVisibility(View.GONE);
             }
             if (emptyState != null) {
                 emptyState.setVisibility(View.VISIBLE);
+                TextView emptyText = emptyState.findViewById(R.id.tvEmptyTitle);
+                if (emptyText != null) {
+                    if (allRooms.isEmpty() && !isLoading) {
+                        emptyText.setText("No rooms available");
+                    } else {
+                        emptyText.setText("No rooms match your filters");
+                    }
+                }
             }
         } else {
             if (rvRoomList != null) {
@@ -276,12 +402,6 @@ public class StaffRoomListActivity extends AppCompatActivity {
             if (emptyState != null) {
                 emptyState.setVisibility(View.GONE);
             }
-        }
-    }
-
-    private void updateRoomCount() {
-        if (tvRoomCount != null) {
-            tvRoomCount.setText(filteredRooms.size() + " rooms");
         }
     }
 
@@ -299,16 +419,19 @@ public class StaffRoomListActivity extends AppCompatActivity {
                 Intent intent = new Intent(this, StaffDashboardActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
+                finish();
                 return true;
             } else if (id == R.id.nav_staff_bookings) {
                 Intent intent = new Intent(this, BookingManagementActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
+                finish();
                 return true;
             } else if (id == R.id.nav_profile) {
                 Intent intent = new Intent(this, ProfileActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
                 startActivity(intent);
+                finish();
                 return true;
             }
             return false;

@@ -3,6 +3,8 @@ package com.example.utmspace_hostelbookingsystem;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,6 +34,7 @@ public class BookingsActivity extends AppCompatActivity {
     private TextView emptyState;
     private TextView tvPendingCount;
     private BottomNavigationView bottomNavigation;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // List & Adapter Components
     private BookingAdapter adapter;
@@ -55,12 +59,16 @@ public class BookingsActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.emptyState);
         tvPendingCount = findViewById(R.id.tvPendingCount);
         bottomNavigation = findViewById(R.id.bottomNavigation);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         // 2. Setup RecyclerView
         rvPendingBookings.setLayoutManager(new LinearLayoutManager(this));
         bookingList = new ArrayList<>();
 
-        // 3. Initialize Adapter - FIXED: Added false as third parameter
+        // 3. Setup Swipe Refresh
+        setupSwipeRefresh();
+
+        // 4. Initialize Adapter
         adapter = new BookingAdapter(bookingList, booking -> {
             Intent intent = new Intent(BookingsActivity.this, BookingDetailsActivity.class);
 
@@ -81,11 +89,11 @@ public class BookingsActivity extends AppCompatActivity {
             intent.putExtra("CREATED_AT", booking.getCreatedAt());
 
             startActivity(intent);
-        }, false);  // ← 只需要添加这个 false 参数
+        }, false);
 
         rvPendingBookings.setAdapter(adapter);
 
-        // 4. Initialize Firebase
+        // 5. Initialize Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
@@ -93,16 +101,48 @@ public class BookingsActivity extends AppCompatActivity {
             getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.backgroundColor));
         }
 
-        // 5. Setup navigation
+        // 6. Setup navigation
         setupBottomNavigation();
 
-        // 6. Load user bookings
+        // 7. Load user bookings
         fetchUserBookings();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        // Reset data
+        bookingList.clear();
+        tempBookingMap.clear();
+        completedCount = 0;
+        pendingCount = 0;
+
+        // Reload data
+        fetchUserBookings();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void fetchUserBookings() {
         if (mAuth.getCurrentUser() == null) {
             Toast.makeText(this, "User not logged in.", Toast.LENGTH_SHORT).show();
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
             return;
         }
 
@@ -194,6 +234,9 @@ public class BookingsActivity extends AppCompatActivity {
                             .addOnFailureListener(e -> {
                                 Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                 updateUI();
+                                if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                                    swipeRefreshLayout.setRefreshing(false);
+                                }
                             });
                 })
                 .addOnFailureListener(e -> {
@@ -203,7 +246,6 @@ public class BookingsActivity extends AppCompatActivity {
     }
 
     private void fetchRoomLocation(String roomId, Booking booking, String bookingId) {
-        // 改为通过 roomId 字段查询
         db.collection("Rooms")
                 .whereEqualTo("roomId", roomId)
                 .get()
@@ -244,7 +286,6 @@ public class BookingsActivity extends AppCompatActivity {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         String bookingId = document.getId();
 
-                        // 检查是否已存在
                         if (tempBookingMap.containsKey(bookingId)) {
                             continue;
                         }
@@ -286,11 +327,13 @@ public class BookingsActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     updateUI();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
     private void fetchRoomLocationWithoutUser(String roomId, Booking booking, String bookingId) {
-        // 改为通过 roomId 字段查询
         db.collection("Rooms")
                 .whereEqualTo("roomId", roomId)
                 .get()
@@ -314,7 +357,6 @@ public class BookingsActivity extends AppCompatActivity {
 
     private void checkAndUpdateUI() {
         if (completedCount >= pendingCount) {
-            // 所有数据加载完成，从 Map 转移到 List
             bookingList.clear();
             bookingList.addAll(tempBookingMap.values());
             updateUI();
@@ -335,6 +377,11 @@ public class BookingsActivity extends AppCompatActivity {
         } else {
             rvPendingBookings.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);
+        }
+
+        // Stop refresh animation if still showing
+        if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+            swipeRefreshLayout.setRefreshing(false);
         }
     }
 

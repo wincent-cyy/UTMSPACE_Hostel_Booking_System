@@ -6,6 +6,8 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -14,12 +16,14 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -51,12 +55,15 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
     private ImageView ivClearSearch;
     private BottomNavigationView bottomNavigation;
     private MaterialButton btnClearHistory;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     private FirebaseFirestore db;
     private List<RepairRequest> inProgressList;
     private List<RepairRequest> completedList;
     private boolean isInProgressSelected = true;
     private String currentSearchQuery = "";
+    private boolean isLoading = false;
 
     private SharedPreferences sharedPreferences;
     private Set<String> hiddenCompletedIds = new HashSet<>();
@@ -75,6 +82,7 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupTabs();
         setupSearchFunction();
         setupNavigation();
@@ -117,6 +125,8 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         ivClearSearch = findViewById(R.id.ivClearSearch);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         btnClearHistory = findViewById(R.id.btnClearHistory);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
 
         if (btnClearHistory != null) {
             btnClearHistory.setVisibility(View.GONE);
@@ -124,6 +134,54 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
 
         inProgressList = new ArrayList<>();
         completedList = new ArrayList<>();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset search
+        currentSearchQuery = "";
+        if (etSearchHistory != null) {
+            etSearchHistory.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Reload data
+        fetchRepairRequests();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupTabs() {
@@ -209,7 +267,10 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
     }
 
     private void fetchRepairRequests() {
-        // 不使用 orderBy，避免因缺少字段而失败
+        if (isLoading) return;
+
+        isLoading = true;
+
         db.collection("RepairRequests")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -235,10 +296,20 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
                     } else {
                         displayCompletedOrders();
                     }
+
+                    isLoading = false;
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     showEmptyState(true);
+                    isLoading = false;
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -284,9 +355,15 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         inProgressContainer.setVisibility(View.VISIBLE);
         completedContainer.setVisibility(View.GONE);
 
-        for (RepairRequest request : filteredList) {
+        for (int i = 0; i < filteredList.size(); i++) {
+            RepairRequest request = filteredList.get(i);
             View orderView = createOrderItemView(request);
             inProgressContainer.addView(orderView);
+
+            // 添加间距
+            if (i < filteredList.size() - 1) {
+                addDivider(inProgressContainer);
+            }
         }
     }
 
@@ -312,10 +389,25 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         inProgressContainer.setVisibility(View.GONE);
         completedContainer.setVisibility(View.VISIBLE);
 
-        for (RepairRequest request : filteredList) {
+        for (int i = 0; i < filteredList.size(); i++) {
+            RepairRequest request = filteredList.get(i);
             View orderView = createOrderItemView(request);
             completedContainer.addView(orderView);
+
+            // 添加间距
+            if (i < filteredList.size() - 1) {
+                addDivider(completedContainer);
+            }
         }
+    }
+
+    private void addDivider(LinearLayout container) {
+        View divider = new View(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 12
+        );
+        divider.setLayoutParams(params);
+        container.addView(divider);
     }
 
     private boolean matchesSearch(RepairRequest request) {
@@ -339,7 +431,7 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        params.bottomMargin = 16;
+        params.bottomMargin = 0;
         itemView.setLayoutParams(params);
 
         TextView tvRoomNumber = itemView.findViewById(R.id.tvRoomNumber);

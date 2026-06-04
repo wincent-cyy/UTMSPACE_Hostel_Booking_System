@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -37,6 +38,7 @@ public class AllRoomsActivity extends AppCompatActivity {
     private TextView tvRoomCount;
     private RecyclerView rvRoomList;
     private TextView tvNoResults;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // Firebase
     private FirebaseFirestore db;
@@ -76,6 +78,7 @@ public class AllRoomsActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupListeners();
         setupRecyclerView();
         loadAllRooms();
@@ -89,6 +92,36 @@ public class AllRoomsActivity extends AppCompatActivity {
         tvRoomCount = findViewById(R.id.tvRoomCount);
         rvRoomList = findViewById(R.id.rvRoomList);
         tvNoResults = findViewById(R.id.tvNoResults);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshData();
+            });
+        }
+    }
+
+    private void refreshData() {
+        // Reset filters and search
+        resetFilters();
+        if (etSearchInput != null) {
+            etSearchInput.setText("");
+        }
+
+        // Reload rooms
+        loadAllRooms();
+
+        // Stop refresh animation after data is loaded
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        }, 1500);
     }
 
     private void setupListeners() {
@@ -186,7 +219,7 @@ public class AllRoomsActivity extends AppCompatActivity {
         btnStatusAll = view.findViewById(R.id.btnStatusAll);
         btnStatusAvailable = view.findViewById(R.id.btnStatusAvailable);
         btnStatusFull = view.findViewById(R.id.btnStatusFull);
-        btnStatusMaintenance = view.findViewById(R.id.btnStatusMaintenance);  // 新增
+        btnStatusMaintenance = view.findViewById(R.id.btnStatusMaintenance);
         btnBlockAll = view.findViewById(R.id.btnBlockAll);
         btnBlockA = view.findViewById(R.id.btnBlockA);
         btnBlockB = view.findViewById(R.id.btnBlockB);
@@ -227,7 +260,7 @@ public class AllRoomsActivity extends AppCompatActivity {
         btnStatusAll.setOnClickListener(v -> { selectedStatus = "all"; updateFilterUI(); });
         btnStatusAvailable.setOnClickListener(v -> { selectedStatus = "available"; updateFilterUI(); });
         btnStatusFull.setOnClickListener(v -> { selectedStatus = "full"; updateFilterUI(); });
-        btnStatusMaintenance.setOnClickListener(v -> { selectedStatus = "maintenance"; updateFilterUI(); });  // 新增
+        btnStatusMaintenance.setOnClickListener(v -> { selectedStatus = "maintenance"; updateFilterUI(); });
 
         btnBlockAll.setOnClickListener(v -> { selectedBlock = "all"; updateFilterUI(); });
         btnBlockA.setOnClickListener(v -> { selectedBlock = "Block A"; updateFilterUI(); });
@@ -271,9 +304,17 @@ public class AllRoomsActivity extends AppCompatActivity {
                         allRooms.add(room);
                     }
                     filterAndDisplayRooms();
+
+                    // Stop refresh if still refreshing
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to load rooms: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
                 });
     }
 
@@ -282,6 +323,9 @@ public class AllRoomsActivity extends AppCompatActivity {
 
         if (allRooms.isEmpty()) {
             updateUIForEmptyResults();
+            if (tvRoomCount != null) {
+                tvRoomCount.setText("0 rooms found");
+            }
             return;
         }
 
@@ -297,7 +341,6 @@ public class AllRoomsActivity extends AppCompatActivity {
                 matchesSearch = roomId.contains(searchKeyword) || location.contains(searchKeyword);
             }
 
-            // 状态筛选 - 添加 Maintenance 支持
             if (!selectedStatus.equals("all")) {
                 String status = room.getStatus() != null ? room.getStatus().toLowerCase() : "";
                 matchesStatus = status.equals(selectedStatus);

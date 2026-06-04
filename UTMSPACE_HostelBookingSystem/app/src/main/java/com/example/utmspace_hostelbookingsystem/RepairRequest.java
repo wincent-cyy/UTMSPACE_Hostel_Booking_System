@@ -13,6 +13,7 @@ public class RepairRequest {
     private long createdAt;
     private long updatedAt;
     private String proofImage;
+    private String completionPhoto;
     private String availableTime;  // 添加 availableTime
     private String contactPerson;  // 添加 contactPerson
 
@@ -33,6 +34,7 @@ public class RepairRequest {
     public String getProofImage() { return proofImage; }
     public String getAvailableTime() { return availableTime; }
     public String getContactPerson() { return contactPerson; }
+    public String getCompletionPhoto() { return completionPhoto; }
 
     // Setters
     public void setDocumentId(String documentId) { this.documentId = documentId; }
@@ -49,4 +51,5 @@ public class RepairRequest {
     public void setProofImage(String proofImage) { this.proofImage = proofImage; }
     public void setAvailableTime(String availableTime) { this.availableTime = availableTime; }
     public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
+    public void setCompletionPhoto(String completionPhoto) { this.completionPhoto = completionPhoto; }
 }

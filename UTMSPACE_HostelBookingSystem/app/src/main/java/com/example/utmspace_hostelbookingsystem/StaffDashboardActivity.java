@@ -5,17 +5,21 @@ import android.graphics.BitmapFactory;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -42,10 +46,11 @@ public class StaffDashboardActivity extends AppCompatActivity {
     private TextView tvStaffName;
     private ShapeableImageView ivProfilePicture;
     private LinearLayout profileAvatar;
-    private LinearLayout cardTotalBookings;  // Total Bookings 卡片容器
-    private LinearLayout cardActiveIssues;    // Active Issues 卡片容器
+    private LinearLayout cardTotalBookings;
+    private LinearLayout cardActiveIssues;
     private TextView tvTotalBookings, tvRoomIssues, tvOccupiedRooms, tvVacantRooms;
     private LinearLayout recentBookingsContainer;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -68,6 +73,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
 
         // Initialize views
         initViews();
+        setupSwipeRefresh();
 
         // Load staff name and profile picture
         loadStaffData();
@@ -86,6 +92,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
         tvStaffName = findViewById(R.id.tvStaffName);
         profileAvatar = findViewById(R.id.profileAvatar);
         ivProfilePicture = findViewById(R.id.ivProfilePicture);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         // 卡片容器
         cardTotalBookings = findViewById(R.id.cardTotalBookings);
@@ -105,6 +112,49 @@ public class StaffDashboardActivity extends AppCompatActivity {
 
         // 设置卡片点击事件
         setupCardClickListeners();
+    }
+
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+
+            // 获取 ScrollView
+            ScrollView scrollView = findViewById(R.id.scrollView); // 需要给你的 ScrollView 添加 ID
+
+            // 设置只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshDashboard();
+            });
+
+            // 监听 ScrollView 滚动状态
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    // 当 ScrollView 滚动到顶部时启用刷新，否则禁用
+                    if (scrollView.getScrollY() == 0) {
+                        swipeRefreshLayout.setEnabled(true);
+                    } else {
+                        swipeRefreshLayout.setEnabled(false);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshDashboard() {
+        // 重新加载所有数据
+        loadStaffData();
+        loadDashboardStats();
+        loadRecentBookings();
+
+        // 停止刷新动画
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+        }, 1500);
     }
 
     private void setupCardClickListeners() {
@@ -179,7 +229,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> tvRoomIssues.setText("0"));
 
-        // Full and Available rooms - Show numbers only, no "Rooms" text
+        // Full and Available rooms
         db.collection("Rooms").get()
                 .addOnSuccessListener(query -> {
                     int full = 0;
@@ -243,7 +293,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Failed to load recent bookings: " + e.getMessage());
                     recentBookingsContainer.removeAllViews();
-                    addErrorStateView("Failed to load recent bookings: " + e.getMessage());
+                    addErrorStateView("Failed to load recent bookings");
                 });
     }
 
@@ -276,7 +326,7 @@ public class StaffDashboardActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        params.bottomMargin = 16;  // 16dp 间距
+        params.bottomMargin = 16;
         itemView.setLayoutParams(params);
 
         // 使用布局中正确的 ID
@@ -393,7 +443,6 @@ public class StaffDashboardActivity extends AppCompatActivity {
     }
 
     private void setDefaultAvatar() {
-        // Use Glide to load default avatar as circle
         Glide.with(this)
                 .load(R.drawable.ic_account_circle)
                 .circleCrop()
@@ -408,14 +457,10 @@ public class StaffDashboardActivity extends AppCompatActivity {
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
 
             if (bitmap != null) {
-                // 计算目标尺寸 - 放大头像
                 int targetWidth = 200;
                 int targetHeight = 200;
-
-                // 缩放 Bitmap
                 Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true);
 
-                // 使用 Glide 加载缩放后的图片为圆形
                 Glide.with(this)
                         .load(scaledBitmap)
                         .circleCrop()

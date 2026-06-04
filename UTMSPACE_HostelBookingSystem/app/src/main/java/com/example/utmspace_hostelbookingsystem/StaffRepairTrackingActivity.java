@@ -7,10 +7,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -28,6 +32,8 @@ import java.util.List;
 
 public class StaffRepairTrackingActivity extends AppCompatActivity {
 
+    private static final String TAG = "StaffRepairTracking";
+
     // UI Elements
     private LinearLayout ivBack;
     private EditText etSearchRepair;
@@ -35,6 +41,8 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     private RecyclerView rvRepairList;
     private TextView tvEmptyState;
     private TextView tvRequestCount;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private ScrollView scrollView;
 
     // Filter Chips
     private TextView chipAll, chipPending, chipInProgress, chipCompleted;
@@ -55,10 +63,16 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
 
+    // Loading state
+    private boolean isLoading = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_staff_repair_tracking);
+
+        // 解决键盘弹出问题
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 
         db = FirebaseFirestore.getInstance();
 
@@ -67,6 +81,7 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
         }
 
         initViews();
+        setupSwipeRefresh();
         setupRecyclerView();
         setupFilterChips();
         setupSearchFunction();
@@ -81,6 +96,8 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
         rvRepairList = findViewById(R.id.rvRepairList);
         tvEmptyState = findViewById(R.id.tvEmptyState);
         tvRequestCount = findViewById(R.id.tvRequestCount);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        scrollView = findViewById(R.id.scrollView);
 
         // Filter chips
         chipAll = findViewById(R.id.chipAll);
@@ -89,12 +106,62 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
         chipCompleted = findViewById(R.id.chipCompleted);
     }
 
+    private void setupSwipeRefresh() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                    ContextCompat.getColor(this, R.color.primaryColor)
+            );
+            swipeRefreshLayout.setProgressBackgroundColorSchemeColor(
+                    ContextCompat.getColor(this, R.color.cardBackground)
+            );
+
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                Log.d(TAG, "Swipe refresh triggered");
+                refreshData();
+            });
+
+            // 只有当 ScrollView 滚动到顶部时才启用下拉刷新
+            if (scrollView != null) {
+                scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
+                    if (swipeRefreshLayout != null && scrollView != null) {
+                        swipeRefreshLayout.setEnabled(scrollView.getScrollY() == 0);
+                    }
+                });
+            }
+        }
+    }
+
+    private void refreshData() {
+        if (isLoading) {
+            if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            return;
+        }
+
+        // Reset filters and search
+        currentStatusFilter = "All";
+        currentSearchQuery = "";
+
+        if (etSearchRepair != null) {
+            etSearchRepair.setText("");
+        }
+        if (ivClearSearch != null) {
+            ivClearSearch.setVisibility(View.GONE);
+        }
+
+        // Update chips UI
+        updateChipStyles(chipAll);
+
+        // Reload data
+        loadRepairRequests();
+    }
+
     private void setupRecyclerView() {
         rvRepairList.setLayoutManager(new LinearLayoutManager(this));
         adapter = new RepairRequestAdapter(filteredRequests, request -> {
             Intent intent = new Intent(StaffRepairTrackingActivity.this, StaffRepairDetailActivity.class);
 
-            // 使用统一的 key 名称（全部小写，与 Firestore 一致）
             intent.putExtra("REQUEST_ID", request.getDocumentId());
             intent.putExtra("roomId", request.getRoomId());
             intent.putExtra("roomType", request.getRoomType());
@@ -104,7 +171,9 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
             intent.putExtra("status", request.getStatus());
             intent.putExtra("name", request.getName());
             intent.putExtra("createdAt", request.getCreatedAt());
-            intent.putExtra("availableTime", request.getAvailableTime());  // 改为小写 availableTime
+            intent.putExtra("availableTime", request.getAvailableTime());
+            intent.putExtra("contactPerson", request.getContactPerson());
+            intent.putExtra("completionPhoto", request.getCompletionPhoto());
 
             startActivity(intent);
         });
@@ -138,13 +207,11 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     }
 
     private void updateChipStyles(TextView selectedChip) {
-        // Reset all chips
         resetChipStyle(chipAll);
         resetChipStyle(chipPending);
         resetChipStyle(chipInProgress);
         resetChipStyle(chipCompleted);
 
-        // Set selected chip style
         selectedChip.setBackgroundResource(R.drawable.filter_chip_selected);
         selectedChip.setTextColor(getColor(android.R.color.white));
     }
@@ -168,7 +235,6 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
 
                 final String query = s.toString();
 
-                // Show/hide clear button
                 if (ivClearSearch != null) {
                     ivClearSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
                 }
@@ -184,7 +250,6 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Clear search button
         if (ivClearSearch != null) {
             ivClearSearch.setOnClickListener(v -> {
                 etSearchRepair.setText("");
@@ -195,33 +260,76 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
     }
 
     private void loadRepairRequests() {
+        if (isLoading) {
+            Log.d(TAG, "Already loading, skipping");
+            return;
+        }
+
+        isLoading = true;
+        Log.d(TAG, "Loading repair requests from Firestore");
+
+        // 显示加载状态
+        showLoadingState();
+
+        long startTime = System.currentTimeMillis();
+
         db.collection("RepairRequests")
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    long endTime = System.currentTimeMillis();
+                    Log.d(TAG, "Query completed in: " + (endTime - startTime) + " ms");
+                    Log.d(TAG, "Found " + queryDocumentSnapshots.size() + " requests");
+
                     allRequests.clear();
-
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        // 添加日志查看原始数据
-                        android.util.Log.d("StaffRepairTracking", "=== Document Data ===");
-                        android.util.Log.d("StaffRepairTracking", "createdAt raw: " + document.getLong("createdAt"));
-                        android.util.Log.d("StaffRepairTracking", "availableTime: " + document.getString("availableTime"));
-
                         RepairRequest request = document.toObject(RepairRequest.class);
                         request.setDocumentId(document.getId());
-
-                        // 添加日志查看转换后的数据
-                        android.util.Log.d("StaffRepairTracking", "after toObject - createdAt: " + request.getCreatedAt());
-                        android.util.Log.d("StaffRepairTracking", "after toObject - availableTime: " + request.getAvailableTime());
-
                         allRequests.add(request);
                     }
 
                     applyFilters();
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
+                    isLoading = false;
                 })
                 .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to load requests: " + e.getMessage());
                     Toast.makeText(this, "Failed to load requests: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                    if (swipeRefreshLayout != null && swipeRefreshLayout.isRefreshing()) {
+                        swipeRefreshLayout.setRefreshing(false);
+                    }
+                    isLoading = false;
+
+                    showErrorState();
                 });
+    }
+
+    private void showLoadingState() {
+        runOnUiThread(() -> {
+            if (tvEmptyState != null) {
+                tvEmptyState.setText("Loading requests...");
+                tvEmptyState.setVisibility(View.VISIBLE);
+            }
+            if (rvRepairList != null) {
+                rvRepairList.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void showErrorState() {
+        runOnUiThread(() -> {
+            if (tvEmptyState != null) {
+                tvEmptyState.setText("Failed to load requests\nPull down to retry");
+                tvEmptyState.setVisibility(View.VISIBLE);
+            }
+            if (rvRepairList != null) {
+                rvRepairList.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void applyFilters() {
@@ -259,20 +367,35 @@ public class StaffRepairTrackingActivity extends AppCompatActivity {
             }
         }
 
-        // Update adapter
-        adapter.notifyDataSetChanged();
+        // Update UI
+        runOnUiThread(() -> {
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
 
-        // Update count
-        tvRequestCount.setText(filteredRequests.size() + " requests");
+            tvRequestCount.setText(filteredRequests.size() + " requests");
 
-        // Update empty state
-        if (filteredRequests.isEmpty()) {
-            rvRepairList.setVisibility(View.GONE);
-            tvEmptyState.setVisibility(View.VISIBLE);
-        } else {
-            rvRepairList.setVisibility(View.VISIBLE);
-            tvEmptyState.setVisibility(View.GONE);
-        }
+            if (filteredRequests.isEmpty()) {
+                if (rvRepairList != null) {
+                    rvRepairList.setVisibility(View.GONE);
+                }
+                if (tvEmptyState != null) {
+                    if (allRequests.isEmpty() && !isLoading) {
+                        tvEmptyState.setText("No repair requests available");
+                    } else {
+                        tvEmptyState.setText("No requests match your filters");
+                    }
+                    tvEmptyState.setVisibility(View.VISIBLE);
+                }
+            } else {
+                if (rvRepairList != null) {
+                    rvRepairList.setVisibility(View.VISIBLE);
+                }
+                if (tvEmptyState != null) {
+                    tvEmptyState.setVisibility(View.GONE);
+                }
+            }
+        });
     }
 
     private void setupClickListeners() {

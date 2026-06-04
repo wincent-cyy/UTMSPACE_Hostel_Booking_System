@@ -1,170 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F0EB">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:paddingTop="40dp"
-        android:paddingBottom="8dp">
-
-        <!-- 标题行：包含标题和清除按钮 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="My Bookings"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="#800000"
-                    android:layout_marginStart="20dp"
-                    android:fontFamily="sans-serif" />
-
-                <View
-                    android:layout_width="60dp"
-                    android:layout_height="3dp"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginTop="8dp"
-                    android:background="#800000" />
-
-            </LinearLayout>
-
-            <!-- Clear History Button - 放在标题行右侧 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnClearHistory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:text="Clear History"
-                android:textSize="12sp"
-                android:textColor="#800000"
-                android:backgroundTint="#FEE2E2"
-                app:strokeColor="#800000"
-                app:strokeWidth="1dp"
-                app:cornerRadius="20dp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
-                android:visibility="gone" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="4dp"
-        android:layout_margin="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="0dp"
-        android:background="@drawable/tab_container_background"
-        android:gravity="center">
-
-        <TextView
-            android:id="@+id/tabOngoing"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:text="Ongoing"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/tab_background_selector"
-            android:gravity="center"
-            android:layout_marginEnd="4dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="sans-serif" />
-
-        <TextView
-            android:id="@+id/tabHistory"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:text="History"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#800000"
-            android:background="@drawable/tab_background_selector"
-            android:gravity="center"
-            android:layout_marginStart="4dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:fontFamily="sans-serif" />
-
-    </LinearLayout>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:background="#F5F0EB"
+        android:fitsSystemWindows="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:paddingTop="0dp">
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:paddingTop="40dp"
+            android:paddingBottom="8dp">
 
+            <!-- 标题行：包含标题和清除按钮 -->
             <LinearLayout
-                android:id="@+id/ongoingOrdersContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <LinearLayout
-                android:id="@+id/historyOrdersContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="My Bookings"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#800000"
+                        android:layout_marginStart="20dp"
+                        android:fontFamily="sans-serif" />
+
+                    <View
+                        android:layout_width="60dp"
+                        android:layout_height="3dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="8dp"
+                        android:background="#800000" />
+
+                </LinearLayout>
+
+                <!-- Clear History Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearHistory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="Clear History"
+                    android:textSize="12sp"
+                    android:textColor="#800000"
+                    android:backgroundTint="#FEE2E2"
+                    app:strokeColor="#800000"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="20dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            android:layout_margin="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="0dp"
+            android:background="@drawable/tab_container_background"
+            android:gravity="center">
 
             <TextView
-                android:id="@+id/tvEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="No bookings found"
+                android:id="@+id/tabOngoing"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="Ongoing"
                 android:textSize="14sp"
-                android:textColor="#AA7A6C"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/tab_background_selector"
                 android:gravity="center"
-                android:padding="40dp"
-                android:visibility="gone"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="sans-serif" />
+
+            <TextView
+                android:id="@+id/tabHistory"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:text="History"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#800000"
+                android:background="@drawable/tab_background_selector"
+                android:gravity="center"
+                android:layout_marginStart="4dp"
+                android:clickable="true"
+                android:focusable="true"
                 android:fontFamily="sans-serif" />
 
         </LinearLayout>
-    </ScrollView>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigationView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bottom_nav_background"
-        app:menu="@menu/student_nav_menu"
-        app:itemIconTint="@drawable/nav_item_active"
-        app:itemTextColor="@drawable/nav_item_active"
-        app:itemRippleColor="@android:color/transparent"
-        app:elevation="0dp" />
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
-</LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:paddingTop="0dp">
+
+                <LinearLayout
+                    android:id="@+id/ongoingOrdersContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <LinearLayout
+                    android:id="@+id/historyOrdersContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No bookings found"
+                    android:textSize="14sp"
+                    android:textColor="#AA7A6C"
+                    android:gravity="center"
+                    android:padding="40dp"
+                    android:visibility="gone"
+                    android:fontFamily="sans-serif" />
+
+            </LinearLayout>
+        </ScrollView>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigationView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bottom_nav_background"
+            app:menu="@menu/student_nav_menu"
+            app:itemIconTint="@drawable/nav_item_active"
+            app:itemTextColor="@drawable/nav_item_active"
+            app:itemRippleColor="@android:color/transparent"
+            app:elevation="0dp" />
+
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
