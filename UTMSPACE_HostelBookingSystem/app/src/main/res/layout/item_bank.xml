@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- 银行图标 -->
+    <ImageView
+        android:id="@+id/ivBankIcon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_bank_placeholder"
+        android:layout_marginEnd="16dp" />
+
+    <!-- 银行信息 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvBankName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Maybank"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#1E293B"
+            android:fontFamily="sans-serif" />
+
+        <TextView
+            android:id="@+id/tvBankDesc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Online Banking"
+            android:textSize="12sp"
+            android:textColor="#AA7A6C"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+
+    <!-- 右箭头 - 不使用任何 tint -->
+    <ImageView
+        android:id="@+id/ivArrow"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_chevron_right" />
+
+</LinearLayout>

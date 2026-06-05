@@ -293,17 +293,6 @@
                         android:textColor="#3C2A24"
                         android:fontFamily="sans-serif" />
 
-                    <RadioButton
-                        android:id="@+id/radioQR"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:text="   QR Code (DuitNow)"
-                        android:drawableStart="@drawable/ic_qr"
-                        android:drawablePadding="12dp"
-                        android:buttonTint="#800000"
-                        android:textColor="#3C2A24"
-                        android:fontFamily="sans-serif" />
-
                 </RadioGroup>
 
             </LinearLayout>

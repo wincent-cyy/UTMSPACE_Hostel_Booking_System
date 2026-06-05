@@ -408,25 +408,21 @@ public class ReceiptActivity extends AppCompatActivity {
     /**
      * 用默认 PDF 查看器打开文件（优先使用 WPS、Adobe 等）
      */
+    /**
+     * 用默认 PDF 查看器打开文件（强制使用外部应用）
+     */
     private void openPDFWithDefaultApp(File file) {
         try {
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
 
+            // 方法1：直接打开（会弹出选择器让用户选择用哪个应用）
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(uri, "application/pdf");
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-            // 检查是否有应用可以处理 PDF
-            PackageManager pm = getPackageManager();
-            List<ResolveInfo> activities = pm.queryIntentActivities(intent, 0);
+            startActivity(Intent.createChooser(intent, "Open Receipt With"));
 
-            if (activities.size() > 0) {
-                startActivity(intent);
-            } else {
-                // 如果没有 PDF 查看器，提示用户
-                Toast.makeText(this, "No PDF viewer found. Please install WPS Office or Adobe Reader.", Toast.LENGTH_LONG).show();
-            }
         } catch (Exception e) {
             Log.e(TAG, "Error opening PDF", e);
             Toast.makeText(this, "PDF saved to Downloads folder", Toast.LENGTH_LONG).show();

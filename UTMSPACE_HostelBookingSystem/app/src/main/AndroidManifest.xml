@@ -33,7 +33,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UTMSPACE_HostelBookingSystem">
         <activity
-            android:name=".MainActivity"
+            android:name=".GrabPayWebViewActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FpxWebViewActivity"
             android:exported="false" />
         <activity
             android:name=".AdminRepairDetailActivity"
@@ -176,6 +179,14 @@
             android:theme="@style/Theme.UTMSPACE.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="payment-result"
+                    android:scheme="hostelhub" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
