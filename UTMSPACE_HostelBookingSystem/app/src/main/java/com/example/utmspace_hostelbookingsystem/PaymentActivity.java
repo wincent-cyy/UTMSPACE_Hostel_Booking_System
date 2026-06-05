@@ -54,6 +54,8 @@ public class PaymentActivity extends AppCompatActivity {
     private static final String STRIPE_PK_TEST = "pk_test_51TecLn2OMxhp6dH92Uznx2TfYwa9yNu4eV8rMGEeE9ifItjCLBA7mIynGIWo1CuWNT3S8edwmBv3yKwsvpDLYo7a00NwucyJPZ";
     private static final String STRIPE_PK_LIVE = "pk_live_51TecLKRrulifJ7fOSKUyFcYMQsKS0x8MFMMyyQFnEo6Lp2POgoHphZWMTS8SDEDomAbt8ptwO9WiNKNBCmAvsFeI00AxD2TUSF";
 
+    private static final boolean TEST_GRABPAY_MODE = true;
+
     private LinearLayout ivBack, btnPayNow;
     private TextView tvRoomName, tvRoomNumber, tvTotalAmount;
     private RadioGroup paymentMethodGroup;
@@ -495,11 +497,17 @@ public class PaymentActivity extends AppCompatActivity {
 
         JSONObject json = new JSONObject();
         try {
-            json.put("amount", getAmountInCents());
-            // 添加成功和取消的回调 URL（可以设置一个临时 URL，WebView 会拦截处理）
+            int amount;
+            if (TEST_GRABPAY_MODE) {
+                amount = 100;  // RM 1.00 测试
+                Log.d(TAG, "TEST MODE - Using RM 1.00 for GrabPay");
+            } else {
+                amount = getAmountInCents();
+                Log.d(TAG, "PRODUCTION MODE - Amount in cents: " + amount);
+            }
+            json.put("amount", amount);
             json.put("successUrl", "https://yourdomain.com/success");
             json.put("cancelUrl", "https://yourdomain.com/cancel");
-            Log.d(TAG, "GrabPay amount in cents: " + getAmountInCents());
         } catch (JSONException e) {
             Log.e(TAG, "JSON error", e);
             progressDialog.dismiss();
@@ -507,6 +515,7 @@ public class PaymentActivity extends AppCompatActivity {
             Toast.makeText(this, "Error creating request", Toast.LENGTH_SHORT).show();
             return;
         }
+
 
         RequestBody body = RequestBody.create(
                 MediaType.parse("application/json; charset=utf-8"),
