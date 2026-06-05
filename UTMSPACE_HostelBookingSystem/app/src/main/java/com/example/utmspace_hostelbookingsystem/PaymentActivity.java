@@ -2,95 +2,64 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.functions.FirebaseFunctions;
 
+import com.stripe.android.PaymentConfiguration;
+import com.stripe.android.paymentsheet.PaymentSheet;
+import com.stripe.android.paymentsheet.PaymentSheetResult;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class PaymentActivity extends AppCompatActivity {
 
     private static final String TAG = "PaymentActivity";
     private static final String CHANNEL_ID = "payment_channel";
-    private static final int NOTIFICATION_ID = 1001;
 
-    // Header
-    private LinearLayout ivBack;
-
-    // Order Summary
-    private TextView tvRoomName;
-    private TextView tvRoomNumber;
-    private TextView tvDuration;
-    private TextView tvTotalAmount;
-
-    // Payment Method
+    private LinearLayout ivBack, btnPayNow;
+    private TextView tvRoomName, tvRoomNumber, tvTotalAmount;
     private RadioGroup paymentMethodGroup;
     private RadioButton radioCard, radioFPX, radioEWallet, radioQR;
 
-    // Card Details Section
-    private LinearLayout cardDetailsSection;
-    private TextInputEditText etCardNumber;
-    private TextInputEditText etExpiryDate;
-    private TextInputEditText etCVV;
-    private TextInputEditText etCardHolderName;
+    private String bookingDocId, roomId, roomType, roomPrice;
+    private String selectedPaymentMethod = "";
 
-    // FPX Section
-    private LinearLayout fpxSection;
-    private Spinner spinnerBank;
-
-    // E-Wallet Section
-    private LinearLayout ewalletSection;
-    private LinearLayout btnTouchNGo;
-    private TextView tvSelectedWallet;
-
-    // QR Section
-    private LinearLayout qrSection;
-
-    // Pay Button
-    private LinearLayout btnPayNow;
-
-    // Data
-    private String bookingDocId;
-    private String roomId;
-    private String roomType;
-    private String roomPrice;
-    private String studentName;
-    private String matricNumber;
-    private String phoneNumber;
-    private String checkInDate;
-    private String leaseDuration;
-
-    // Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
-    // Selected payment method
-    private String selectedPaymentMethod = "";
-    private String selectedWallet = "";
+    private PaymentSheet paymentSheet;
+    private String paymentIntentClientSecret;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,414 +69,280 @@ public class PaymentActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Set white status bar without affecting layout
-        setupStatusBar();
+        // 检查当前用户
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "Please login first", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginAndSignupActivity.class));
+            finish();
+            return;
+        }
 
-        // 创建通知渠道
-        createNotificationChannel();
+        // 打印用户信息确认
+        Log.d(TAG, "User logged in: " + currentUser.getEmail());
+        Log.d(TAG, "UID: " + currentUser.getUid());
+
+        // Stripe init（记得换成你自己的 publishable key）
+        PaymentConfiguration.init(
+                getApplicationContext(),
+                "pk_test_51TecLn2OMxhp6dH92Uznx2TfYwa9yNu4eV8rMGEeE9ifItjCLBA7mIynGIWo1CuWNT3S8edwmBv3yKwsvpDLYo7a00NwucyJPZ"
+        );
+
+        paymentSheet = new PaymentSheet(this, result -> {
+
+            if (result instanceof PaymentSheetResult.Completed) {
+                Toast.makeText(this, "Payment Success!", Toast.LENGTH_SHORT).show();
+                updateBookingStatus(true);
+            }
+
+            if (result instanceof PaymentSheetResult.Canceled) {
+                Toast.makeText(this, "Payment Cancelled", Toast.LENGTH_SHORT).show();
+            }
+
+            if (result instanceof PaymentSheetResult.Failed) {
+                Toast.makeText(this, "Payment Failed", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         initViews();
         getIntentData();
         setupPaymentMethodToggle();
-        setupWalletSelection();
-        setupClickListeners();
+
+        btnPayNow.setOnClickListener(v -> processPayment());
+        ivBack.setOnClickListener(v -> finish());
+
+        createNotificationChannel();
     }
 
-    /**
-     * Setup status bar to be white with dark icons
-     */
-    private void setupStatusBar() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Only set status bar color to white
-            getWindow().setStatusBarColor(Color.WHITE);
+    private void processPayment() {
 
-            // Make status bar icons dark for visibility on white background
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                View decorView = getWindow().getDecorView();
-                int flags = decorView.getSystemUiVisibility();
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-                decorView.setSystemUiVisibility(flags);
+        if (selectedPaymentMethod.isEmpty()) {
+            Toast.makeText(this, "Select payment method", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!selectedPaymentMethod.equals("Credit/Debit Card")) {
+            Toast.makeText(this, "Only Card supported", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        startStripePayment();
+    }
+
+    private void startStripePayment() {
+        if (mAuth.getCurrentUser() == null) {
+            Toast.makeText(this, "Login required", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        btnPayNow.setEnabled(false);
+
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Initializing payment...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        // ✅ 使用 OkHttp 直接调用 HTTP 触发器
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        // 创建 JSON 请求体
+        JSONObject json = new JSONObject();
+        try {
+            json.put("amount", getAmountInCents());
+            Log.d(TAG, "Amount in cents: " + getAmountInCents());
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON error", e);
+            progressDialog.dismiss();
+            btnPayNow.setEnabled(true);
+            Toast.makeText(this, "Error creating request", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        RequestBody body = RequestBody.create(
+                MediaType.parse("application/json; charset=utf-8"),
+                json.toString()
+        );
+
+        Request request = new Request.Builder()
+                .url("https://us-central1-utmspace-hostel-booking-system.cloudfunctions.net/createPaymentIntent")
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String responseBody = response.body().string();
+                Log.d(TAG, "Response: " + responseBody);
+
+                runOnUiThread(() -> {
+                    progressDialog.dismiss();
+
+                    try {
+                        JSONObject result = new JSONObject(responseBody);
+
+                        if (result.has("clientSecret")) {
+                            paymentIntentClientSecret = result.getString("clientSecret");
+                            openPaymentSheet();
+                        } else if (result.has("error")) {
+                            String error = result.getString("error");
+                            Log.e(TAG, "Payment error: " + error);
+                            Toast.makeText(PaymentActivity.this, "Error: " + error, Toast.LENGTH_LONG).show();
+                            btnPayNow.setEnabled(true);
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "JSON parse error", e);
+                        Toast.makeText(PaymentActivity.this, "Parse error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        btnPayNow.setEnabled(true);
+                    }
+                });
             }
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "Network error", e);
+                runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    btnPayNow.setEnabled(true);
+                    Toast.makeText(PaymentActivity.this, "Network error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private int getAmountInCents() {
+        // 从 roomPrice 解析金额
+        try {
+            String priceStr = roomPrice.replace("RM ", "").trim();
+            double price = Double.parseDouble(priceStr);
+            return (int) (price * 100);  // 转换为 cents
+        } catch (NumberFormatException e) {
+            return 12000;  // 默认 RM 120
         }
     }
 
-    private void initViews() {
-        // Header
-        ivBack = findViewById(R.id.ivBack);
+    private void openPaymentSheet() {
+        PaymentSheet.Configuration config =
+                new PaymentSheet.Configuration("Hostel Booking");
 
-        // Order Summary
+        paymentSheet.presentWithPaymentIntent(
+                paymentIntentClientSecret,
+                config
+        );
+    }
+
+    private void updateBookingStatus(boolean success) {
+
+        long currentTime = System.currentTimeMillis();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("bookingStatus", "Paid");
+        updates.put("paymentMethod", selectedPaymentMethod);
+        updates.put("paymentTimestamp", currentTime);
+
+        db.collection("Bookings").document(bookingDocId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> {
+
+                    increaseRoomOccupancy();
+
+                    Toast.makeText(this, "Payment successful!", Toast.LENGTH_LONG).show();
+
+                    showNotification();
+
+                    Intent intent = new Intent(this, ReceiptActivity.class);
+                    intent.putExtra("BOOKING_DOC_ID", bookingDocId);
+                    intent.putExtra("ROOM_ID", roomId);
+                    intent.putExtra("ROOM_TYPE", roomType);
+                    intent.putExtra("ROOM_PRICE", roomPrice);
+
+                    startActivity(intent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to update booking: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void increaseRoomOccupancy() {
+        // 如果 roomId 是房间编号而不是文档 ID
+        db.collection("Rooms")
+                .whereEqualTo("roomId", roomId)  // 通过字段查询
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (!query.isEmpty()) {
+                        String docId = query.getDocuments().get(0).getId();
+                        db.collection("Rooms").document(docId)
+                                .update("currentOccupancy", FieldValue.increment(1));
+                    }
+                });
+    }
+
+    private void showNotification() {
+
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this, CHANNEL_ID)
+                        .setSmallIcon(android.R.drawable.ic_dialog_info)
+                        .setContentTitle("Payment Successful")
+                        .setContentText("Your payment is completed")
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setAutoCancel(true);
+
+        NotificationManager nm =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        nm.notify(1001, builder.build());
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Payment",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            nm.createNotificationChannel(channel);
+        }
+    }
+
+    private void setupPaymentMethodToggle() {
+        paymentMethodGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radioCard) {
+                selectedPaymentMethod = "Credit/Debit Card";
+            }
+        });
+    }
+
+    private void initViews() {
+        ivBack = findViewById(R.id.ivBack);
         tvRoomName = findViewById(R.id.tvRoomName);
         tvRoomNumber = findViewById(R.id.tvRoomNumber);
-        tvDuration = findViewById(R.id.tvDuration);
         tvTotalAmount = findViewById(R.id.tvTotalAmount);
 
-        // Payment Method
         paymentMethodGroup = findViewById(R.id.paymentMethodGroup);
         radioCard = findViewById(R.id.radioCard);
         radioFPX = findViewById(R.id.radioFPX);
         radioEWallet = findViewById(R.id.radioEWallet);
         radioQR = findViewById(R.id.radioQR);
 
-        // Card Details
-        cardDetailsSection = findViewById(R.id.cardDetailsSection);
-        etCardNumber = findViewById(R.id.etCardNumber);
-        etExpiryDate = findViewById(R.id.etExpiryDate);
-        etCVV = findViewById(R.id.etCVV);
-        etCardHolderName = findViewById(R.id.etCardHolderName);
-
-        // FPX
-        fpxSection = findViewById(R.id.fpxSection);
-        spinnerBank = findViewById(R.id.spinnerBank);
-
-        // E-Wallet
-        ewalletSection = findViewById(R.id.ewalletSection);
-        btnTouchNGo = findViewById(R.id.btnTouchNGo);
-        tvSelectedWallet = findViewById(R.id.tvSelectedWallet);
-
-        // QR
-        qrSection = findViewById(R.id.qrSection);
-
-        // Pay Button
         btnPayNow = findViewById(R.id.btnPayNow);
     }
 
     private void getIntentData() {
         Intent intent = getIntent();
-        if (intent != null) {
-            bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
-            roomId = intent.getStringExtra("ROOM_ID");
-            roomType = intent.getStringExtra("ROOM_TYPE");
-            roomPrice = intent.getStringExtra("ROOM_PRICE");
-            studentName = intent.getStringExtra("STUDENT_NAME");
-            matricNumber = intent.getStringExtra("MATRIC_NUMBER");
-            phoneNumber = intent.getStringExtra("PHONE_NUMBER");
-            checkInDate = intent.getStringExtra("CHECK_IN_DATE");
-            leaseDuration = intent.getStringExtra("LEASE_DURATION");
 
-            // Display order summary
-            tvRoomName.setText(roomType != null ? roomType : "N/A");
-            tvRoomNumber.setText(roomId != null ? roomId : "N/A");
-            tvDuration.setText(leaseDuration != null ? leaseDuration : "1 Semester");
-            tvTotalAmount.setText(roomPrice != null ? roomPrice : "RM 0");
-        }
-    }
+        bookingDocId = intent.getStringExtra("BOOKING_DOC_ID");
+        roomId = intent.getStringExtra("ROOM_ID");
+        roomType = intent.getStringExtra("ROOM_TYPE");
+        roomPrice = intent.getStringExtra("ROOM_PRICE");
 
-    private void setupPaymentMethodToggle() {
-        paymentMethodGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            // Hide all sections first
-            cardDetailsSection.setVisibility(View.GONE);
-            fpxSection.setVisibility(View.GONE);
-            ewalletSection.setVisibility(View.GONE);
-            qrSection.setVisibility(View.GONE);
-
-            if (checkedId == R.id.radioCard) {
-                selectedPaymentMethod = "Credit/Debit Card";
-                cardDetailsSection.setVisibility(View.VISIBLE);
-            } else if (checkedId == R.id.radioFPX) {
-                selectedPaymentMethod = "FPX (Online Banking)";
-                fpxSection.setVisibility(View.VISIBLE);
-            } else if (checkedId == R.id.radioEWallet) {
-                selectedPaymentMethod = "E-Wallet";
-                ewalletSection.setVisibility(View.VISIBLE);
-            } else if (checkedId == R.id.radioQR) {
-                selectedPaymentMethod = "QR Code (DuitNow)";
-                qrSection.setVisibility(View.VISIBLE);
-            }
-        });
-    }
-
-    private void setupWalletSelection() {
-        btnTouchNGo.setOnClickListener(v -> {
-            selectedWallet = "Touch 'n Go";
-            tvSelectedWallet.setText("Selected: Touch 'n Go");
-            tvSelectedWallet.setVisibility(View.VISIBLE);
-        });
-    }
-
-    private void setupClickListeners() {
-        ivBack.setOnClickListener(v -> finish());
-
-        btnPayNow.setOnClickListener(v -> processPayment());
-    }
-
-    private void processPayment() {
-        // Validate payment method selection
-        if (selectedPaymentMethod.isEmpty()) {
-            Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Validate based on selected method
-        if (selectedPaymentMethod.equals("Credit/Debit Card")) {
-            if (!validateCardDetails()) {
-                return;
-            }
-        } else if (selectedPaymentMethod.equals("E-Wallet") && selectedWallet.isEmpty()) {
-            Toast.makeText(this, "Please select an e-wallet", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 模拟支付
-        simulatePayment();
-    }
-
-    /**
-     * 模拟支付功能
-     */
-    private void simulatePayment() {
-        // 创建模拟支付对话框
-        AlertDialog paymentDialog = new AlertDialog.Builder(this)
-                .setTitle("Processing Payment")
-                .setMessage("Please wait while we process your payment...")
-                .setCancelable(false)
-                .create();
-        paymentDialog.show();
-
-        // 模拟网络延迟（2秒）
-        new Handler().postDelayed(() -> {
-            paymentDialog.dismiss();
-
-            // 随机生成支付结果（80%成功，20%失败）
-            boolean isSuccess = Math.random() < 0.8;
-
-            if (isSuccess) {
-                // 支付成功
-                updateBookingStatus(true);
-            } else {
-                // 支付失败
-                showPaymentFailedDialog();
-            }
-        }, 2000);
-    }
-
-    /**
-     * 显示支付失败对话框
-     */
-    private void showPaymentFailedDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Payment Failed")
-                .setMessage("Your payment could not be processed. Please try again or use another payment method.")
-                .setPositiveButton("Try Again", (dialog, which) -> {
-                    // 重试
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                .show();
-    }
-
-    /**
-     * 创建通知渠道（Android 8.0+ 必需）
-     */
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Payment Notifications",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Payment success notifications");
-            channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 500, 200, 500});
-
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
-        }
-    }
-
-    /**
-     * 显示支付成功通知（普通弹窗，不跳转）
-     */
-    private void showPaymentSuccessNotification() {
-        // 创建空的 PendingIntent（点击通知不跳转，只是关闭通知）
-        Intent emptyIntent = new Intent();
-        emptyIntent.setAction(Intent.ACTION_MAIN);
-        emptyIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                0,
-                emptyIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // 构建通知
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("✅ Payment Successful")
-                .setContentText("Your payment for " + roomType + " has been processed successfully.")
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("Your payment for " + roomType + " (Room: " + roomId + ") has been processed successfully. Amount: " + roomPrice))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .setVibrate(new long[]{0, 500, 200, 500});
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager != null) {
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-        }
-    }
-
-    private boolean validateCardDetails() {
-        String cardNumber = etCardNumber.getText().toString().trim();
-        String expiryDate = etExpiryDate.getText().toString().trim();
-        String cvv = etCVV.getText().toString().trim();
-        String cardHolderName = etCardHolderName.getText().toString().trim();
-
-        if (cardNumber.isEmpty()) {
-            etCardNumber.setError("Card number required");
-            return false;
-        }
-        if (cardNumber.length() < 16) {
-            etCardNumber.setError("Valid card number required (16 digits)");
-            return false;
-        }
-        if (expiryDate.isEmpty()) {
-            etExpiryDate.setError("Expiry date required");
-            return false;
-        }
-        if (!expiryDate.matches("\\d{2}/\\d{2}")) {
-            etExpiryDate.setError("Valid expiry date (MM/YY) required");
-            return false;
-        }
-        if (cvv.isEmpty()) {
-            etCVV.setError("CVV required");
-            return false;
-        }
-        if (cvv.length() < 3) {
-            etCVV.setError("Valid CVV required (3-4 digits)");
-            return false;
-        }
-        if (cardHolderName.isEmpty()) {
-            etCardHolderName.setError("Cardholder name required");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * FIXED: 更新房间的当前入住人数 +1
-     * 使用 roomId 字段查询，而不是直接使用文档 ID
-     */
-    private void updateRoomOccupancy() {
-        if (roomId == null || roomId.isEmpty()) {
-            Log.e(TAG, "Cannot update occupancy: roomId is null or empty");
-            return;
-        }
-
-        // 通过 roomId 字段查询房间文档
-        db.collection("Rooms")
-                .whereEqualTo("roomId", roomId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        // 获取第一个匹配的文档
-                        DocumentSnapshot roomDoc = queryDocumentSnapshots.getDocuments().get(0);
-                        String documentId = roomDoc.getId();  // 获取实际的文档 ID
-
-                        Integer currentOccupancy = roomDoc.getLong("currentOccupancy") != null
-                                ? roomDoc.getLong("currentOccupancy").intValue() : 0;
-                        Integer maxCapacity = roomDoc.getLong("maxCapacity") != null
-                                ? roomDoc.getLong("maxCapacity").intValue() : 1;
-
-                        int newOccupancy = currentOccupancy + 1;
-
-                        // 确保不超过最大容量
-                        if (newOccupancy <= maxCapacity) {
-                            Map<String, Object> updates = new HashMap<>();
-                            updates.put("currentOccupancy", newOccupancy);
-
-                            // 使用实际的文档 ID 进行更新
-                            db.collection("Rooms").document(documentId)
-                                    .update(updates)
-                                    .addOnSuccessListener(aVoid -> {
-                                        Log.d(TAG, "Room occupancy updated from " + currentOccupancy + " to " + newOccupancy);
-                                        Toast.makeText(PaymentActivity.this, "Room occupancy updated", Toast.LENGTH_SHORT).show();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e(TAG, "Failed to update occupancy: " + e.getMessage());
-                                        Toast.makeText(PaymentActivity.this, "Failed to update occupancy: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    });
-                        } else {
-                            Log.w(TAG, "Cannot update occupancy: Room is full. Current: " + currentOccupancy + ", Max: " + maxCapacity);
-                            Toast.makeText(PaymentActivity.this, "Room is already at maximum capacity", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Log.e(TAG, "Room not found for roomId: " + roomId);
-                        Toast.makeText(PaymentActivity.this, "Room not found: " + roomId, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error finding room: " + e.getMessage());
-                    Toast.makeText(PaymentActivity.this, "Error finding room: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void updateBookingStatus(boolean isSuccess) {
-        if (bookingDocId == null || bookingDocId.isEmpty()) {
-            Toast.makeText(this, "Error: Booking ID not found", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        long currentTime = System.currentTimeMillis();
-
-        // Parse the total amount
-        double amountPaid = 0;
-        String amountText = tvTotalAmount.getText().toString().replace("RM ", "").trim();
-        try {
-            amountPaid = Double.parseDouble(amountText);
-        } catch (NumberFormatException e) {
-            amountPaid = 0;
-        }
-
-        final double finalAmountPaid = amountPaid;
-        final String finalPaymentMethod = selectedPaymentMethod;
-
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("bookingStatus", "Paid");
-        updates.put("paymentMethod", selectedPaymentMethod);
-        updates.put("paymentTimestamp", currentTime);
-        updates.put("amountPaid", amountPaid);
-
-        db.collection("Bookings").document(bookingDocId)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    // 显示成功 Toast
-                    Toast.makeText(PaymentActivity.this, "Payment successful!", Toast.LENGTH_LONG).show();
-
-                    // 更新房间入住人数 +1 (现在使用 roomId 字段查询)
-                    updateRoomOccupancy();
-
-                    // 显示系统通知（不跳转）
-                    showPaymentSuccessNotification();
-
-                    // 直接跳转到 Receipt 页面
-                    Intent intent = new Intent(PaymentActivity.this, ReceiptActivity.class);
-                    intent.putExtra("BOOKING_DOC_ID", bookingDocId);
-                    intent.putExtra("ROOM_ID", roomId);
-                    intent.putExtra("ROOM_TYPE", roomType);
-                    intent.putExtra("ROOM_PRICE", roomPrice);
-                    intent.putExtra("STUDENT_NAME", studentName);
-                    intent.putExtra("MATRIC_NUMBER", matricNumber);
-                    intent.putExtra("PHONE_NUMBER", phoneNumber);
-                    intent.putExtra("CHECK_IN_DATE", checkInDate);
-                    intent.putExtra("LEASE_DURATION", leaseDuration);
-                    intent.putExtra("PAYMENT_METHOD", finalPaymentMethod);
-                    intent.putExtra("AMOUNT_PAID", finalAmountPaid);
-                    intent.putExtra("PAYMENT_TIMESTAMP", currentTime);
-                    startActivity(intent);
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(PaymentActivity.this, "Payment failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Ensure status bar stays white when activity resumes
-        setupStatusBar();
+        tvRoomName.setText(roomType);
+        tvRoomNumber.setText(roomId);
+        tvTotalAmount.setText(roomPrice);
     }
 }

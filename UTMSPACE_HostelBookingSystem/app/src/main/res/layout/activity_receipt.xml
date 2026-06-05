@@ -265,65 +265,7 @@
                     android:background="#EEDDD5"
                     android:layout_marginVertical="12dp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Subtotal"
-                        android:textSize="13sp"
-                        android:textColor="#AA7A6C"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:id="@+id/tvSubtotal"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="RM 1500.00"
-                        android:textSize="13sp"
-                        android:textColor="#3C2A24"
-                        android:fontFamily="sans-serif" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Service Charge (6%)"
-                        android:textSize="13sp"
-                        android:textColor="#AA7A6C"
-                        android:fontFamily="sans-serif" />
-
-                    <TextView
-                        android:id="@+id/tvServiceCharge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="RM 90.00"
-                        android:textSize="13sp"
-                        android:textColor="#3C2A24"
-                        android:fontFamily="sans-serif" />
-
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#EEDDD5"
-                    android:layout_marginVertical="12dp" />
+                <!-- 移除了 Subtotal 和 Service Charge 部分，直接显示 Total Amount -->
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -346,7 +288,7 @@
                         android:id="@+id/tvTotalAmount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RM 1590.00"
+                        android:text="RM 1500.00"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="#800000"
