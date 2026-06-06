@@ -25,6 +25,7 @@ public class AdminEditRoomActivity extends AppCompatActivity {
     private LinearLayout ivBack;
     private LinearLayout btnSave;
     private LinearLayout btnDeleteRoom;
+    private LinearLayout dangerZoneLayout;
 
     private TextInputEditText etRoomNumber;
     private TextInputEditText etRoomType;
@@ -89,6 +90,7 @@ public class AdminEditRoomActivity extends AppCompatActivity {
         etStatus = findViewById(R.id.etStatus);
         etMaxCapacity = findViewById(R.id.etMaxCapacity);
         etCurrentOccupancy = findViewById(R.id.etCurrentOccupancy);
+        dangerZoneLayout = findViewById(R.id.dangerZoneLayout);
     }
 
     private void getIntentData() {
@@ -140,15 +142,23 @@ public class AdminEditRoomActivity extends AppCompatActivity {
 
     private void setupEditMode() {
         if (isViewOnly) {
-            // View only mode - disable all fields and hide buttons
+            // View only mode - disable all fields and hide danger zone
             enableFields(false);
             btnSave.setVisibility(View.GONE);
-            btnDeleteRoom.setVisibility(View.GONE);
+
+            // 隐藏整个 Danger Zone 区域
+            if (dangerZoneLayout != null) {
+                dangerZoneLayout.setVisibility(View.GONE);
+            }
         } else {
-            // Edit mode - enable fields and show buttons
+            // Edit mode - enable fields and show danger zone
             enableFields(true);
             btnSave.setVisibility(View.VISIBLE);
-            btnDeleteRoom.setVisibility(View.VISIBLE);
+
+            // 显示整个 Danger Zone 区域
+            if (dangerZoneLayout != null) {
+                dangerZoneLayout.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -280,18 +290,17 @@ public class AdminEditRoomActivity extends AppCompatActivity {
                 });
     }
 
-    private void updateRelatedCollections(final String roomId, final String roomType, final double price, final String status) {
+    private void updateRelatedCollections(final String roomNumber, final String roomType, final double price, final String status) {
         final int[] pendingUpdates = {2};
         final boolean[] hasError = {false};
 
-        // Update Bookings collection
+        // Update Bookings collection - 使用 roomNumber (即 "A-101")
         db.collection("Bookings")
-                .whereEqualTo("roomId", roomDocId)
+                .whereEqualTo("roomId", roomNumber)  // 改成 roomNumber
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Map<String, Object> bookingUpdates = new HashMap<>();
-                        bookingUpdates.put("roomId", roomId);
                         bookingUpdates.put("roomType", roomType);
                         bookingUpdates.put("price", price);
                         document.getReference().update(bookingUpdates);
@@ -303,14 +312,13 @@ public class AdminEditRoomActivity extends AppCompatActivity {
                     checkAndFinish(pendingUpdates, hasError);
                 });
 
-        // Update RepairRequests collection
+        // Update RepairRequests collection - 使用 roomNumber
         db.collection("RepairRequests")
-                .whereEqualTo("roomId", roomDocId)
+                .whereEqualTo("roomId", roomNumber)  // 改成 roomNumber
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Map<String, Object> repairUpdates = new HashMap<>();
-                        repairUpdates.put("roomId", roomId);
                         repairUpdates.put("roomType", roomType);
                         document.getReference().update(repairUpdates);
                     }
@@ -426,15 +434,18 @@ public class AdminEditRoomActivity extends AppCompatActivity {
         final int[] pendingDeletions = {3};
         final boolean[] hasError = {false};
 
-        // Update Bookings
+        final String roomNumber = etRoomNumber.getText().toString().trim();
+
+        // Update Bookings - 使用 roomNumber
         db.collection("Bookings")
-                .whereEqualTo("roomId", roomDocId)
+                .whereEqualTo("roomId", roomNumber)  // 改成 roomNumber
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Map<String, Object> updates = new HashMap<>();
                         updates.put("roomStatus", "Deleted");
                         updates.put("roomId", "N/A");
+                        updates.put("roomType", "Deleted Room");
                         document.getReference().update(updates);
                     }
                     checkAndFinishDeletion(pendingDeletions, hasError);
@@ -444,9 +455,9 @@ public class AdminEditRoomActivity extends AppCompatActivity {
                     checkAndFinishDeletion(pendingDeletions, hasError);
                 });
 
-        // Update RepairRequests
+        // Update RepairRequests - 使用 roomNumber
         db.collection("RepairRequests")
-                .whereEqualTo("roomId", roomDocId)
+                .whereEqualTo("roomId", roomNumber)  // 改成 roomNumber
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {

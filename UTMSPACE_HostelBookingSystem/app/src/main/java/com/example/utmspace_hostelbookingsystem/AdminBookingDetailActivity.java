@@ -1,5 +1,6 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -7,15 +8,19 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
 public class AdminBookingDetailActivity extends AppCompatActivity {
 
@@ -50,8 +55,15 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
     private LinearLayout rejectionSection;
     private TextView tvRejectionReason;
 
+    // Danger Zone
+    private LinearLayout dangerZone;
+    private LinearLayout btnDeleteRequest;
+
+    // Firebase
     private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
     private String bookingId;
+    private String roomId;  // 保存房间ID，用于更新 occupancy
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,10 +74,12 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
         setupStatusBar();
 
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
         initViews();
         getIntentData();
         setupClickListeners();
+        checkUserRoleAndShowDeleteButton();
     }
 
     /**
@@ -117,6 +131,10 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
         // Rejection Reason
         rejectionSection = findViewById(R.id.rejectionSection);
         tvRejectionReason = findViewById(R.id.tvRejectionReason);
+
+        // Danger Zone
+        dangerZone = findViewById(R.id.dangerZone);
+        btnDeleteRequest = findViewById(R.id.btnDeleteRequest);
     }
 
     private void getIntentData() {
@@ -126,6 +144,9 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
             bookingId = intent.getStringExtra("BOOKING_ID");
             if (bookingId == null) {
                 bookingId = intent.getStringExtra("BOOKING_DOC_ID");
+            }
+            if (bookingId == null) {
+                bookingId = intent.getStringExtra("documentId");
             }
             tvBookingId.setText("#" + (bookingId != null ?
                     (bookingId.length() > 8 ? bookingId.substring(0, 8) : bookingId) : "N/A"));
@@ -156,7 +177,6 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
             tvPhone.setText(phone != null && !phone.isEmpty() ? phone : "N/A");
 
             // Email - 从 ManagementActivity 没有传递 email，需要从其他地方获取或显示 N/A
-            // 如果 UserManagementActivity 有传递 email，可以在这里获取
             String email = intent.getStringExtra("EMAIL");
             if (email == null) email = intent.getStringExtra("email");
             tvEmail.setText(email != null && !email.isEmpty() ? email : "N/A");
@@ -167,7 +187,7 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
             tvProgramme.setText(programme != null && !programme.isEmpty() ? programme : "N/A");
 
             // Room Information
-            String roomId = intent.getStringExtra("ROOM_ID");
+            roomId = intent.getStringExtra("ROOM_ID");
             if (roomId == null) roomId = intent.getStringExtra("roomId");
             tvRoomNumber.setText(roomId != null && !roomId.isEmpty() ? roomId : "N/A");
 
@@ -240,6 +260,37 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 检查当前用户角色，决定是否显示删除按钮
+     */
+    private void checkUserRoleAndShowDeleteButton() {
+        String currentUid = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+        if (currentUid == null) {
+            if (dangerZone != null) {
+                dangerZone.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        db.collection("Users").document(currentUid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String role = documentSnapshot.getString("role");
+                        if ("Admin".equalsIgnoreCase(role) && dangerZone != null) {
+                            dangerZone.setVisibility(View.VISIBLE);
+                        } else {
+                            dangerZone.setVisibility(View.GONE);
+                        }
+                    } else {
+                        dangerZone.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    dangerZone.setVisibility(View.GONE);
+                });
+    }
+
     private void displayStatus(String status) {
         if (status == null) {
             status = "Pending";
@@ -290,6 +341,141 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         ivBack.setOnClickListener(v -> finish());
+
+        if (btnDeleteRequest != null) {
+            btnDeleteRequest.setOnClickListener(v -> showDeleteConfirmation());
+        }
+    }
+
+    /**
+     * 显示删除确认对话框
+     */
+    private void showDeleteConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Booking")
+                .setMessage("Are you sure you want to delete this booking? This action cannot be undone.\n\nNote: This will also update the room occupancy if the booking was approved.")
+                .setPositiveButton("Yes, Delete", (dialog, which) -> deleteBooking())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * 删除预订
+     */
+    private void deleteBooking() {
+        if (bookingId == null || bookingId.isEmpty()) {
+            Toast.makeText(this, "Booking ID not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // 禁用删除按钮，防止重复点击
+        if (btnDeleteRequest != null) {
+            btnDeleteRequest.setEnabled(false);
+            btnDeleteRequest.setAlpha(0.5f);
+        }
+
+        // 先获取预订的状态，如果是 Approved 或 Paid，需要更新房间 occupancy
+        db.collection("Bookings").document(bookingId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String status = documentSnapshot.getString("bookingStatus");
+                        String roomIdFromBooking = documentSnapshot.getString("roomId");
+
+                        // 删除预订文档
+                        db.collection("Bookings").document(bookingId)
+                                .delete()
+                                .addOnSuccessListener(aVoid -> {
+                                    // 如果是 Approved 或 Paid 状态，减少房间 occupancy
+                                    if (("Approved".equalsIgnoreCase(status) || "Paid".equalsIgnoreCase(status))
+                                            && roomIdFromBooking != null && !roomIdFromBooking.isEmpty()) {
+                                        updateRoomOccupancy(roomIdFromBooking, false);
+                                    } else {
+                                        Toast.makeText(this, "Booking deleted successfully", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                    if (btnDeleteRequest != null) {
+                                        btnDeleteRequest.setEnabled(true);
+                                        btnDeleteRequest.setAlpha(1f);
+                                    }
+                                });
+                    } else {
+                        // 文档不存在，直接完成
+                        Toast.makeText(this, "Booking deleted successfully", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to check booking: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    if (btnDeleteRequest != null) {
+                        btnDeleteRequest.setEnabled(true);
+                        btnDeleteRequest.setAlpha(1f);
+                    }
+                });
+    }
+
+    /**
+     * 更新房间 occupancy
+     * @param roomId 房间ID
+     * @param isIncrement true=增加 occupancy, false=减少 occupancy
+     */
+    private void updateRoomOccupancy(String roomId, boolean isIncrement) {
+        db.collection("Rooms")
+                .whereEqualTo("roomId", roomId)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        String roomDocId = queryDocumentSnapshots.getDocuments().get(0).getId();
+                        db.collection("Rooms").document(roomDocId)
+                                .get()
+                                .addOnSuccessListener(documentSnapshot -> {
+                                    int currentOccupancy = documentSnapshot.getLong("currentOccupancy") != null ?
+                                            documentSnapshot.getLong("currentOccupancy").intValue() : 0;
+                                    int maxCapacity = documentSnapshot.getLong("maxCapacity") != null ?
+                                            documentSnapshot.getLong("maxCapacity").intValue() : 1;
+
+                                    int newOccupancy = isIncrement ? currentOccupancy + 1 : Math.max(0, currentOccupancy - 1);
+
+                                    Map<String, Object> updates = new java.util.HashMap<>();
+                                    updates.put("currentOccupancy", newOccupancy);
+
+                                    // 更新房间状态
+                                    if (newOccupancy <= 0) {
+                                        updates.put("status", "Available");
+                                    } else if (newOccupancy >= maxCapacity) {
+                                        updates.put("status", "Full");
+                                    } else {
+                                        updates.put("status", "Available");
+                                    }
+
+                                    db.collection("Rooms").document(roomDocId)
+                                            .update(updates)
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(this, "Booking deleted and room occupancy updated", Toast.LENGTH_SHORT).show();
+                                                finish();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Toast.makeText(this, "Booking deleted but room occupancy not updated", Toast.LENGTH_SHORT).show();
+                                                finish();
+                                            });
+                                })
+                                .addOnFailureListener(e -> {
+                                    Toast.makeText(this, "Booking deleted", Toast.LENGTH_SHORT).show();
+                                    finish();
+                                });
+                    } else {
+                        Toast.makeText(this, "Booking deleted", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Booking deleted", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
     }
 
     @Override

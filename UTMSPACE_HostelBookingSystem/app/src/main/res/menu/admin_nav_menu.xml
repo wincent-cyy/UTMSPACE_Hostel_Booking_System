@@ -15,5 +15,5 @@
     <item
         android:id="@+id/nav_management"
         android:icon="@drawable/ic_nav_booking"
-        android:title="Management" />
+        android:title="Bookings" />
 </menu>

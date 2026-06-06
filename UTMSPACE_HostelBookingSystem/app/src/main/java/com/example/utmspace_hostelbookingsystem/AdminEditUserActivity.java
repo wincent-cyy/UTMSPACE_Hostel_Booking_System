@@ -10,6 +10,8 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -18,6 +20,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.functions.FirebaseFunctions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +52,8 @@ public class AdminEditUserActivity extends AppCompatActivity {
     private LinearLayout btnDeleteUser;
 
     private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+    private FirebaseFunctions functions;
     private String userId;
     private String userRole;
     private boolean isEditMode = false;
@@ -56,6 +61,8 @@ public class AdminEditUserActivity extends AppCompatActivity {
     private String originalEmail;
     private String originalPhone;
     private String originalRole;
+    private String currentAdminId;
+    private boolean isAdminUser = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,26 +70,23 @@ public class AdminEditUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_edit_user);
 
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-        // FIXED: Set white status bar without affecting layout
+        functions = FirebaseFunctions.getInstance();
+
         setupStatusBar();
 
         initViews();
         getIntentData();
         setupClickListeners();
+        checkCurrentUserRole();
         loadUserData();
         setEditMode(false);
     }
 
-    /**
-     * Setup status bar to be white with dark icons
-     */
     private void setupStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Only set status bar color to white
             getWindow().setStatusBarColor(Color.WHITE);
-
-            // Make status bar icons dark for visibility on white background
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 View decorView = getWindow().getDecorView();
                 int flags = decorView.getSystemUiVisibility();
@@ -120,7 +124,31 @@ public class AdminEditUserActivity extends AppCompatActivity {
             userId = intent.getStringExtra("USER_ID");
             userRole = intent.getStringExtra("USER_ROLE");
             tvTitle.setText("Edit User");
+
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser != null) {
+                currentAdminId = currentUser.getUid();
+            }
         }
+    }
+
+    private void checkCurrentUserRole() {
+        if (currentAdminId == null) {
+            isAdminUser = false;
+            return;
+        }
+
+        db.collection("Users").document(currentAdminId)
+                .get()
+                .addOnSuccessListener(adminDoc -> {
+                    if (adminDoc.exists()) {
+                        String adminRole = adminDoc.getString("role");
+                        isAdminUser = "Admin".equalsIgnoreCase(adminRole);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    isAdminUser = false;
+                });
     }
 
     private void setupClickListeners() {
@@ -142,10 +170,20 @@ public class AdminEditUserActivity extends AppCompatActivity {
             btnToggleEditText.setText("Cancel");
             btnSave.setVisibility(View.VISIBLE);
             enableFields(true);
+            updateDangerZoneVisibility();
         } else {
             btnToggleEditText.setText("Edit Mode");
             btnSave.setVisibility(View.GONE);
             enableFields(false);
+            dangerZone.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateDangerZoneVisibility() {
+        if (isEditMode && isAdminUser && currentAdminId != null && !userId.equals(currentAdminId)) {
+            dangerZone.setVisibility(View.VISIBLE);
+        } else {
+            dangerZone.setVisibility(View.GONE);
         }
     }
 
@@ -193,6 +231,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
                             tilId.setHint("Student ID");
                             tilProgramme.setHint("Programme");
                             tilSemester.setHint("Semester");
+                            tilSemester.setVisibility(View.VISIBLE);
 
                             String studentId = documentSnapshot.getString("studentId");
                             String programme = documentSnapshot.getString("programme");
@@ -205,6 +244,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
                             tilId.setHint("Staff ID");
                             tilProgramme.setHint("Department");
                             tilSemester.setHint("Year");
+                            tilSemester.setVisibility(View.VISIBLE);
 
                             String staffId = documentSnapshot.getString("staffId");
                             String department = documentSnapshot.getString("department");
@@ -233,10 +273,6 @@ public class AdminEditUserActivity extends AppCompatActivity {
 
                             etId.setText(adminId != null ? adminId : "");
                             etProgramme.setText(department != null ? department : "");
-                        }
-
-                        if ("Admin".equalsIgnoreCase(role)) {
-                            dangerZone.setVisibility(View.VISIBLE);
                         }
                     }
                 })
@@ -294,13 +330,22 @@ public class AdminEditUserActivity extends AppCompatActivity {
     }
 
     private void updateRelatedCollections(final String newName, final String newEmail, final String newPhone) {
-        final int[] pendingUpdates = {3};
+        // 只需要等待 Bookings 和 RepairRequests 完成，Notifications 不需要更新
+        final int[] pendingUpdates = {2};
         final boolean[] hasError = {false};
 
+        // 1. Update Bookings
         db.collection("Bookings")
                 .whereEqualTo("uid", userId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // 没有找到相关 Bookings，直接标记完成
+                        checkAndFinish(pendingUpdates, hasError);
+                        return;
+                    }
+
+                    // 批量更新所有 Bookings
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Map<String, Object> bookingUpdates = new HashMap<>();
                         bookingUpdates.put("name", newName);
@@ -315,10 +360,18 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     checkAndFinish(pendingUpdates, hasError);
                 });
 
+        // 2. Update RepairRequests
         db.collection("RepairRequests")
                 .whereEqualTo("uid", userId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        // 没有找到相关 RepairRequests，直接标记完成
+                        checkAndFinish(pendingUpdates, hasError);
+                        return;
+                    }
+
+                    // 批量更新所有 RepairRequests
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
                         Map<String, Object> repairUpdates = new HashMap<>();
                         repairUpdates.put("name", newName);
@@ -330,22 +383,14 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     hasError[0] = true;
                     checkAndFinish(pendingUpdates, hasError);
                 });
-
-        db.collection("Notifications")
-                .whereEqualTo("userId", userId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    checkAndFinish(pendingUpdates, hasError);
-                })
-                .addOnFailureListener(e -> {
-                    hasError[0] = true;
-                    checkAndFinish(pendingUpdates, hasError);
-                });
     }
 
     private void checkAndFinish(int[] pendingUpdates, boolean[] hasError) {
         pendingUpdates[0]--;
         if (pendingUpdates[0] == 0) {
+            btnSave.setEnabled(true);
+            btnSave.setAlpha(1f);
+
             if (hasError[0]) {
                 Toast.makeText(this, "User updated with some errors. Please check data consistency.", Toast.LENGTH_LONG).show();
             } else {
@@ -437,9 +482,10 @@ public class AdminEditUserActivity extends AppCompatActivity {
     }
 
     private void deleteUserRelatedData() {
-        final int[] pendingDeletions = {4};
+        final int[] pendingDeletions = {5};  // 5 个操作
         final boolean[] hasError = {false};
 
+        // 1. Delete Bookings
         db.collection("Bookings")
                 .whereEqualTo("uid", userId)
                 .get()
@@ -454,6 +500,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     checkAndFinishDeletion(pendingDeletions, hasError);
                 });
 
+        // 2. Delete RepairRequests
         db.collection("RepairRequests")
                 .whereEqualTo("uid", userId)
                 .get()
@@ -468,6 +515,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     checkAndFinishDeletion(pendingDeletions, hasError);
                 });
 
+        // 3. Delete Notifications
         db.collection("Notifications")
                 .whereEqualTo("userId", userId)
                 .get()
@@ -482,6 +530,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     checkAndFinishDeletion(pendingDeletions, hasError);
                 });
 
+        // 4. Delete User from Firestore (这个不能删！)
         db.collection("Users").document(userId)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
@@ -491,16 +540,38 @@ public class AdminEditUserActivity extends AppCompatActivity {
                     hasError[0] = true;
                     checkAndFinishDeletion(pendingDeletions, hasError);
                 });
+
+        // 5. Delete User from Authentication (调用云函数)
+        deleteUserFromAuth(pendingDeletions, hasError);
+    }
+
+    private void deleteUserFromAuth(int[] pendingDeletions, boolean[] hasError) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("uid", userId);
+
+        functions.getHttpsCallable("deleteUserByAdmin")
+                .call(data)
+                .addOnSuccessListener(result -> {
+                    Toast.makeText(this, "Authentication account deleted", Toast.LENGTH_SHORT).show();
+                    checkAndFinishDeletion(pendingDeletions, hasError);
+                })
+                .addOnFailureListener(e -> {
+                    hasError[0] = true;
+                    Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    checkAndFinishDeletion(pendingDeletions, hasError);
+                });
     }
 
     private void checkAndFinishDeletion(int[] pendingDeletions, boolean[] hasError) {
         pendingDeletions[0]--;
         if (pendingDeletions[0] == 0) {
             if (hasError[0]) {
-                Toast.makeText(this, "User data partially deleted. Please check Firebase Console.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "User data deleted. Please check Firebase Console.", Toast.LENGTH_LONG).show();
             } else {
-                Toast.makeText(this, "User deleted successfully!", Toast.LENGTH_LONG).show();
+                // 可选：显示一个短暂的提示或不显示
+                Toast.makeText(this, "User deleted", Toast.LENGTH_SHORT).show();
             }
+            // 直接返回上一页
             finish();
         }
     }
@@ -508,7 +579,6 @@ public class AdminEditUserActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Ensure status bar stays white when activity resumes
         setupStatusBar();
     }
 }

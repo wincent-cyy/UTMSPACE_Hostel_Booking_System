@@ -12,9 +12,12 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -49,17 +52,29 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
     private LinearLayout proofImageCard;
     private ImageView ivProofImage;
 
+    // Danger Zone
+    private LinearLayout dangerZone;
+    private LinearLayout btnDeleteRequest;
+
+    // Firebase
+    private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+    private String repairRequestId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_repair_detail);
 
-        // FIXED: Set white status bar without affecting layout
+        db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
+
         setupStatusBar();
 
         initViews();
         getIntentData();
         setupClickListeners();
+        checkUserRoleAndShowDeleteButton();
     }
 
     /**
@@ -67,10 +82,7 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
      */
     private void setupStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Only set status bar color to white
             getWindow().setStatusBarColor(Color.WHITE);
-
-            // Make status bar icons dark for visibility on white background
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 View decorView = getWindow().getDecorView();
                 int flags = decorView.getSystemUiVisibility();
@@ -107,23 +119,28 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
         // Completion Proof
         proofImageCard = findViewById(R.id.proofImageCard);
         ivProofImage = findViewById(R.id.ivProofImage);
+
+        // Danger Zone
+        dangerZone = findViewById(R.id.dangerZone);
+        btnDeleteRequest = findViewById(R.id.btnDeleteRequest);
     }
 
     private void getIntentData() {
         Intent intent = getIntent();
         if (intent != null) {
-            // Request ID
-            String requestId = intent.getStringExtra("REPAIR_ID");
-            if (requestId == null) {
-                requestId = intent.getStringExtra("REQUEST_ID");
+            // Request ID - 保存用于删除
+            repairRequestId = intent.getStringExtra("REPAIR_ID");
+            if (repairRequestId == null || repairRequestId.isEmpty()) {
+                repairRequestId = intent.getStringExtra("REQUEST_ID");
             }
-            if (requestId == null) {
-                requestId = intent.getStringExtra("documentId");
+            if (repairRequestId == null || repairRequestId.isEmpty()) {
+                repairRequestId = intent.getStringExtra("documentId");
             }
-            tvRequestId.setText("#" + (requestId != null ?
-                    (requestId.length() > 8 ? requestId.substring(0, 8) : requestId) : "N/A"));
 
-            // Status - Priority: STATUS > status
+            tvRequestId.setText("#" + (repairRequestId != null ?
+                    (repairRequestId.length() > 8 ? repairRequestId.substring(0, 8) : repairRequestId) : "N/A"));
+
+            // Status
             String status = intent.getStringExtra("STATUS");
             if (status == null || status.isEmpty()) {
                 status = intent.getStringExtra("status");
@@ -176,7 +193,6 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
             tvDescription.setText(description != null && !description.isEmpty() ? description : "No description provided");
 
             // Additional Information
-            // Reported By - Priority: STAFF_NAME > staffName > STUDENT_NAME > studentName > name
             String reportedBy = intent.getStringExtra("STAFF_NAME");
             if (reportedBy == null || reportedBy.isEmpty()) {
                 reportedBy = intent.getStringExtra("staffName");
@@ -204,7 +220,7 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
                 tvReportedDate.setText("N/A");
             }
 
-            // Preferred Time / Available Time
+            // Preferred Time
             String preferredTime = intent.getStringExtra("PREFERRED_TIME");
             if (preferredTime == null || preferredTime.isEmpty()) {
                 preferredTime = intent.getStringExtra("availableTime");
@@ -224,7 +240,7 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
             }
             tvContactPerson.setText(contactPerson != null && !contactPerson.isEmpty() ? contactPerson : "N/A");
 
-            // Completion Proof Photo (from staff/technician when completing repair)
+            // Completion Proof Photo
             String completionPhoto = intent.getStringExtra("COMPLETION_PHOTO");
             if (completionPhoto == null || completionPhoto.isEmpty()) {
                 completionPhoto = intent.getStringExtra("completionPhoto");
@@ -235,6 +251,39 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
                 proofImageCard.setVisibility(View.GONE);
             }
         }
+    }
+
+    /**
+     * 检查当前用户角色，决定是否显示删除按钮
+     */
+    private void checkUserRoleAndShowDeleteButton() {
+        if (mAuth.getCurrentUser() == null) {
+            if (dangerZone != null) {
+                dangerZone.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        String currentUid = mAuth.getCurrentUser().getUid();
+
+        db.collection("Users").document(currentUid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String role = documentSnapshot.getString("role");
+                        // 只有 Admin 才能看到删除按钮
+                        if ("Admin".equalsIgnoreCase(role) && dangerZone != null) {
+                            dangerZone.setVisibility(View.VISIBLE);
+                        } else {
+                            dangerZone.setVisibility(View.GONE);
+                        }
+                    } else {
+                        dangerZone.setVisibility(View.GONE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    dangerZone.setVisibility(View.GONE);
+                });
     }
 
     private void displayStatus(String status) {
@@ -301,7 +350,6 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
             ivProofImage.setImageBitmap(bitmap);
             proofImageCard.setVisibility(View.VISIBLE);
 
-            // Click to view full screen
             ivProofImage.setOnClickListener(v -> showFullScreenImage(bitmap));
         } catch (Exception e) {
             proofImageCard.setVisibility(View.GONE);
@@ -323,12 +371,60 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         ivBack.setOnClickListener(v -> finish());
+
+        // 只保留 Danger Zone 的删除按钮
+        if (btnDeleteRequest != null) {
+            btnDeleteRequest.setOnClickListener(v -> showDeleteConfirmation());
+        }
+    }
+
+    /**
+     * 显示删除确认对话框
+     */
+    private void showDeleteConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Repair Request")
+                .setMessage("Are you sure you want to delete this repair request? This action cannot be undone.")
+                .setPositiveButton("Yes, Delete", (dialog, which) -> deleteRepairRequest())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * 删除维修请求
+     */
+    private void deleteRepairRequest() {
+        if (repairRequestId == null || repairRequestId.isEmpty()) {
+            Toast.makeText(this, "Repair request ID not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // 禁用删除按钮，防止重复点击
+        if (btnDeleteRequest != null) {
+            btnDeleteRequest.setEnabled(false);
+            btnDeleteRequest.setAlpha(0.5f);
+        }
+
+        // 直接删除文档
+        db.collection("RepairRequests").document(repairRequestId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Repair request deleted successfully", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    if (btnDeleteRequest != null) {
+                        btnDeleteRequest.setEnabled(true);
+                        btnDeleteRequest.setAlpha(1f);
+                    }
+                });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Ensure status bar stays white when activity resumes
         setupStatusBar();
     }
 }

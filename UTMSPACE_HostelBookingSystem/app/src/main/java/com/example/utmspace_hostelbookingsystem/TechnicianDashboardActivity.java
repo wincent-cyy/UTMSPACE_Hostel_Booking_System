@@ -53,7 +53,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
     private TextView tvPendingRepairs, tvInProgress, tvCompleted, tvTotalRepairs;
     private LinearLayout recentRepairsContainer;
     private BottomNavigationView bottomNavigation;
-    private CardView btnViewRepairs;
     private SwipeRefreshLayout swipeRefreshLayout;
     private ScrollView mainScrollView;  // ADDED: Reference to main ScrollView
 
@@ -78,7 +77,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         initViews();
         setupSwipeRefresh();
         setupProfileClick();
-        setupClickListeners();
         setupBottomNavigation();
         loadTechnicianData();
         loadDashboardStats();
@@ -100,9 +98,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
 
         // Recent repairs container
         recentRepairsContainer = findViewById(R.id.recentRepairsContainer);
-
-        // Action buttons
-        btnViewRepairs = findViewById(R.id.btnViewRepairs);
 
         // Bottom navigation
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -474,16 +469,6 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         emptyText.setPadding(16, 24, 16, 24);
         emptyText.setGravity(android.view.Gravity.CENTER);
         recentRepairsContainer.addView(emptyText);
-    }
-
-    private void setupClickListeners() {
-        // View Repair Requests button
-        if (btnViewRepairs != null) {
-            btnViewRepairs.setOnClickListener(v -> {
-                Intent intent = new Intent(TechnicianDashboardActivity.this, TechnicianRepairRequestActivity.class);
-                startActivity(intent);
-            });
-        }
     }
 
     private void setupBottomNavigation() {

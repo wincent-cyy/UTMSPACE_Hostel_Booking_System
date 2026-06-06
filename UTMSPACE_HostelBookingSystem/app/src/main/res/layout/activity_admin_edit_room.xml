@@ -315,7 +315,7 @@
 
             <!-- Danger Zone Card -->
             <LinearLayout
-                android:id="@+id/dangerZone"
+                android:id="@+id/dangerZoneLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"

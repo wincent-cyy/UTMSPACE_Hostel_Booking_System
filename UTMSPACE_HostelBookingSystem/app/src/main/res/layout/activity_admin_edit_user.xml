@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F0EB"
-    android:fillViewport="true">   <!-- 添加这一行 -->
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -379,7 +379,7 @@
 
                 </LinearLayout>
 
-                <!-- Delete User Button -->
+                <!-- Delete User Button - Delete from Auth and Firestore -->
                 <LinearLayout
                     android:id="@+id/btnDeleteUser"
                     android:layout_width="match_parent"
