@@ -50,7 +50,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private LinearLayout profileAvatar;
     private BottomNavigationView bottomNavigationView;
     private EditText etSearchInput;
-    private ImageView ivSearchIcon, ivFilterIcon;
+    private ImageView ivSearchIcon;
     private TextView tvViewAll;
 
     // Swipe Refresh
@@ -78,6 +78,8 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private Handler bannerHandler = new Handler(Looper.getMainLooper());
     private Runnable bannerRunnable;
     private boolean isBannerScrolling = false;
+
+    private boolean isUserInteracting = false;
 
     // Firebase
     private FirebaseAuth mAuth;
@@ -140,7 +142,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
         // Search
         etSearchInput = findViewById(R.id.etSearchInput);
         ivSearchIcon = findViewById(R.id.ivSearchIcon);
-        ivFilterIcon = findViewById(R.id.ivFilterIcon);
 
         // Banner
         bannerScrollView = findViewById(R.id.bannerScrollView);
@@ -219,6 +220,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
             // Reset banner scroll position
             if (bannerScrollView != null && bannerRunnable != null) {
                 currentBannerIndex = 0;
+                isUserInteracting = false;  // ADD THIS
                 bannerScrollView.scrollTo(0, 0);
                 bannerHandler.removeCallbacks(bannerRunnable);
                 isBannerScrolling = false;
@@ -358,15 +360,42 @@ public class StudentDashboardActivity extends AppCompatActivity {
     private void setupAutoScrollBanner() {
         if (bannerScrollView == null) return;
 
+        // ADD THIS: Detect user touch on banner
+        bannerScrollView.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                case android.view.MotionEvent.ACTION_MOVE:
+                    // User is interacting - stop auto scroll
+                    isUserInteracting = true;
+                    bannerHandler.removeCallbacks(bannerRunnable);
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    // User released - resume auto scroll after delay
+                    isUserInteracting = false;
+                    bannerHandler.removeCallbacks(bannerRunnable);
+                    // Resume scrolling after 3 seconds of inactivity
+                    bannerHandler.postDelayed(bannerRunnable, 3000);
+                    break;
+            }
+            return false; // Allow scroll to continue
+        });
+
         bannerRunnable = new Runnable() {
             @Override
             public void run() {
-                if (bannerScrollView == null || isBannerScrolling) return;
+                // SKIP if user is interacting
+                if (bannerScrollView == null || isBannerScrolling || isUserInteracting) {
+                    if (!isUserInteracting) {
+                        bannerHandler.postDelayed(this, 1000);
+                    }
+                    return;
+                }
 
-                // 计算下一个索引
+                // Calculate next index
                 currentBannerIndex = (currentBannerIndex + 1) % bannerCount;
 
-                // 计算目标滚动位置
+                // Calculate target scroll position
                 int targetScrollX = currentBannerIndex * bannerItemWidth;
 
                 Log.d(TAG, "Scrolling to banner " + (currentBannerIndex + 1) +
@@ -375,15 +404,15 @@ public class StudentDashboardActivity extends AppCompatActivity {
                 isBannerScrolling = true;
                 bannerScrollView.smoothScrollTo(targetScrollX, 0);
 
-                // 重置滚动标志
+                // Reset scroll flag after animation completes
                 bannerHandler.postDelayed(() -> isBannerScrolling = false, 500);
 
-                // 每 4 秒重复
+                // Repeat every 4 seconds
                 bannerHandler.postDelayed(this, 4000);
             }
         };
 
-        // 2 秒后开始自动滚动
+        // Start after 2 seconds
         bannerHandler.postDelayed(bannerRunnable, 2000);
     }
 
@@ -576,11 +605,6 @@ public class StudentDashboardActivity extends AppCompatActivity {
             navigateToAllRooms();
         });
 
-        // Filter icon click
-        ivFilterIcon.setOnClickListener(v -> {
-            navigateToAllRooms();
-        });
-
         // Search input click
         etSearchInput.setFocusable(false);
         etSearchInput.setClickable(true);
@@ -635,6 +659,7 @@ public class StudentDashboardActivity extends AppCompatActivity {
 
         // 重置 Banner 索引和滚动
         currentBannerIndex = 0;
+        isUserInteracting = false;
         bannerScrollView.post(() -> {
             calculateBannerWidths();
             if (bannerRunnable != null) {

@@ -16,7 +16,6 @@
         android:paddingEnd="20dp"
         android:paddingBottom="36dp">
 
-        <!-- 其余内容保持不变 -->
         <!-- Brand Header -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -154,7 +153,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Password Input -->
+            <!-- Password Input with Eye Icon -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -198,6 +197,16 @@
                         android:textSize="14sp"
                         android:inputType="textPassword"
                         android:fontFamily="sans-serif" />
+
+                    <!-- Eye Icon for Password Toggle -->
+                    <ImageView
+                        android:id="@+id/loginTogglePassword"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_eye_close"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="#C96B5A" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -235,6 +244,37 @@
                     android:textColor="#B13E2E"
                     android:clickable="true"
                     android:focusable="true" />
+            </LinearLayout>
+
+            <!-- ADD THIS: Resend Verification Email Button -->
+            <LinearLayout
+                android:id="@+id/resendVerificationContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Didn't receive verification email? "
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#800000" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resend"
+                    android:textSize="12sp"
+                    android:textStyle="normal"
+                    android:textColor="#800000" />
+
             </LinearLayout>
 
             <!-- Login Button -->
@@ -282,7 +322,7 @@
                     android:background="#EEDAD2" />
             </LinearLayout>
 
-            <!-- Replace the original three icons -->
+            <!-- Quick access icons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -291,7 +331,6 @@
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="12dp">
 
-                <!-- 1. Dormitory Map -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -319,7 +358,6 @@
                         android:layout_marginTop="6dp" />
                 </LinearLayout>
 
-                <!-- 2. Emergency Contacts -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -508,7 +546,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Role Dropdown with arrow -->
+            <!-- Role Dropdown with clickable arrow -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -526,6 +564,7 @@
                     android:layout_marginBottom="4dp" />
 
                 <LinearLayout
+                    android:id="@+id/roleContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/input_field_background"
@@ -533,7 +572,9 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true">
 
                     <ImageView
                         android:layout_width="20dp"
@@ -551,14 +592,17 @@
                         android:spinnerMode="dropdown" />
 
                     <ImageView
+                        android:id="@+id/roleDropdownArrow"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        app:srcCompat="@android:drawable/arrow_down_float"
-                        app:tint="#C96B5A" />
+                        android:src="@android:drawable/arrow_down_float"
+                        app:tint="#C96B5A"
+                        android:clickable="true"
+                        android:focusable="true" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Password -->
+            <!-- Password with Eye Icon -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -600,10 +644,19 @@
                         android:hint="Minimum 7 characters"
                         android:textSize="14sp"
                         android:inputType="textPassword" />
+
+                    <ImageView
+                        android:id="@+id/signupTogglePassword"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_eye_close"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="#C96B5A" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Confirm Password -->
+            <!-- Confirm Password with Eye Icon -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -645,6 +698,15 @@
                         android:hint="Confirm your password"
                         android:textSize="14sp"
                         android:inputType="textPassword" />
+
+                    <ImageView
+                        android:id="@+id/signupToggleConfirmPwd"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_eye_close"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:tint="#C96B5A" />
                 </LinearLayout>
             </LinearLayout>
 

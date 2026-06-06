@@ -34,7 +34,6 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
     private TextInputEditText etMaxCapacity;
     private EditText etCurrentOccupancy;  // 改为可编辑的 EditText
     private LinearLayout btnSendRepairRequest;
-    private LinearLayout btnViewRepairHistory;
     private LinearLayout btnCancel;
     private LinearLayout btnSave;
 
@@ -94,7 +93,6 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
         etMaxCapacity = findViewById(R.id.etMaxCapacity);
         etCurrentOccupancy = findViewById(R.id.etCurrentOccupancy);
         btnSendRepairRequest = findViewById(R.id.btnSendRepairRequest);
-        btnViewRepairHistory = findViewById(R.id.btnViewRepairHistory);
         btnCancel = findViewById(R.id.btnCancel);
         btnSave = findViewById(R.id.btnSave);
 
@@ -243,15 +241,6 @@ public class StaffRoomDetailActivity extends AppCompatActivity {
                 String roomNumber = etRoomNumber != null ? etRoomNumber.getText().toString() : "";
                 Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairRequestActivity.class);
                 intent.putExtra("ROOM_ID", roomNumber);
-                intent.putExtra("ROOM_DOC_ID", roomDocId);
-                startActivity(intent);
-            });
-        }
-
-        // 查看维修历史
-        if (btnViewRepairHistory != null) {
-            btnViewRepairHistory.setOnClickListener(v -> {
-                Intent intent = new Intent(StaffRoomDetailActivity.this, StaffRepairTrackingActivity.class);
                 intent.putExtra("ROOM_DOC_ID", roomDocId);
                 startActivity(intent);
             });

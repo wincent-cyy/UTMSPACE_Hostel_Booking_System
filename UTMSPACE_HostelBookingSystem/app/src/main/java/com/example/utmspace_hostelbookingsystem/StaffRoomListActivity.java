@@ -377,6 +377,8 @@ public class StaffRoomListActivity extends AppCompatActivity {
     }
 
     private void setupSearchFunction() {
+        etSearchRoom.setHint("Search by room number or location (e.g., A-101, Block A)");
+
         etSearchRoom.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -435,12 +437,15 @@ public class StaffRoomListActivity extends AppCompatActivity {
                     break;
             }
 
-            // 2. Search filter - by room number only
+            // 2. Search filter - by room number OR location
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
                 String cleanQuery = currentSearchQuery.toLowerCase().trim();
                 String roomId = room.getRoomId() != null ? room.getRoomId().toLowerCase() : "";
-                matchesSearch = roomId.contains(cleanQuery);
+                String location = room.getLocation() != null ? room.getLocation().toLowerCase() : "";
+
+                // Check if search query matches either room number OR location
+                matchesSearch = roomId.contains(cleanQuery) || location.contains(cleanQuery);
             }
 
             if (matchesStatus && matchesSearch) {

@@ -228,13 +228,38 @@ public class ApplyActivity extends AppCompatActivity {
             setSelectedChip(1);
             selectedDuration = 1;
             updateTotalPrice();
+
+            autoUpdateCheckOutDate();
         });
 
         chip2Semester.setOnClickListener(v -> {
             setSelectedChip(2);
             selectedDuration = 2;
             updateTotalPrice();
+
+            autoUpdateCheckOutDate();
         });
+    }
+
+    /**
+     * Automatically update check-out date based on check-in date and selected duration
+     */
+    private void autoUpdateCheckOutDate() {
+        String checkInDate = etCheckInDate.getText().toString().trim();
+        if (!checkInDate.isEmpty()) {
+            String checkOutDate = calculateCheckOutDate(checkInDate, selectedDuration);
+            if (!checkOutDate.isEmpty()) {
+                String oldCheckOut = etCheckOutDate.getText().toString();
+                etCheckOutDate.setText(checkOutDate);
+
+                // Optional: Show toast notification
+                if (!checkOutDate.equals(oldCheckOut)) {
+                    Toast.makeText(this,
+                            "Check-out date updated to " + checkOutDate + " (" + selectedDuration + " semester)",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
     /**
@@ -346,6 +371,40 @@ public class ApplyActivity extends AppCompatActivity {
     }
 
     /**
+     * Calculate check-out date based on check-in date and duration (semesters)
+     * 1 semester = 6 months, 2 semesters = 12 months
+     */
+    private String calculateCheckOutDate(String checkInDate, int semesters) {
+        if (checkInDate == null || checkInDate.isEmpty()) return "";
+
+        try {
+            String[] parts = checkInDate.split("/");
+            int day = Integer.parseInt(parts[0]);
+            int month = Integer.parseInt(parts[1]) - 1; // Calendar month is 0-based
+            int year = Integer.parseInt(parts[2]);
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(year, month, day);
+
+            // Add months based on semesters (1 semester = 6 months)
+            int monthsToAdd = semesters * 6;
+            calendar.add(Calendar.MONTH, monthsToAdd);
+
+            // Subtract 1 day to get the last day of the period
+            calendar.add(Calendar.DAY_OF_MONTH, -1);
+
+            int newDay = calendar.get(Calendar.DAY_OF_MONTH);
+            int newMonth = calendar.get(Calendar.MONTH) + 1;
+            int newYear = calendar.get(Calendar.YEAR);
+
+            return String.format("%02d/%02d/%d", newDay, newMonth, newYear);
+        } catch (Exception e) {
+            Log.e("ApplyActivity", "Error calculating check-out date", e);
+            return "";
+        }
+    }
+
+    /**
      * 检查退房日期是否在入住日期之后
      */
     private boolean isCheckOutDateValid(String checkInDate, String checkOutDate) {
@@ -383,17 +442,25 @@ public class ApplyActivity extends AppCompatActivity {
                     String date = String.format("%02d/%02d/%d", selectedDay, selectedMonth + 1, selectedYear);
                     dateField.setText(date);
 
-                    // 如果是入住日期，检查并清除无效的退房日期
                     if (isCheckIn) {
+                        // MODIFY THIS PART - Auto fill check-out date based on duration
                         String currentCheckOut = etCheckOutDate.getText().toString();
-                        if (!currentCheckOut.isEmpty()) {
-                            if (!isCheckOutDateValid(date, currentCheckOut)) {
+                        String calculatedCheckOut = calculateCheckOutDate(date, selectedDuration);
+
+                        if (!calculatedCheckOut.isEmpty()) {
+                            etCheckOutDate.setText(calculatedCheckOut);
+                            Toast.makeText(this,
+                                    "Check-out date auto-set to " + calculatedCheckOut + " (" + selectedDuration + " semester)",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            // Fallback: clear if invalid
+                            if (!currentCheckOut.isEmpty() && !isCheckOutDateValid(date, currentCheckOut)) {
                                 etCheckOutDate.setText("");
                                 Toast.makeText(this, "Check-out date cannot be before check-in date. Please re-select check-out date.", Toast.LENGTH_LONG).show();
                             }
                         }
                     } else {
-                        // 如果是退房日期，检查是否在入住日期之后
+                        // For manual check-out date selection, validate it's after check-in
                         String currentCheckIn = etCheckInDate.getText().toString();
                         if (!currentCheckIn.isEmpty()) {
                             if (!isCheckOutDateValid(currentCheckIn, date)) {

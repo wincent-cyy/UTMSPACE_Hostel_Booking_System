@@ -350,27 +350,6 @@
 
                 </LinearLayout>
 
-                <!-- View Repair History Button -->
-                <LinearLayout
-                    android:id="@+id/btnViewRepairHistory"
-                    android:layout_width="match_parent"
-                    android:layout_height="52dp"
-                    android:background="@drawable/outline_button_background"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="View Repair History"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="#800000"
-                        android:fontFamily="sans-serif" />
-
-                </LinearLayout>
-
             </LinearLayout>
 
             <!-- Action Buttons -->

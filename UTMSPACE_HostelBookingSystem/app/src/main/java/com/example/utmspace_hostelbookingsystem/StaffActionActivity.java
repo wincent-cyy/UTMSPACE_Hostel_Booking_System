@@ -44,6 +44,7 @@ public class StaffActionActivity extends AppCompatActivity {
     private EditText etRejectionReason;
     private LinearLayout btnReject;
     private LinearLayout btnApprove;
+    private LinearLayout btnDelete;
 
     // Firebase
     private FirebaseFirestore db;
@@ -104,6 +105,7 @@ public class StaffActionActivity extends AppCompatActivity {
         etRejectionReason = findViewById(R.id.etRejectionReason);
         btnReject = findViewById(R.id.btnReject);
         btnApprove = findViewById(R.id.btnApprove);
+        btnDelete = findViewById(R.id.btnDelete);
     }
 
     private void getIntentData() {
@@ -213,12 +215,24 @@ public class StaffActionActivity extends AppCompatActivity {
 
     private void updateButtonVisibility(String status) {
         if ("Pending".equalsIgnoreCase(status)) {
+            // Pending: 显示 Approve 和 Reject 按钮
             btnApprove.setVisibility(View.VISIBLE);
             btnReject.setVisibility(View.VISIBLE);
+            btnDelete.setVisibility(View.GONE);
             rejectionSection.setVisibility(View.GONE);
-        } else {
+        } else if ("Approved".equalsIgnoreCase(status) ||
+                "Rejected".equalsIgnoreCase(status) ||
+                "Paid".equalsIgnoreCase(status)) {
+            // Approved, Rejected, Paid: 只显示 Delete 按钮
             btnApprove.setVisibility(View.GONE);
             btnReject.setVisibility(View.GONE);
+            btnDelete.setVisibility(View.VISIBLE);
+            rejectionSection.setVisibility(View.GONE);
+        } else {
+            // 其他状态：全部隐藏
+            btnApprove.setVisibility(View.GONE);
+            btnReject.setVisibility(View.GONE);
+            btnDelete.setVisibility(View.GONE);
             rejectionSection.setVisibility(View.GONE);
         }
     }
@@ -240,6 +254,11 @@ public class StaffActionActivity extends AppCompatActivity {
         // 注意：提交拒绝需要在 rejectionSection 中添加提交按钮
         // 如果 XML 中没有提交按钮，这里添加一个简单的确认方式
         setupRejectionSubmit();
+
+        // Delete 按钮
+        if (btnDelete != null) {
+            btnDelete.setOnClickListener(v -> showDeleteConfirmation());
+        }
     }
 
     private void setupRejectionSubmit() {
@@ -303,6 +322,74 @@ public class StaffActionActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void showDeleteConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Booking")
+                .setMessage("Are you sure you want to delete this booking? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    performDeleteBooking();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void performDeleteBooking() {
+        if (bookingId == null || bookingId.isEmpty()) {
+            Toast.makeText(this, "Booking ID not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 显示加载（可选）
+        btnDelete.setEnabled(false);
+
+        db.collection("Bookings").document(bookingId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Booking deleted successfully", Toast.LENGTH_SHORT).show();
+
+                    // 如果是 Approved 状态且房间已分配，需要更新房间 occupancy
+                    if ("Approved".equalsIgnoreCase(currentStatus) && roomId != null) {
+                        decreaseRoomOccupancy();
+                    }
+
+                    finish(); // 返回上一页
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnDelete.setEnabled(true);
+                });
+    }
+
+    /**
+     * 当删除已批准的预订时，减少房间 occupancy
+     */
+    private void decreaseRoomOccupancy() {
+        if (roomId == null) return;
+
+        db.collection("Rooms").document(roomId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Integer currentOccupancy = documentSnapshot.getLong("currentOccupancy") != null
+                                ? documentSnapshot.getLong("currentOccupancy").intValue() : 0;
+
+                        int newOccupancy = Math.max(0, currentOccupancy - 1);
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("currentOccupancy", newOccupancy);
+
+                        // 如果房间之前是 Full，现在更新回 Available
+                        if ("Full".equals(documentSnapshot.getString("status"))) {
+                            updates.put("status", "Available");
+                        }
+
+                        db.collection("Rooms").document(roomId).update(updates)
+                                .addOnSuccessListener(aVoid -> Log.d(TAG, "Room occupancy decreased to " + newOccupancy))
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to update room occupancy", e));
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to get room info", e));
     }
 
     private void updateBookingStatus(String newStatus, String rejectReason) {

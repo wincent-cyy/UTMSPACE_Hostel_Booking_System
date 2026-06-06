@@ -372,7 +372,7 @@ public class RoomDetailsActivity extends AppCompatActivity {
             } else if (lowerType.contains("double")) {
                 return "Spacious double room with 2 study desks, 2 beds, shared wardrobe, and air conditioning. Perfect for sharing.";
             } else if (lowerType.contains("quad")) {
-                return "Affordable quad room with 4 study desks, 4 beds, shared wardrobes, air conditioning, and balcony. Great for group living.";
+                return "Affordable quad room with 4 study desks, 4 beds, wardrobes,  and air conditioning. Great for group living.";
             }
         }
         return "Well-maintained room with essential amenities for comfortable student living.";

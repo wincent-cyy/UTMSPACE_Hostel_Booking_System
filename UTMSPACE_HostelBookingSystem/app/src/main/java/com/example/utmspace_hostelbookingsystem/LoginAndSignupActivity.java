@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -66,6 +67,7 @@ public class LoginAndSignupActivity extends AppCompatActivity {
     private static final String KEY_SAVED_EMAIL = "SavedEmail";
     private static final String KEY_SAVED_PASSWORD = "SavedPassword";
     private static final String KEY_REMEMBER_ME = "RememberMeChecked";
+    private String lastUnverifiedEmail = "";
 
     // UI Components
     private LinearLayout loginForm;
@@ -88,6 +90,16 @@ public class LoginAndSignupActivity extends AppCompatActivity {
     private EditText signupConfirmPwd;
     private CheckBox agreeTerms;
     private TextView openTermsPageBtn;
+    // Resend Verification
+    private TextView resendVerificationBtn;
+    // Password visibility toggles
+    private ImageView loginTogglePassword;
+    private ImageView signupTogglePassword;
+    private ImageView signupToggleConfirmPwd;
+
+    // Role dropdown clickable container
+    private LinearLayout roleContainer;
+    private ImageView roleDropdownArrow;
 
     // Buttons
     private Button doLoginBtn;
@@ -115,6 +127,7 @@ public class LoginAndSignupActivity extends AppCompatActivity {
     private Runnable timeoutRunnable;
     private boolean isProcessing = false;
     private boolean isAnimating = false;
+    private LinearLayout resendVerificationContainer;
 
     // Terms Launcher
     private ActivityResultLauncher<Intent> termsLauncher;
@@ -213,6 +226,16 @@ public class LoginAndSignupActivity extends AppCompatActivity {
         loginPassword = findViewById(R.id.loginPassword);
         rememberMe = findViewById(R.id.rememberMe);
         openForgotPageBtn = findViewById(R.id.openForgotPageBtn);
+
+        // Password toggle icons
+        loginTogglePassword = findViewById(R.id.loginTogglePassword);
+        signupTogglePassword = findViewById(R.id.signupTogglePassword);
+        signupToggleConfirmPwd = findViewById(R.id.signupToggleConfirmPwd);
+
+        // Role dropdown clickable elements
+        roleContainer = findViewById(R.id.roleContainer);
+        roleDropdownArrow = findViewById(R.id.roleDropdownArrow);
+        resendVerificationContainer = findViewById(R.id.resendVerificationContainer);
 
         // Signup fields
         signupName = findViewById(R.id.signupName);
@@ -384,6 +407,314 @@ public class LoginAndSignupActivity extends AppCompatActivity {
 
         // Contact Support Button - 发送邮件
         contactSupportBtn.setOnClickListener(v -> contactSupport());
+
+        // Setup password toggle functionality
+        setupPasswordToggle(loginPassword, loginTogglePassword);
+        setupPasswordToggle(signupPassword, signupTogglePassword);
+        setupPasswordToggle(signupConfirmPwd, signupToggleConfirmPwd);
+
+        // Setup role dropdown clickable (make arrow and container open spinner)
+        setupRoleDropdownClickable();
+
+        if (resendVerificationContainer != null) {
+            resendVerificationContainer.setOnClickListener(v -> resendVerificationEmail());
+        }
+    }
+
+    private void showResendVerificationButton(String email) {
+        lastUnverifiedEmail = email;
+        // 显示容器，而不是单独的 TextView
+        if (resendVerificationContainer != null) {
+            resendVerificationContainer.setVisibility(View.VISIBLE);
+        }
+        // 隐藏旧的单独按钮（如果存在）
+        if (resendVerificationBtn != null) {
+            resendVerificationBtn.setVisibility(View.GONE);
+        }
+    }
+
+    private void hideResendVerificationButton() {
+        if (resendVerificationContainer != null) {
+            resendVerificationContainer.setVisibility(View.GONE);
+        }
+        if (resendVerificationBtn != null) {
+            resendVerificationBtn.setVisibility(View.GONE);
+        }
+        lastUnverifiedEmail = "";
+    }
+
+    private void resendVerificationEmail() {
+        if (lastUnverifiedEmail == null || lastUnverifiedEmail.isEmpty()) {
+            Toast.makeText(this, "Please enter your email and try logging in first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 显示倒计时对话框
+        showResendConfirmationDialog();
+    }
+
+    private void showResendConfirmationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_resend_verification, null);
+        builder.setView(dialogView);
+
+        TextView tvEmail = dialogView.findViewById(R.id.tvResendEmail);
+        TextView tvCountdown = dialogView.findViewById(R.id.tvCountdown);
+        Button btnResend = dialogView.findViewById(R.id.btnResend);
+        Button btnChangeEmail = dialogView.findViewById(R.id.btnChangeEmail);
+
+        tvEmail.setText(lastUnverifiedEmail);
+
+        AlertDialog dialog = builder.create();
+        dialog.setCancelable(false);
+
+        // 倒计时逻辑
+        Handler countdownHandler = new Handler(Looper.getMainLooper());
+        int[] secondsLeft = {30}; // 30秒倒计时
+        boolean[] canResend = {false};
+
+        Runnable countdownRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (secondsLeft[0] > 0) {
+                    tvCountdown.setText("You can resend in " + secondsLeft[0] + " seconds");
+                    secondsLeft[0]--;
+                    countdownHandler.postDelayed(this, 1000);
+                } else {
+                    tvCountdown.setText("You can now resend the verification email");
+                    btnResend.setEnabled(true);
+                    btnResend.setAlpha(1.0f);
+                    canResend[0] = true;
+                }
+            }
+        };
+
+        // 初始状态：按钮禁用
+        btnResend.setEnabled(false);
+        btnResend.setAlpha(0.5f);
+        countdownHandler.post(countdownRunnable);
+
+        // Resend 按钮点击
+        btnResend.setOnClickListener(v -> {
+            if (!canResend[0]) {
+                Toast.makeText(this, "Please wait " + secondsLeft[0] + " seconds", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            performResendVerification(lastUnverifiedEmail, dialog);
+        });
+
+        // Change Email 按钮 - 允许用户更改邮箱
+        btnChangeEmail.setOnClickListener(v -> {
+            dialog.dismiss();
+            showChangeEmailDialog();
+        });
+
+        dialog.show();
+    }
+
+    private void performResendVerification(String email, AlertDialog dialog) {
+        ProgressDialog progress = new ProgressDialog(this);
+        progress.setMessage("Sending verification email...");
+        progress.setCancelable(false);
+        progress.show();
+
+        // 关键修复：先尝试登录（密码正确但未验证的用户）
+        // 注意：这里需要用户输入的密码，但我们已经有了 lastUnverifiedEmail
+        // 我们需要从 loginPassword 获取密码
+        String password = loginPassword.getText().toString().trim();
+
+        if (TextUtils.isEmpty(password)) {
+            progress.dismiss();
+            Toast.makeText(this, "Please enter your password first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null && !user.isEmailVerified()) {
+                            // 用户已登录但未验证，可以重新发送验证邮件
+                            user.sendEmailVerification()
+                                    .addOnSuccessListener(aVoid -> {
+                                        progress.dismiss();
+                                        dialog.dismiss();
+                                        Toast.makeText(this, "Verification email resent! Please check your inbox.", Toast.LENGTH_LONG).show();
+
+                                        // 登出，让用户重新登录
+                                        mAuth.signOut();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        progress.dismiss();
+                                        Toast.makeText(this, "Failed to send: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    });
+                        } else {
+                            progress.dismiss();
+                            dialog.dismiss();
+                            Toast.makeText(this, "Your email is already verified! Please login.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        progress.dismiss();
+                        // 登录失败，可能是密码错误
+                        new AlertDialog.Builder(this)
+                                .setTitle("Cannot Resend")
+                                .setMessage("Unable to resend verification email.\n\n" +
+                                        "Possible reasons:\n" +
+                                        "1. Wrong password - Please check your password\n" +
+                                        "2. Email not registered - Please sign up first\n\n" +
+                                        "Would you like to try a different email?")
+                                .setPositiveButton("Try Different Email", (d, which) -> {
+                                    dialog.dismiss();
+                                    showChangeEmailDialog();
+                                })
+                                .setNegativeButton("Cancel", null)
+                                .show();
+                    }
+                });
+    }
+
+    private void sendVerificationEmailDirect(String email, ProgressDialog progress, AlertDialog dialog) {
+        // 使用 Firebase 的 createUserWithEmailAndPassword 会创建新用户，不好
+        // 更好的方法：使用 FirebaseAuth 发送验证邮件的 API
+        // 实际上 Firebase 没有直接发送验证邮件到已存在邮箱的 API
+        // 解决方案：提示用户通过忘记密码重置或重新注册
+
+        progress.dismiss();
+        dialog.dismiss();
+
+        // 显示选项对话框
+        new AlertDialog.Builder(this)
+                .setTitle("Verification Options")
+                .setMessage("What would you like to do?")
+                .setPositiveButton("Forgot Password?", (d, which) -> {
+                    // 跳转到 Forgot Password
+                    Intent intent = new Intent(this, ForgotPasswordActivity.class);
+                    intent.putExtra("email", email);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Try Different Email", (d, which) -> {
+                    showChangeEmailDialog();
+                })
+                .setNeutralButton("Cancel", null)
+                .show();
+    }
+
+    private void showChangeEmailDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_change_email, null);
+        builder.setView(dialogView);
+
+        EditText etNewEmail = dialogView.findViewById(R.id.etNewEmail);
+        Button btnSubmit = dialogView.findViewById(R.id.btnSubmitEmail);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancelEmail);
+
+        AlertDialog dialog = builder.create();
+
+        btnSubmit.setOnClickListener(v -> {
+            String newEmail = etNewEmail.getText().toString().trim().toLowerCase();
+            if (TextUtils.isEmpty(newEmail) || !android.util.Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
+                etNewEmail.setError("Valid email required");
+                return;
+            }
+
+            dialog.dismiss();
+
+            // 显示检查进度
+            ProgressDialog progress = new ProgressDialog(this);
+            progress.setMessage("Checking email...");
+            progress.setCancelable(false);
+            progress.show();
+
+            // 直接查询 Firestore Users 集合
+            db.collection("Users")
+                    .whereEqualTo("email", newEmail)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        progress.dismiss();
+
+                        if (task.isSuccessful() && task.getResult() != null && !task.getResult().isEmpty()) {
+                            // 邮箱在 Firestore 中存在 = 已注册
+                            DocumentSnapshot userDoc = task.getResult().getDocuments().get(0);
+                            String registeredRole = userDoc.getString("role");
+
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Email Already Registered")
+                                    .setMessage("The email " + newEmail + " is already registered as " + registeredRole + ".\n\n" +
+                                            "Please login with your existing account instead.")
+                                    .setPositiveButton("Go to Login", (d, which) -> {
+                                        setTabSelected(true, true);
+                                        loginEmail.setText(newEmail);
+                                        loginPassword.requestFocus();
+                                    })
+                                    .setNegativeButton("Cancel", null)
+                                    .show();
+                        } else {
+                            // 邮箱在 Firestore 中不存在
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Account Not Found")
+                                    .setMessage("No account found with email: " + newEmail + "\n\nWould you like to create a new account with this email?")
+                                    .setPositiveButton("Create Account", (d, which) -> {
+                                        setTabSelected(false, true);
+                                        signupEmail.setText(newEmail);
+                                    })
+                                    .setNegativeButton("Cancel", null)
+                                    .show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        progress.dismiss();
+                        Log.e(TAG, "Firestore query failed: " + e.getMessage());
+
+                        // 查询失败，让用户自己选择
+                        new AlertDialog.Builder(this)
+                                .setTitle("Unable to Check Email")
+                                .setMessage("Network error. Please check your connection and try again.")
+                                .setPositiveButton("OK", null)
+                                .show();
+                    });
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    /**
+     * Setup password visibility toggle for EditText
+     * Logic:
+     * - When eye is CLOSED (ic_eye_close) → password is HIDDEN → click to SHOW password → change to OPEN eye
+     * - When eye is OPEN (ic_eye_open) → password is VISIBLE → click to HIDE password → change to CLOSED eye
+     */
+    private void setupPasswordToggle(EditText editText, ImageView toggleIcon) {
+        if (toggleIcon == null) return;
+
+        toggleIcon.setOnClickListener(v -> {
+            // Check current input type
+            if (editText.getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD)) {
+                // Currently HIDDEN (closed eye) → change to VISIBLE (open eye)
+                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                toggleIcon.setImageResource(R.drawable.ic_eye_open);  // Open eye = password visible
+            } else {
+                // Currently VISIBLE (open eye) → change to HIDDEN (closed eye)
+                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                toggleIcon.setImageResource(R.drawable.ic_eye_close); // Closed eye = password hidden
+            }
+            // Move cursor to end
+            editText.setSelection(editText.getText().length());
+        });
+    }
+
+    /**
+     * Setup role dropdown - make the entire container and arrow clickable to open spinner
+     */
+    private void setupRoleDropdownClickable() {
+        if (roleContainer == null || roleDropdownArrow == null || signupRole == null) return;
+
+        View.OnClickListener openSpinnerListener = v -> signupRole.performClick();
+
+        roleContainer.setOnClickListener(openSpinnerListener);
+        roleDropdownArrow.setOnClickListener(openSpinnerListener);
     }
 
     private void setTabSelected(boolean isLoginSelected, boolean animate) {
@@ -649,7 +980,13 @@ public class LoginAndSignupActivity extends AppCompatActivity {
                         } else {
                             progressDialog.dismiss();
                             mAuth.signOut();
-                            Toast.makeText(LoginAndSignupActivity.this, "Please verify your email before logging in.", Toast.LENGTH_LONG).show();
+
+                            // ADD THIS: Show resend verification button
+                            showResendVerificationButton(email);
+
+                            Toast.makeText(LoginAndSignupActivity.this,
+                                    "Please verify your email before logging in.\n\nCheck your inbox or click 'Resend' to get a new verification email.",
+                                    Toast.LENGTH_LONG).show();
                         }
                     } else {
                         progressDialog.dismiss();

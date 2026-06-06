@@ -114,13 +114,6 @@
                         android:textSize="15sp"
                         android:inputType="text"
                         android:fontFamily="sans-serif" />
-
-                    <ImageView
-                        android:id="@+id/ivFilterIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_tune"
-                        app:tint="#800000" />
                 </LinearLayout>
 
                 <!-- Auto Scroll Banner -->
