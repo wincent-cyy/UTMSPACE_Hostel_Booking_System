@@ -329,10 +329,12 @@ public class RoomManagementActivity extends AppCompatActivity {
                 matchesType = roomType != null && roomType.toLowerCase().contains(currentTypeFilter.toLowerCase());
             }
 
-            // Search filter
+            // Search filter - by room number OR location
             if (!currentSearchQuery.isEmpty()) {
+                String cleanQuery = currentSearchQuery.toLowerCase().trim();
                 String roomId = room.getRoomId() != null ? room.getRoomId().toLowerCase() : "";
-                matchesSearch = roomId.contains(currentSearchQuery);
+                String location = room.getLocation() != null ? room.getLocation().toLowerCase() : "";
+                matchesSearch = roomId.contains(cleanQuery) || location.contains(cleanQuery);
             }
 
             if (matchesType && matchesSearch) {

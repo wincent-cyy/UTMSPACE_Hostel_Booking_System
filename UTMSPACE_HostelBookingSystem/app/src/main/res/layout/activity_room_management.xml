@@ -90,7 +90,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="10dp"
                         android:background="@null"
-                        android:hint="Search by room number..."
+                        android:hint="Search by room number or location..."
                         android:textSize="14sp"
                         android:inputType="text"
                         android:fontFamily="sans-serif" />

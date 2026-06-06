@@ -353,7 +353,7 @@
 
                 </LinearLayout>
 
-                <!-- Change Password Button -->
+                <!-- Change Password Button (保持原样) -->
                 <LinearLayout
                     android:id="@+id/btnChangePassword"
                     android:layout_width="match_parent"
@@ -376,12 +376,12 @@
 
                 </LinearLayout>
 
-                <!-- Logout Button -->
+                <!-- Logout Button (红色背景 + 白色文字) -->
                 <LinearLayout
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:background="@drawable/outline_button_background"
+                    android:background="@drawable/danger_button_background"
                     android:gravity="center"
                     android:clickable="true"
                     android:focusable="true">
@@ -393,7 +393,7 @@
                         android:text="Logout"
                         android:textSize="14sp"
                         android:textStyle="bold"
-                        android:textColor="#EF4444"
+                        android:textColor="#FFFFFF"
                         android:fontFamily="sans-serif" />
 
                 </LinearLayout>
@@ -442,7 +442,7 @@
                     android:orientation="horizontal"
                     android:gravity="center"
                     android:padding="14dp"
-                    android:background="@drawable/outline_button_background"
+                    android:background="@drawable/danger_button_background"
                     android:layout_marginBottom="12dp"
                     android:clickable="true"
                     android:focusable="true">
@@ -453,7 +453,7 @@
                         android:text="Delete Account"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#EF4444"
+                        android:textColor="#FFFFFF"
                         android:fontFamily="sans-serif" />
 
                 </LinearLayout>
