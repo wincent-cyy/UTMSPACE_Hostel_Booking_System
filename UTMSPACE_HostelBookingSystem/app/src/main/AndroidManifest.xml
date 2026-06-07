@@ -177,19 +177,24 @@
             android:name=".LoginAndSignupActivity"
             android:exported="true"
             android:theme="@style/Theme.UTMSPACE.Splash">
+
+            <!-- 1️⃣ Launcher（桌面入口） -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
+            <!-- 2️⃣ Deep link（支付回调） -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="payment-result"
-                    android:scheme="hostelhub" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
+                    android:scheme="hostelhub"
+                    android:host="payment-result" />
             </intent-filter>
+
         </activity>
     </application>
 
