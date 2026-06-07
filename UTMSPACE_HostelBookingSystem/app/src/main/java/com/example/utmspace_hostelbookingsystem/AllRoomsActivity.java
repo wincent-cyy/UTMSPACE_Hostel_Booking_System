@@ -367,7 +367,10 @@ public class AllRoomsActivity extends AppCompatActivity {
             if (!searchKeyword.isEmpty()) {
                 String roomId = room.getRoomId() != null ? room.getRoomId().toLowerCase() : "";
                 String location = room.getLocation() != null ? room.getLocation().toLowerCase() : "";
-                matchesSearch = roomId.contains(searchKeyword) || location.contains(searchKeyword);
+                String roomType = room.getRoomType() != null ? room.getRoomType().toLowerCase() : "";
+                matchesSearch = roomId.contains(searchKeyword) ||
+                        location.contains(searchKeyword) ||
+                        roomType.contains(searchKeyword);
             }
 
             if (!selectedStatus.equals("all")) {

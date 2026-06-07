@@ -45,6 +45,7 @@ public class StaffActionActivity extends AppCompatActivity {
     private LinearLayout btnReject;
     private LinearLayout btnApprove;
     private LinearLayout btnDelete;
+    private LinearLayout btnContact;
 
     // Firebase
     private FirebaseFirestore db;
@@ -106,6 +107,7 @@ public class StaffActionActivity extends AppCompatActivity {
         btnReject = findViewById(R.id.btnReject);
         btnApprove = findViewById(R.id.btnApprove);
         btnDelete = findViewById(R.id.btnDelete);
+        btnContact = findViewById(R.id.btnContact);
     }
 
     private void getIntentData() {
@@ -185,6 +187,8 @@ public class StaffActionActivity extends AppCompatActivity {
 
         // 更新按钮可见性
         updateButtonVisibility(bookingStatus);
+        // 检查并显示 Contact 按钮
+        checkAndShowContactButton();
     }
 
     private void updateStatusUI(String status) {
@@ -235,6 +239,23 @@ public class StaffActionActivity extends AppCompatActivity {
             btnDelete.setVisibility(View.GONE);
             rejectionSection.setVisibility(View.GONE);
         }
+
+        // Contact 按钮在所有状态下都显示（只要有电话号码）
+        checkAndShowContactButton();
+    }
+
+    /**
+     * 检查电话号码是否有效，并显示 Contact 按钮
+     */
+    private void checkAndShowContactButton() {
+        String phoneNumber = tvPhoneNumber.getText().toString().trim();
+        if (btnContact != null) {
+            if (!phoneNumber.isEmpty() && !phoneNumber.equals("N/A")) {
+                btnContact.setVisibility(View.VISIBLE);
+            } else {
+                btnContact.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void setupClickListeners() {
@@ -258,6 +279,39 @@ public class StaffActionActivity extends AppCompatActivity {
         // Delete 按钮
         if (btnDelete != null) {
             btnDelete.setOnClickListener(v -> showDeleteConfirmation());
+        }
+
+        // Contact 按钮 - 拨打电话
+        if (btnContact != null) {
+            btnContact.setOnClickListener(v -> makePhoneCall());
+        }
+    }
+
+    /**
+     * 拨打电话
+     */
+    private void makePhoneCall() {
+        String phoneNumber = tvPhoneNumber.getText().toString().trim();
+
+        if (phoneNumber.isEmpty() || phoneNumber.equals("N/A")) {
+            Toast.makeText(this, "Phone number not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 清理电话号码（移除空格、括号、横线等）
+        String cleanedNumber = phoneNumber.replaceAll("[\\s\\-()]", "");
+
+        // 如果号码以 0 开头，马来西亚号码需要加 +60
+        if (cleanedNumber.startsWith("0") && cleanedNumber.length() > 1) {
+            cleanedNumber = "+60" + cleanedNumber.substring(1);
+        }
+
+        try {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + cleanedNumber));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Cannot make call: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

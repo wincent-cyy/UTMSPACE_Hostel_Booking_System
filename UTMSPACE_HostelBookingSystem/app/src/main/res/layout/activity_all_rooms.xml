@@ -90,7 +90,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="10dp"
                         android:background="@null"
-                        android:hint="Search room number or location..."
+                        android:hint="Search room number, type or location..."
                         android:textSize="14sp"
                         android:inputType="text"
                         android:imeOptions="actionSearch"
