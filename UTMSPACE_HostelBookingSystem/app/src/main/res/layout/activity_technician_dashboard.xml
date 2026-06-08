@@ -127,11 +127,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⏳"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/clock_fill" />
 
                         <TextView
                             android:id="@+id/tvPendingRepairs"
@@ -168,11 +167,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🔄"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/progress" />
 
                         <TextView
                             android:id="@+id/tvInProgress"
@@ -217,11 +215,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="✅"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/done_ring_round_fill" />
 
                         <TextView
                             android:id="@+id/tvCompleted"
@@ -258,11 +255,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📊"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/chart_fill" />
 
                         <TextView
                             android:id="@+id/tvTotalRepairs"

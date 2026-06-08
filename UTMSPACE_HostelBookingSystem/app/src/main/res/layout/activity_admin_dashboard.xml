@@ -156,11 +156,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="👥"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/group_fill" />
 
                         <TextView
                             android:id="@+id/tvTotalUsers"
@@ -198,11 +197,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📋"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/file_dock_search_fill" />
 
                         <TextView
                             android:id="@+id/tvTotalBookings"
@@ -249,11 +247,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⏳"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/home_fill" />
 
                         <TextView
                             android:id="@+id/tvPendingApprovals"
@@ -262,7 +259,7 @@
                             android:text="0"
                             android:textSize="22sp"
                             android:textStyle="bold"
-                            android:textColor="#D97706"
+                            android:textColor="#800000"
                             android:layout_marginTop="4sp"
                             android:fontFamily="sans-serif" />
 
@@ -291,11 +288,10 @@
                         android:clickable="true"
                         android:focusable="true">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🔧"
-                            android:textSize="24sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/setting_fill" />
 
                         <TextView
                             android:id="@+id/tvActiveRepairs"
@@ -304,7 +300,7 @@
                             android:text="0"
                             android:textSize="22sp"
                             android:textStyle="bold"
-                            android:textColor="#3B82F6"
+                            android:textColor="#800000"
                             android:layout_marginTop="4sp"
                             android:fontFamily="sans-serif" />
 
@@ -363,11 +359,10 @@
                         android:padding="20dp"
                         android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="👥"
-                            android:textSize="32sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/group_fill" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -425,11 +420,10 @@
                         app:strokeColor="#800000"
                         android:outlineProvider="background">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📋"
-                            android:textSize="32sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/file_dock_search_fill" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -487,11 +481,10 @@
                         app:strokeColor="#800000"
                         android:outlineProvider="background">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🏠"
-                            android:textSize="32sp" />
+                        <ImageView
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:src="@drawable/home_fill" />
 
                         <LinearLayout
                             android:layout_width="0dp"
