@@ -250,23 +250,38 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         if (status == null) status = "Pending";
         tvStatus.setText(status);
 
+        // 获取 statusBanner 布局（如果有的话）
+        LinearLayout statusBanner = findViewById(R.id.statusBanner);
+
         switch (status.toLowerCase()) {
             case "pending":
                 tvStatusIcon.setText("⏳");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+                }
                 break;
             case "in progress":
             case "in-progress":
-                tvStatusIcon.setText("🔄");
-                tvStatus.setTextColor(getColor(android.R.color.holo_blue_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
+                }
                 break;
             case "completed":
-                tvStatusIcon.setText("✅");
-                tvStatus.setTextColor(getColor(android.R.color.holo_green_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+                }
                 break;
             default:
                 tvStatusIcon.setText("⏳");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatus.setTextColor(Color.parseColor("#D97706"));
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));
+                }
         }
     }
 
@@ -274,13 +289,19 @@ public class TechnicianRepairDetailActivity extends AppCompatActivity {
         if (priority == null) return;
         switch (priority.toLowerCase()) {
             case "high":
-                tvPriority.setTextColor(getColor(android.R.color.holo_red_dark));
+                tvPriority.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
                 break;
             case "medium":
-                tvPriority.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvPriority.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
                 break;
             case "low":
-                tvPriority.setTextColor(getColor(android.R.color.holo_green_dark));
+                tvPriority.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                break;
+            case "emergency":
+                tvPriority.setTextColor(Color.parseColor("#7F1D1D"));  // 深红色文字
+                break;
+            default:
+                tvPriority.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
                 break;
         }
     }

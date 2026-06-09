@@ -297,29 +297,32 @@ public class AdminRepairDetailActivity extends AppCompatActivity {
         switch (status.toLowerCase()) {
             case "pending":
                 tvStatusIcon.setText("⏳");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
                 if (statusBanner != null) {
-                    statusBanner.setBackgroundColor(getColor(android.R.color.holo_orange_light));
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
                 }
                 break;
             case "in progress":
             case "in-progress":
-                tvStatusIcon.setText("🔄");
-                tvStatus.setTextColor(getColor(android.R.color.holo_blue_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
                 if (statusBanner != null) {
-                    statusBanner.setBackgroundColor(getColor(android.R.color.holo_blue_light));
+                    statusBanner.setBackgroundColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
                 }
                 break;
             case "completed":
-                tvStatusIcon.setText("✅");
-                tvStatus.setTextColor(getColor(android.R.color.holo_green_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
                 if (statusBanner != null) {
-                    statusBanner.setBackgroundColor(getColor(android.R.color.holo_green_light));
+                    statusBanner.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
                 }
                 break;
             default:
-                tvStatusIcon.setText("🔧");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#D97706"));
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));
+                }
                 break;
         }
     }

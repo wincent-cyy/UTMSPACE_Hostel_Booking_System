@@ -437,7 +437,11 @@ public class StaffRepairRequestActivity extends AppCompatActivity {
                                    String priority, String description, String contactPerson,
                                    String availableTime, String name, String userId) {
 
+        // 生成唯一的请求ID (格式: REQ_ + 时间戳)
+        String requestId = "REQ_" + System.currentTimeMillis();
+
         Map<String, Object> repairRequest = new HashMap<>();
+        repairRequest.put("requestId", requestId);
         repairRequest.put("roomId", roomId);
         repairRequest.put("roomType", roomType);
         repairRequest.put("issueType", issueType);
@@ -460,7 +464,7 @@ public class StaffRepairRequestActivity extends AppCompatActivity {
                 .add(repairRequest)
                 .addOnSuccessListener(documentReference -> {
                     Toast.makeText(StaffRepairRequestActivity.this,
-                            "Repair request submitted successfully!", Toast.LENGTH_LONG).show();
+                            "Repair request submitted successfully!\nRequest ID: " + requestId, Toast.LENGTH_LONG).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {

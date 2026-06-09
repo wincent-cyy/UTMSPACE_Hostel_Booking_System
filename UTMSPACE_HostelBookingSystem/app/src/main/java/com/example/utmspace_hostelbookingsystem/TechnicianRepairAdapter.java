@@ -1,7 +1,6 @@
 package com.example.utmspace_hostelbookingsystem;
 
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,62 +47,77 @@ public class TechnicianRepairAdapter extends RecyclerView.Adapter<TechnicianRepa
         String roomId = request.getRoomId();
         holder.tvRoomNumber.setText(roomId != null ? roomId : "N/A");
 
-        // 问题类型 (XML 中是 tvIssueType，不是 tvItemName)
+        // 问题类型
         String issueType = request.getIssueType();
         holder.tvIssueType.setText(issueType != null ? issueType : "N/A");
 
-        // 描述 (XML 中有 tvDescription)
+        // 描述
         String description = request.getDescription();
         if (holder.tvDescription != null) {
             holder.tvDescription.setText(description != null ? description : "No description");
         }
 
-        // 状态 (XML 中有 tvStatus)
+        // ==================== 状态设置 ====================
         String status = request.getStatus();
         if (status != null && holder.tvStatus != null) {
             holder.tvStatus.setText(status);
+
+            // 设置统一的圆角背景
+            holder.tvStatus.setBackgroundResource(R.drawable.status_badge_rounded);
+            holder.tvStatus.setPadding(32, 8, 32, 8);
+
             switch (status.toLowerCase()) {
                 case "pending":
-                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    holder.tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                    holder.tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
                     break;
                 case "in progress":
                 case "in-progress":
-                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_in_progress);
+                    holder.tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
+                    holder.tvStatus.setBackgroundColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
                     break;
                 case "completed":
-                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_completed);
+                    holder.tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                    holder.tvStatus.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
                     break;
                 default:
-                    holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    holder.tvStatus.setTextColor(Color.parseColor("#D97706"));
+                    holder.tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7"));
                     break;
             }
         }
 
-        // 优先级 (XML 中是 tvPriority，不是 tvUrgency)
+        // ==================== 优先级设置 ====================
         String priority = request.getPriority();
         if (priority != null && holder.tvPriority != null) {
             holder.tvPriority.setText(priority);
-            holder.tvPriority.setBackgroundResource(R.drawable.urgency_badge);
 
-            int color;
+            // 设置统一的圆角背景
+            holder.tvPriority.setBackgroundResource(R.drawable.status_badge_rounded);
+            holder.tvPriority.setPadding(24, 4, 24, 4);
+
             switch (priority.toLowerCase()) {
-                case "low":
-                    color = Color.parseColor("#10B981");
+                case "high":
+                    holder.tvPriority.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
+                    holder.tvPriority.setBackgroundColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
                     break;
                 case "medium":
-                    color = Color.parseColor("#F59E0B");
+                    holder.tvPriority.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                    holder.tvPriority.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
                     break;
-                case "high":
-                    color = Color.parseColor("#EF4444");
+                case "low":
+                    holder.tvPriority.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                    holder.tvPriority.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
                     break;
                 case "emergency":
-                    color = Color.parseColor("#7F1D1D");
+                    holder.tvPriority.setTextColor(Color.parseColor("#7F1D1D"));  // 深红色文字
+                    holder.tvPriority.setBackgroundColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
                     break;
                 default:
-                    color = Color.parseColor("#94A3B8");
+                    holder.tvPriority.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
+                    holder.tvPriority.setBackgroundColor(Color.parseColor("#F3F4F6"));  // 浅灰色背景
                     break;
             }
-            holder.tvPriority.getBackground().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
         }
 
         // 日期
@@ -115,7 +129,7 @@ public class TechnicianRepairAdapter extends RecyclerView.Adapter<TechnicianRepa
             holder.tvDate.setText("N/A");
         }
 
-        // 只有 Details 按钮可以点击，整个卡片不可点击
+        // 只有 Details 按钮可以点击
         if (holder.btnStartRepair != null) {
             holder.btnStartRepair.setOnClickListener(v -> {
                 if (listener != null) {
@@ -124,7 +138,6 @@ public class TechnicianRepairAdapter extends RecyclerView.Adapter<TechnicianRepa
             });
         }
 
-        // 整个卡片不设置点击事件
         holder.itemView.setClickable(false);
     }
 
@@ -140,10 +153,10 @@ public class TechnicianRepairAdapter extends RecyclerView.Adapter<TechnicianRepa
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvRoomNumber;
-        TextView tvIssueType;      // 改为 tvIssueType
-        TextView tvDescription;    // 添加 tvDescription
+        TextView tvIssueType;
+        TextView tvDescription;
         TextView tvStatus;
-        TextView tvPriority;       // 改为 tvPriority
+        TextView tvPriority;
         TextView tvDate;
         LinearLayout btnStartRepair;
 

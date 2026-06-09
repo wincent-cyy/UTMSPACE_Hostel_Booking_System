@@ -63,6 +63,7 @@ public class AdminEditUserActivity extends AppCompatActivity {
     private String originalRole;
     private String currentAdminId;
     private boolean isAdminUser = false;
+    private boolean isViewOnly = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +83,13 @@ public class AdminEditUserActivity extends AppCompatActivity {
         checkCurrentUserRole();
         loadUserData();
         setEditMode(false);
+
+        // ✅ 根据 isViewOnly 设置初始状态
+        if (isViewOnly) {
+            setEditMode(false);  // View 模式
+        } else {
+            setEditMode(false);  // 初始为非编辑模式
+        }
     }
 
     private void setupStatusBar() {
@@ -125,6 +133,8 @@ public class AdminEditUserActivity extends AppCompatActivity {
             userRole = intent.getStringExtra("USER_ROLE");
             tvTitle.setText("Edit User");
 
+            isViewOnly = intent.getBooleanExtra("VIEW_ONLY", false);
+
             FirebaseUser currentUser = mAuth.getCurrentUser();
             if (currentUser != null) {
                 currentAdminId = currentUser.getUid();
@@ -166,6 +176,19 @@ public class AdminEditUserActivity extends AppCompatActivity {
     private void setEditMode(boolean editMode) {
         if (btnToggleEditText == null) return;
 
+        // ✅ 如果是 View Only 模式，隐藏 Edit Mode 切换按钮
+        if (isViewOnly) {
+            if (btnToggleEdit != null) {
+                btnToggleEdit.setVisibility(View.GONE);
+            }
+            // View 模式下，不显示 Edit Mode 切换功能，直接禁用编辑
+            enableFields(false);
+            btnSave.setVisibility(View.GONE);
+            dangerZone.setVisibility(View.GONE);
+            return;
+        }
+
+        // 非 View Only 模式（Edit 模式）的正常逻辑
         if (editMode) {
             btnToggleEditText.setText("Cancel");
             btnSave.setVisibility(View.VISIBLE);

@@ -2,6 +2,7 @@ package com.example.utmspace_hostelbookingsystem;
 
 public class RepairRequest {
     private String documentId;
+    private String requestId;
     private String issueType;      // 改为 issueType (原来是 itemName)
     private String priority;       // 改为 priority (原来是 urgency)
     private String description;
@@ -35,6 +36,7 @@ public class RepairRequest {
     public String getAvailableTime() { return availableTime; }
     public String getContactPerson() { return contactPerson; }
     public String getCompletionPhoto() { return completionPhoto; }
+    public String getRequestId() {return requestId;}
 
     // Setters
     public void setDocumentId(String documentId) { this.documentId = documentId; }
@@ -52,4 +54,5 @@ public class RepairRequest {
     public void setAvailableTime(String availableTime) { this.availableTime = availableTime; }
     public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
     public void setCompletionPhoto(String completionPhoto) { this.completionPhoto = completionPhoto; }
+    public void setRequestId(String requestId) {this.requestId = requestId;}
 }

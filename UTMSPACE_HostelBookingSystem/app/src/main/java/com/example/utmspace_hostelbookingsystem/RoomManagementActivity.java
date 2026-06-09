@@ -3,6 +3,7 @@ package com.example.utmspace_hostelbookingsystem;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -399,12 +400,25 @@ public class RoomManagementActivity extends AppCompatActivity {
 
         String status = room.getStatus() != null ? room.getStatus() : "Available";
         tvRoomStatus.setText(status);
+
+// 设置统一的圆角背景样式
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setCornerRadius(30f);
+        drawable.setPadding(24, 8, 24, 8);
+        tvRoomStatus.setBackground(drawable);
+
         if ("Available".equalsIgnoreCase(status)) {
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_available);
+            drawable.setColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
         } else if ("Full".equalsIgnoreCase(status)) {
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_full);
+            drawable.setColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
         } else if ("Maintenance".equalsIgnoreCase(status)) {
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_maintenance);
+            drawable.setColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+        } else {
+            drawable.setColor(Color.parseColor("#F3F4F6"));  // 浅灰色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
         }
 
         // View button - navigate to AdminEditRoomActivity in view mode
@@ -540,26 +554,39 @@ public class RoomManagementActivity extends AppCompatActivity {
 
                     // Auto-set max capacity based on room type
                     if (selectedType.equals("Single Room")) {
-                        if (etMaxCapacity != null && etMaxCapacity.getText().toString().isEmpty()) {
-                            etMaxCapacity.setText("1");
-                        }
-                        if (etCurrentOccupancy != null && etCurrentOccupancy.getText().toString().isEmpty()) {
+                        etMaxCapacity.setText("1");
+                        // 如果当前 occupancy 大于1，重置为0
+                        try {
+                            int currentOcc = Integer.parseInt(etCurrentOccupancy.getText().toString());
+                            if (currentOcc > 1) {
+                                etCurrentOccupancy.setText("0");
+                            }
+                        } catch (NumberFormatException e) {
                             etCurrentOccupancy.setText("0");
                         }
+                        Toast.makeText(this, "Single Room: Max capacity set to 1", Toast.LENGTH_SHORT).show();  // 添加提示
                     } else if (selectedType.equals("Double Room")) {
-                        if (etMaxCapacity != null && etMaxCapacity.getText().toString().isEmpty()) {
-                            etMaxCapacity.setText("2");
-                        }
-                        if (etCurrentOccupancy != null && etCurrentOccupancy.getText().toString().isEmpty()) {
+                        etMaxCapacity.setText("2");
+                        try {
+                            int currentOcc = Integer.parseInt(etCurrentOccupancy.getText().toString());
+                            if (currentOcc > 2) {
+                                etCurrentOccupancy.setText("0");
+                            }
+                        } catch (NumberFormatException e) {
                             etCurrentOccupancy.setText("0");
                         }
+                        Toast.makeText(this, "Double Room: Max capacity set to 2", Toast.LENGTH_SHORT).show();  // 添加提示
                     } else if (selectedType.equals("Quad Room")) {
-                        if (etMaxCapacity != null && etMaxCapacity.getText().toString().isEmpty()) {
-                            etMaxCapacity.setText("4");
-                        }
-                        if (etCurrentOccupancy != null && etCurrentOccupancy.getText().toString().isEmpty()) {
+                        etMaxCapacity.setText("4");
+                        try {
+                            int currentOcc = Integer.parseInt(etCurrentOccupancy.getText().toString());
+                            if (currentOcc > 4) {
+                                etCurrentOccupancy.setText("0");
+                            }
+                        } catch (NumberFormatException e) {
                             etCurrentOccupancy.setText("0");
                         }
+                        Toast.makeText(this, "Quad Room: Max capacity set to 4", Toast.LENGTH_SHORT).show();  // 添加提示
                     }
                 });
         builder.show();

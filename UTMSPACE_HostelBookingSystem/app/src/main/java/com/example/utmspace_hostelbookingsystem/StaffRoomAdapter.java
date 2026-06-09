@@ -1,5 +1,6 @@
 package com.example.utmspace_hostelbookingsystem;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,14 +54,21 @@ public class StaffRoomAdapter extends RecyclerView.Adapter<StaffRoomAdapter.View
         // 设置入住人数
         holder.tvOccupancy.setText(room.getCurrentOccupancy() + "/" + room.getMaxCapacity());
 
-        // 设置状态颜色
+        // 设置状态颜色和背景
         if (status.equalsIgnoreCase("Available")) {
-            holder.tvStatus.setTextColor(holder.itemView.getContext().getColor(android.R.color.holo_green_dark));
+            holder.tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
         } else if (status.equalsIgnoreCase("Full")) {
-            holder.tvStatus.setTextColor(holder.itemView.getContext().getColor(android.R.color.holo_red_dark));
+            holder.tvStatus.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+        } else if (status.equalsIgnoreCase("Maintenance")) {
+            holder.tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
         } else {
-            holder.tvStatus.setTextColor(holder.itemView.getContext().getColor(android.R.color.holo_orange_dark));
+            holder.tvStatus.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
+            holder.tvStatus.setBackgroundColor(Color.parseColor("#F3F4F6"));  // 浅灰色背景
         }
+
 
         // 编辑按钮点击事件 - 只有点击编辑按钮才触发
         if (holder.btnEdit != null) {

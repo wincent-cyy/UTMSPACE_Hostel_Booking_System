@@ -586,11 +586,12 @@ public class AdminProfileActivity extends AppCompatActivity {
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Admin information updated successfully", Toast.LENGTH_SHORT).show();
-                    if (btnSaveChanges != null) {
-                        btnSaveChanges.setVisibility(View.GONE);
-                    }
-                    btnSaveChanges.setEnabled(true);
-                    btnSaveChanges.setAlpha(1f);
+
+                    // ✅ 添加这两行：跳转到 AdminDashboard 并关闭当前页面
+                    Intent intent = new Intent(AdminProfileActivity.this, AdminDashboardActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Failed to update: " + e.getMessage(), Toast.LENGTH_SHORT).show();

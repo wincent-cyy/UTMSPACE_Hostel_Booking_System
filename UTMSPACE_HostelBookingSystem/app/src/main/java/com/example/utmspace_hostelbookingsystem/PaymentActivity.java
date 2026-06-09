@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
@@ -18,6 +19,8 @@ import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -59,7 +62,7 @@ public class PaymentActivity extends AppCompatActivity {
     private LinearLayout ivBack, btnPayNow;
     private TextView tvRoomName, tvRoomNumber, tvTotalAmount;
     private RadioGroup paymentMethodGroup;
-    private RadioButton radioCard, radioFPX, radioEWallet, radioQR;
+    private RadioButton radioCard, radioFPX, radioEWallet;
 
     private String bookingDocId, roomId, roomType, roomPrice;
     private String studentName, phoneNumber;
@@ -154,7 +157,7 @@ public class PaymentActivity extends AppCompatActivity {
             currentPaymentMode = "test";
             reconfigureStripe(STRIPE_PK_TEST);
             showFpxBankSelectionDialog();
-        } else if (selectedPaymentMethod.equals("Touch 'n Go eWallet")) {
+        } else if (selectedPaymentMethod.equals("Grab Pay")) {
             currentPaymentMode = "live";
             reconfigureStripe(STRIPE_PK_LIVE);
             startLiveTouchNGoPayment();
@@ -472,7 +475,25 @@ public class PaymentActivity extends AppCompatActivity {
         intent.putExtra("ROOM_PRICE", roomPrice);
         intent.putExtra("STUDENT_NAME", studentName);
         intent.putExtra("PHONE_NUMBER", phoneNumber);
-        startActivity(intent);
+        startActivityForResult(intent, 1001);  // 使用 requestCode = 1001
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // FPX 回调 (requestCode = 1001)
+        if (requestCode == 1001 && resultCode == RESULT_OK) {
+            updateBookingStatus(true);
+        }
+        // GrabPay 回调 (requestCode = 1002)
+        else if (requestCode == 1002 && resultCode == RESULT_OK) {
+            updateBookingStatus(true);
+        }
+        else if (requestCode == 1002 && resultCode == RESULT_CANCELED) {
+            Toast.makeText(this, "Payment cancelled", Toast.LENGTH_SHORT).show();
+            btnPayNow.setEnabled(true);
+        }
     }
 
     // ==================== GrabPay 支付（使用 Checkout Session + WebView） ====================
@@ -589,18 +610,6 @@ public class PaymentActivity extends AppCompatActivity {
         startActivityForResult(intent, 1002);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 1002 && resultCode == RESULT_OK) {
-            updateBookingStatus(true);
-        } else if (requestCode == 1002 && resultCode == RESULT_CANCELED) {
-            Toast.makeText(this, "Payment cancelled", Toast.LENGTH_SHORT).show();
-            btnPayNow.setEnabled(true);
-        }
-    }
-
     // ==================== 通用方法 ====================
 
     private int getAmountInCents() {
@@ -661,11 +670,48 @@ public class PaymentActivity extends AppCompatActivity {
                 .whereEqualTo("roomId", roomId)
                 .get()
                 .addOnSuccessListener(query -> {
-                    if (!query.isEmpty()) {
-                        String docId = query.getDocuments().get(0).getId();
-                        db.collection("Rooms").document(docId)
-                                .update("currentOccupancy", FieldValue.increment(1));
-                    }
+                    if (query.isEmpty()) return;
+
+                    String docId = query.getDocuments().get(0).getId();
+                    DocumentReference roomRef = db.collection("Rooms").document(docId);
+
+                    db.runTransaction(transaction -> {
+                        DocumentSnapshot snapshot = transaction.get(roomRef);
+
+                        int currentOccupancy = snapshot.getLong("currentOccupancy") != null ?
+                                snapshot.getLong("currentOccupancy").intValue() : 0;
+                        int maxCapacity = snapshot.getLong("maxCapacity") != null ?
+                                snapshot.getLong("maxCapacity").intValue() : 1;
+
+                        int newOccupancy = currentOccupancy + 1;
+                        boolean shouldBeFull = newOccupancy >= maxCapacity;
+
+                        // 用 Toast 显示判断结果
+                        runOnUiThread(() -> {
+                            Toast.makeText(this,
+                                    "Current: " + currentOccupancy +
+                                            ", Max: " + maxCapacity +
+                                            ", New: " + newOccupancy +
+                                            ", Should be Full: " + shouldBeFull,
+                                    Toast.LENGTH_LONG).show();
+                        });
+
+                        transaction.update(roomRef, "currentOccupancy", newOccupancy);
+
+                        if (shouldBeFull) {
+                            transaction.update(roomRef, "status", "Full");
+                            runOnUiThread(() -> Toast.makeText(this, "Setting status to FULL", Toast.LENGTH_SHORT).show());
+                        } else {
+                            transaction.update(roomRef, "status", "Available");
+                            runOnUiThread(() -> Toast.makeText(this, "Setting status to Available", Toast.LENGTH_SHORT).show());
+                        }
+
+                        return null;
+                    }).addOnSuccessListener(aVoid -> {
+                        runOnUiThread(() -> Toast.makeText(this, "Transaction SUCCESS", Toast.LENGTH_SHORT).show());
+                    }).addOnFailureListener(e -> {
+                        runOnUiThread(() -> Toast.makeText(this, "Transaction FAILED: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    });
                 });
     }
 
@@ -706,7 +752,7 @@ public class PaymentActivity extends AppCompatActivity {
             } else if (checkedId == R.id.radioFPX) {
                 selectedPaymentMethod = "FPX (Online Banking)";
             } else if (checkedId == R.id.radioEWallet) {
-                selectedPaymentMethod = "Touch 'n Go eWallet";
+                selectedPaymentMethod = "Grab Pay";
             }
         });
     }

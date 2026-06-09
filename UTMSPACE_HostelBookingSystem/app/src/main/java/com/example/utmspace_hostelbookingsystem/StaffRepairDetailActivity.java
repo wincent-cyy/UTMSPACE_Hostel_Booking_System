@@ -138,9 +138,20 @@ public class StaffRepairDetailActivity extends AppCompatActivity {
             currentStatus = intent.getStringExtra("status");
         }
 
-        // Set Request ID
-        String displayId = requestId != null ? requestId.substring(0, Math.min(8, requestId.length())) : "N/A";
-        tvRequestId.setText("#" + displayId);
+        // Set Request ID - 优先从 Firestore 读取 requestId 字段
+        String requestIdFromDb = intent.getStringExtra("REQUEST_ID_FROM_DB");
+        String displayId;
+
+        if (requestIdFromDb != null && !requestIdFromDb.isEmpty()) {
+            // 使用 Firestore 中的 requestId
+            displayId = requestIdFromDb;
+        } else if (requestId != null && !requestId.isEmpty()) {
+            // 兼容旧数据：使用文档 ID
+            displayId = "REQ_" + requestId.substring(0, Math.min(8, requestId.length()));
+        } else {
+            displayId = "N/A";
+        }
+        tvRequestId.setText(displayId);
 
         // ========== Room Information ==========
         String roomNumber = intent.getStringExtra("roomId");
@@ -212,25 +223,39 @@ public class StaffRepairDetailActivity extends AppCompatActivity {
         }
         tvStatus.setText(status);
 
+        LinearLayout statusBanner = findViewById(R.id.statusBanner);
+
         switch (status.toLowerCase()) {
             case "pending":
                 tvStatusIcon.setText("⏳");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+                }
                 break;
             case "in progress":
             case "in-progress":
             case "in_progress":
-                tvStatusIcon.setText("🔄");
-                tvStatus.setTextColor(getColor(android.R.color.holo_blue_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
+                }
                 break;
             case "completed":
-                tvStatusIcon.setText("✅");
-                tvStatus.setTextColor(getColor(android.R.color.holo_green_dark));
+                tvStatusIcon.setText("⏳");
+                tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+                }
                 showCompletionProofSection();
                 break;
             default:
                 tvStatusIcon.setText("⏳");
-                tvStatus.setTextColor(getColor(android.R.color.holo_orange_dark));
+                tvStatus.setTextColor(Color.parseColor("#D97706"));
+                if (statusBanner != null) {
+                    statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));
+                }
         }
     }
 

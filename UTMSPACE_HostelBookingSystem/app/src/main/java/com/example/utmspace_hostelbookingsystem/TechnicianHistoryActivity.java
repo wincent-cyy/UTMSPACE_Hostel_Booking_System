@@ -463,28 +463,61 @@ public class TechnicianHistoryActivity extends AppCompatActivity {
         tvIssueType.setText(request.getIssueType() != null ? request.getIssueType() : "N/A");
         tvDescription.setText(request.getDescription() != null ? request.getDescription() : "No description");
 
+        // ==================== 状态设置 ====================
         String status = request.getStatus();
-        if (status != null) {
+        if (status != null && tvStatus != null) {
+            tvStatus.setText(status.equalsIgnoreCase("In Progress") ? "In Progress" : status);
+
             GradientDrawable statusBg = new GradientDrawable();
             statusBg.setCornerRadius(30f);
+            tvStatus.setBackground(statusBg);
+            tvStatus.setPadding(32, 8, 32, 8);
 
             if (status.equalsIgnoreCase("In Progress")) {
-                statusBg.setColor(Color.parseColor("#3B82F6"));
-                tvStatus.setText("In Progress");
-                tvStatus.setTextColor(Color.WHITE);
-                tvStatus.setBackground(statusBg);
-                tvStatus.setPadding(16, 8, 16, 8);
+                tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
+                statusBg.setColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
             } else if (status.equalsIgnoreCase("Completed")) {
-                statusBg.setColor(Color.parseColor("#10B981"));
-                tvStatus.setText("Completed");
-                tvStatus.setTextColor(Color.WHITE);
-                tvStatus.setBackground(statusBg);
-                tvStatus.setPadding(16, 8, 16, 8);
+                tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                statusBg.setColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+            } else {
+                tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                statusBg.setColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
             }
         }
 
+        // ==================== 优先级设置 ====================
         String priority = request.getPriority();
-        tvPriority.setText(priority != null ? priority : "Medium");
+        if (priority != null && tvPriority != null) {
+            tvPriority.setText(priority);
+
+            GradientDrawable priorityBg = new GradientDrawable();
+            priorityBg.setCornerRadius(30f);
+            tvPriority.setBackground(priorityBg);
+            tvPriority.setPadding(24, 4, 24, 4);
+
+            switch (priority.toLowerCase()) {
+                case "high":
+                    tvPriority.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
+                    priorityBg.setColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+                    break;
+                case "medium":
+                    tvPriority.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                    priorityBg.setColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+                    break;
+                case "low":
+                    tvPriority.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                    priorityBg.setColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+                    break;
+                case "emergency":
+                    tvPriority.setTextColor(Color.parseColor("#7F1D1D"));  // 深红色文字
+                    priorityBg.setColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+                    break;
+                default:
+                    tvPriority.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
+                    priorityBg.setColor(Color.parseColor("#F3F4F6"));  // 浅灰色背景
+                    break;
+            }
+        }
 
         long createdAt = request.getCreatedAt();
         if (createdAt > 0) {

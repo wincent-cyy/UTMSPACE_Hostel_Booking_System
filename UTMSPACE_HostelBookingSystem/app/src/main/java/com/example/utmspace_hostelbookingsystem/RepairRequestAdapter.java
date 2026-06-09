@@ -67,22 +67,27 @@ public class RepairRequestAdapter extends RecyclerView.Adapter<RepairRequestAdap
                 switch (status.toLowerCase()) {
                     case "pending":
                         holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                        holder.tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色
                         break;
                     case "in progress":
                     case "in-progress":
                         holder.tvStatus.setBackgroundResource(R.drawable.status_badge_in_progress);
+                        holder.tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色
                         break;
                     case "completed":
                         holder.tvStatus.setBackgroundResource(R.drawable.status_badge_completed);
+                        holder.tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色
                         break;
                     default:
                         holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                        holder.tvStatus.setTextColor(Color.parseColor("#D97706"));
                         break;
                 }
                 holder.tvStatus.setText(status);
             } else {
                 holder.tvStatus.setText("Pending");
                 holder.tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                holder.tvStatus.setTextColor(Color.parseColor("#D97706"));
             }
         }
 

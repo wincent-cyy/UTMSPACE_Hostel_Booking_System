@@ -390,46 +390,52 @@ public class UserManagementActivity extends AppCompatActivity {
         String role = user.getRole() != null ? user.getRole() : "Student";
         tvUserRole.setText(role.substring(0, 1).toUpperCase() + role.substring(1).toLowerCase());
 
-        // 设置圆角背景 - 只设置颜色和圆角
+        // 设置圆角背景 - 浅色背景 + 深色文字
         GradientDrawable drawable = new GradientDrawable();
         drawable.setCornerRadius(30f);
+        tvUserRole.setBackground(drawable);
+        tvUserRole.setPadding(24, 8, 24, 8);
 
         switch (role.toLowerCase()) {
             case "student":
-                drawable.setColor(Color.parseColor("#10B981")); // 绿色
+                drawable.setColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+                tvUserRole.setTextColor(Color.parseColor("#059669"));  // 深青色文字
                 break;
             case "staff":
-                drawable.setColor(Color.parseColor("#3B82F6")); // 蓝色
+                drawable.setColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
+                tvUserRole.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
                 break;
             case "technician":
-                drawable.setColor(Color.parseColor("#F59E0B")); // 橙色
+                drawable.setColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+                tvUserRole.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
                 break;
             case "admin":
-                drawable.setColor(Color.parseColor("#800000")); // 深红色
+                drawable.setColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+                tvUserRole.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
                 break;
             default:
-                drawable.setColor(Color.parseColor("#10B981"));
+                drawable.setColor(Color.parseColor("#D1FAE5"));
+                tvUserRole.setTextColor(Color.parseColor("#059669"));
                 break;
         }
 
-        tvUserRole.setBackground(drawable);
-        tvUserRole.setTextColor(Color.WHITE);
-        tvUserRole.setPadding(24, 8, 24, 8);
-
-        // View Details 和 Edit 按钮都跳转到 AdminEditUserActivity
+        // View Details 按钮 - 传 VIEW_ONLY = true
         btnViewDetails.setOnClickListener(v -> {
             Intent intent = new Intent(UserManagementActivity.this, AdminEditUserActivity.class);
             intent.putExtra("USER_ID", user.getUid());
             intent.putExtra("USER_ROLE", user.getRole());
             intent.putExtra("USER_NAME", user.getName());
+            intent.putExtra("VIEW_ONLY", true);  // 添加这一行：View 模式
             startActivity(intent);
         });
 
+        // Edit 按钮 - 传 VIEW_ONLY = false
         btnEditUser.setOnClickListener(v -> {
             Intent intent = new Intent(UserManagementActivity.this, AdminEditUserActivity.class);
             intent.putExtra("USER_ID", user.getUid());
             intent.putExtra("USER_ROLE", user.getRole());
             intent.putExtra("USER_NAME", user.getName());
+            intent.putExtra("VIEW_ONLY", false);  // 添加这一行：Edit 模式
             startActivity(intent);
         });
 

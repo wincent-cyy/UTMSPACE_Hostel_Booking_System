@@ -255,13 +255,14 @@ public class StaffDashboardActivity extends AppCompatActivity {
     }
 
     private void loadRecentBookings() {
+        // 获取近 2 天的时间戳
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_YEAR, -7);
-        Date sevenDaysAgo = calendar.getTime();
-        long sevenDaysAgoTimestamp = sevenDaysAgo.getTime();
+        calendar.add(Calendar.DAY_OF_YEAR, -2);
+        Date twoDaysAgo = calendar.getTime();
+        long twoDaysAgoTimestamp = twoDaysAgo.getTime();
 
         db.collection("Bookings")
-                .whereGreaterThanOrEqualTo("createdAt", sevenDaysAgoTimestamp)
+                .whereGreaterThanOrEqualTo("createdAt", twoDaysAgoTimestamp)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(10)
                 .get()

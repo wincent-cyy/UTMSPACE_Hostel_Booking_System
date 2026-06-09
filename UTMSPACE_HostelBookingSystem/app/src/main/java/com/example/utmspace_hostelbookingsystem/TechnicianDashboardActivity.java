@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -387,44 +388,64 @@ public class TechnicianDashboardActivity extends AppCompatActivity {
         tvIssueType.setText(issueType != null ? issueType : "N/A");
         tvDescription.setText(description != null ? description : "No description");
 
-        // 设置状态标签
+        // 设置状态标签 - 直接在代码中设置背景和文字颜色
         if (status != null && tvStatus != null) {
             tvStatus.setText(status);
+
+            // 设置统一的圆角背景
+            tvStatus.setBackgroundResource(R.drawable.status_badge_rounded);
+            tvStatus.setPadding(32, 8, 32, 8);
+
             switch (status.toLowerCase()) {
                 case "pending":
-                    tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    tvStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                    tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
                     break;
                 case "in progress":
                 case "in-progress":
-                    tvStatus.setBackgroundResource(R.drawable.status_badge_in_progress);
+                    tvStatus.setTextColor(Color.parseColor("#2563EB"));  // 深蓝色文字
+                    tvStatus.setBackgroundColor(Color.parseColor("#DBEAFE"));  // 浅蓝色背景
                     break;
                 case "completed":
-                    tvStatus.setBackgroundResource(R.drawable.status_badge_completed);
+                    tvStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                    tvStatus.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
                     break;
                 default:
-                    tvStatus.setBackgroundResource(R.drawable.status_badge_pending);
+                    tvStatus.setTextColor(Color.parseColor("#D97706"));
+                    tvStatus.setBackgroundColor(Color.parseColor("#FEF3C7"));
                     break;
             }
         }
 
-        // 设置优先级颜色
+// 设置优先级颜色 - 直接在代码中设置
         if (priority != null) {
             tvPriority.setText(priority);
+
+            // 设置统一的圆角背景
+            tvPriority.setBackgroundResource(R.drawable.status_badge_rounded);
+            tvStatus.setPadding(32, 8, 32, 8);
+
             switch (priority.toLowerCase()) {
                 case "high":
-                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_high);
+                    tvPriority.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
+                    tvPriority.setBackgroundColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
                     break;
                 case "medium":
-                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_medium);
+                    tvPriority.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+                    tvPriority.setBackgroundColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
                     break;
                 case "low":
-                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_low);
+                    tvPriority.setTextColor(Color.parseColor("#059669"));  // 深青色文字
+                    tvPriority.setBackgroundColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
                     break;
                 case "emergency":
-                    tvPriority.setBackgroundResource(R.drawable.urgency_badge_emergency);
+                    tvPriority.setTextColor(Color.parseColor("#7F1D1D"));  // 深红色文字
+                    tvPriority.setBackgroundColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
                     break;
                 default:
-                    tvPriority.setBackgroundResource(R.drawable.urgency_badge);
+                    tvPriority.setTextColor(Color.parseColor("#6B7280"));  // 灰色文字
+                    tvPriority.setBackgroundColor(Color.parseColor("#F3F4F6"));  // 浅灰色背景
+                    break;
             }
         }
 

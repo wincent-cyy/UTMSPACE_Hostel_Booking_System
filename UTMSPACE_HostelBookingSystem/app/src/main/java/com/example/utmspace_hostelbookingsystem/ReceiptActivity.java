@@ -57,6 +57,7 @@ public class ReceiptActivity extends AppCompatActivity {
 
     // 收据编号
     private String receiptNumber;
+    private File generatedPdfFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -193,12 +194,12 @@ public class ReceiptActivity extends AppCompatActivity {
 
         new Handler().postDelayed(() -> {
             try {
-                File pdfFile = createProfessionalPDF();
+                generatedPdfFile = createProfessionalPDF();  // ✅ 保存到成员变量
                 dialog.dismiss();
 
-                if (pdfFile != null && pdfFile.exists()) {
-                    Toast.makeText(this, "Receipt saved: " + pdfFile.getName(), Toast.LENGTH_LONG).show();
-                    openPDFWithDefaultApp(pdfFile);
+                if (generatedPdfFile != null && generatedPdfFile.exists()) {
+                    Toast.makeText(this, "Receipt generated", Toast.LENGTH_SHORT).show();
+                    openPDFWithDefaultApp(generatedPdfFile);  // 打开查看器
                 } else {
                     Toast.makeText(this, "Failed to generate receipt", Toast.LENGTH_SHORT).show();
                 }
@@ -208,6 +209,55 @@ public class ReceiptActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         }, 500);
+    }
+
+    /**
+     * 打开 PDF 查看器（会弹出选择器让用户选择用哪个应用打开）
+     */
+    /**
+     * 打开 PDF 查看器（会弹出选择器让用户选择用哪个应用打开）
+     */
+    /**
+     * 打开 PDF 查看器（会弹出选择器让用户选择用哪个应用打开）
+     */
+    private void openPDFWithDefaultApp(File file) {
+        try {
+            // 获取文件 URI
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+
+            // 方法2：如果方法1不行，尝试用这个
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(uri);
+            intent.setType("application/pdf");
+
+            // 直接启动，不检查 activities
+            try {
+                startActivity(Intent.createChooser(intent, "Open Receipt With"));
+            } catch (Exception e) {
+                Log.e(TAG, "Chooser failed", e);
+
+                // 如果 createChooser 失败，尝试直接用 intent
+                try {
+                    startActivity(intent);
+                } catch (Exception ex) {
+                    // 还是失败，用浏览器打开
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+                    browserIntent.setData(uri);
+                    browserIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(browserIntent);
+                }
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening PDF", e);
+
+            // 最后的备选：提示文件位置
+            new AlertDialog.Builder(this)
+                    .setTitle("PDF Saved")
+                    .setMessage("Receipt saved to Downloads folder.\n\nFile: " + file.getName())
+                    .setPositiveButton("OK", null)
+                    .show();
+        }
     }
 
     /**
@@ -405,29 +455,6 @@ public class ReceiptActivity extends AppCompatActivity {
         return pdfFile;
     }
 
-    /**
-     * 用默认 PDF 查看器打开文件（优先使用 WPS、Adobe 等）
-     */
-    /**
-     * 用默认 PDF 查看器打开文件（强制使用外部应用）
-     */
-    private void openPDFWithDefaultApp(File file) {
-        try {
-            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
-
-            // 方法1：直接打开（会弹出选择器让用户选择用哪个应用）
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(uri, "application/pdf");
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(Intent.createChooser(intent, "Open Receipt With"));
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening PDF", e);
-            Toast.makeText(this, "PDF saved to Downloads folder", Toast.LENGTH_LONG).show();
-        }
-    }
 
     private void setupStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

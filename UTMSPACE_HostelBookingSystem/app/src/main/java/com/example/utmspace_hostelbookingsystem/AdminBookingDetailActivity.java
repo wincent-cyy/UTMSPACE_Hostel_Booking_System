@@ -309,28 +309,28 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
                 }
                 break;
             case "approved":
-                tvStatusIcon.setText("✅");
+                tvStatusIcon.setText("⏳");
                 tvStatus.setTextColor(Color.parseColor("#15803D"));
                 if (statusBanner != null) {
                     statusBanner.setBackgroundColor(Color.parseColor("#DCFCE7"));
                 }
                 break;
             case "rejected":
-                tvStatusIcon.setText("❌");
+                tvStatusIcon.setText("⏳");
                 tvStatus.setTextColor(Color.parseColor("#B91C1C"));
                 if (statusBanner != null) {
                     statusBanner.setBackgroundColor(Color.parseColor("#FEE2E2"));
                 }
                 break;
             case "paid":
-                tvStatusIcon.setText("💰");
+                tvStatusIcon.setText("⏳");
                 tvStatus.setTextColor(Color.parseColor("#1E40AF"));
                 if (statusBanner != null) {
                     statusBanner.setBackgroundColor(Color.parseColor("#DBEAFE"));
                 }
                 break;
             default:
-                tvStatusIcon.setText("📋");
+                tvStatusIcon.setText("⏳");
                 tvStatus.setTextColor(Color.parseColor("#D97706"));
                 if (statusBanner != null) {
                     statusBanner.setBackgroundColor(Color.parseColor("#FEF3C7"));
