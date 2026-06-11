@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <array name="role_array">
-        <item>student</item>
-        <item>staff</item>
-        <item>technician</item>
-    </array>
-
     <string-array name="bank_list">
         <item>Select Bank</item>
         <item>Maybank</item>

@@ -166,9 +166,9 @@ public class AdminBookingDetailActivity extends AppCompatActivity {
             if (studentName == null) studentName = intent.getStringExtra("name");
             tvStudentName.setText(studentName != null && !studentName.isEmpty() ? studentName : "N/A");
 
-            String matricNumber = intent.getStringExtra("MATRIC_NUMBER");
-            if (matricNumber == null) matricNumber = intent.getStringExtra("matricNumber");
-            tvStudentId.setText(matricNumber != null && !matricNumber.isEmpty() ? matricNumber : "N/A");
+            String studentId = intent.getStringExtra("STUDENT_ID");
+            if (studentId == null) studentId = intent.getStringExtra("studentId");
+            tvStudentId.setText(studentId != null && !studentId.isEmpty() ? studentId : "N/A");
 
             // Phone - 从 ManagementActivity 传递的是 "PHONE"
             String phone = intent.getStringExtra("PHONE");

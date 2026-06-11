@@ -10,7 +10,7 @@ public class Booking {
 
     // 从 Users 继承的快照数据
     private String name;
-    private String matricNumber;
+    private String studentId;
     private String phone;
     private String email;            // 添加 email
     private String programme;        // 添加 programme
@@ -42,7 +42,7 @@ public class Booking {
 
     // Users 继承字段
     public String getName() { return name; }
-    public String getMatricNumber() { return matricNumber; }
+    public String getStudentId() { return studentId; }
     public String getPhone() { return phone; }
     public String getEmail() { return email; }
     public String getProgramme() { return programme; }
@@ -72,7 +72,7 @@ public class Booking {
 
     // Users 继承字段
     public void setName(String name) { this.name = name; }
-    public void setMatricNumber(String matricNumber) { this.matricNumber = matricNumber; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
     public void setPhone(String phone) { this.phone = phone; }
     public void setEmail(String email) { this.email = email; }
     public void setProgramme(String programme) { this.programme = programme; }
@@ -196,8 +196,8 @@ public class Booking {
         if (name != null && !name.isEmpty()) {
             return name;
         }
-        if (matricNumber != null && !matricNumber.isEmpty()) {
-            return matricNumber;
+        if (studentId != null && !studentId.isEmpty()) {
+            return studentId;
         }
         return "N/A";
     }

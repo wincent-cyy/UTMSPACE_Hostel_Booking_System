@@ -10,7 +10,7 @@ public class BookingModel {
     private String programme;       // 添加 programme
     private String location;        // 房间位置
     private String roomType;        // 房间类型
-    private String matricNumber;
+    private String studentId;
     private String phone;
     private String status;
     private String bookingStatus;
@@ -40,7 +40,7 @@ public class BookingModel {
     public String getProgramme() { return programme; }
     public String getLocation() { return location; }
     public String getRoomType() { return roomType; }
-    public String getMatricNumber() { return matricNumber; }
+    public String getStudentId() { return studentId; }
     public String getPhone() { return phone; }
 
     public String getStatus() {
@@ -74,7 +74,7 @@ public class BookingModel {
     public void setProgramme(String programme) { this.programme = programme; }
     public void setLocation(String location) { this.location = location; }
     public void setRoomType(String roomType) { this.roomType = roomType; }
-    public void setMatricNumber(String matricNumber) { this.matricNumber = matricNumber; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
     public void setPhone(String phone) { this.phone = phone; }
     public void setStatus(String status) { this.status = status; }
     public void setBookingStatus(String bookingStatus) { this.bookingStatus = bookingStatus; }

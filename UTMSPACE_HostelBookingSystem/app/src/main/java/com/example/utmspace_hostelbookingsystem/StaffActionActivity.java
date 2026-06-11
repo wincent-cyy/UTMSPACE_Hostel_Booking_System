@@ -163,7 +163,7 @@ public class StaffActionActivity extends AppCompatActivity {
 
         // 从 Booking 获取学生信息（快照数据）
         String studentName = document.getString("name");
-        String studentMatric = document.getString("matricNumber");
+        String studentId = document.getString("studentId");
         String studentPhone = document.getString("phone");
         String studentEmail = document.getString("email");
         String studentProgramme = document.getString("programme");
@@ -172,7 +172,7 @@ public class StaffActionActivity extends AppCompatActivity {
         updateStatusUI(bookingStatus);
 
         tvStudentName.setText(studentName != null ? studentName : "N/A");
-        tvStudentId.setText(studentMatric != null ? studentMatric : "N/A");
+        tvStudentId.setText(studentId != null ? studentId : "N/A");
         tvPhoneNumber.setText(studentPhone != null ? studentPhone : "N/A");
         tvEmail.setText(studentEmail != null ? studentEmail : "N/A");
         tvProgramme.setText(studentProgramme != null ? studentProgramme : "N/A");

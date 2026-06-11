@@ -84,7 +84,7 @@ public class BookingsActivity extends AppCompatActivity {
             intent.putExtra("ROOM_LOCATION", booking.getLocation());
             intent.putExtra("ROOM_PRICE", booking.getDisplayPrice());
             intent.putExtra("STUDENT_NAME", booking.getName());
-            intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+            intent.putExtra("STUDENT_ID", booking.getStudentId());
             intent.putExtra("PHONE_NUMBER", booking.getPhone());
             intent.putExtra("EMAIL", booking.getEmail());
             intent.putExtra("PROGRAMME", booking.getProgramme());
@@ -210,7 +210,7 @@ public class BookingsActivity extends AppCompatActivity {
                                     booking.setRoomId(document.getString("roomId"));
                                     booking.setRoomType(document.getString("roomType"));
                                     booking.setName(document.getString("name"));
-                                    booking.setMatricNumber(document.getString("matricNumber"));
+                                    booking.setStudentId(document.getString("studentId"));
                                     booking.setPhone(document.getString("phone"));
                                     booking.setEmail(finalEmail);
                                     booking.setProgramme(finalProgramme);
@@ -314,7 +314,7 @@ public class BookingsActivity extends AppCompatActivity {
                         booking.setRoomId(document.getString("roomId"));
                         booking.setRoomType(document.getString("roomType"));
                         booking.setName(document.getString("name"));
-                        booking.setMatricNumber(document.getString("matricNumber"));
+                        booking.setStudentId(document.getString("studentId"));
                         booking.setPhone(document.getString("phone"));
                         booking.setEmail(document.getString("email"));
                         booking.setProgramme(document.getString("programme"));

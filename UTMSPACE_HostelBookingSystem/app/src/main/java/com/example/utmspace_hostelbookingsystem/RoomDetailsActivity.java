@@ -2,6 +2,7 @@ package com.example.utmspace_hostelbookingsystem;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -322,15 +323,21 @@ public class RoomDetailsActivity extends AppCompatActivity {
         }
         tvRoomStatus.setText(status);
 
+// 设置统一的圆角背景
+        GradientDrawable statusBg = new GradientDrawable();
+        statusBg.setCornerRadius(30f);
+        tvRoomStatus.setBackground(statusBg);
+        tvRoomStatus.setPadding(32, 8, 32, 8);
+
         if (status.equalsIgnoreCase("Full")) {
-            tvRoomStatus.setTextColor(getColor(android.R.color.white));
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_full);
+            statusBg.setColor(Color.parseColor("#FEE2E2"));  // 浅红色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#DC2626"));  // 深红色文字
         } else if (status.equalsIgnoreCase("Maintenance")) {
-            tvRoomStatus.setTextColor(getColor(android.R.color.white));
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_maintenance);
-        } else {
-            tvRoomStatus.setTextColor(getColor(android.R.color.white));
-            tvRoomStatus.setBackgroundResource(R.drawable.status_badge_available);
+            statusBg.setColor(Color.parseColor("#FEF3C7"));  // 浅黄色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#D97706"));  // 深黄色文字
+        } else { // Available
+            statusBg.setColor(Color.parseColor("#D1FAE5"));  // 浅青色背景
+            tvRoomStatus.setTextColor(Color.parseColor("#059669"));  // 深青色文字
         }
 
         String location = currentRoom.getLocation();

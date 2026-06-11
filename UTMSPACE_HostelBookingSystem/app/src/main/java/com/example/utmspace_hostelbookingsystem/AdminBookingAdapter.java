@@ -14,20 +14,28 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * AdminBookingAdapter - Admin Booking Adapter
+ * Used to display all student booking requests in a RecyclerView
+ * Supports viewing details for each booking
+ */
 public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapter.ViewHolder> {
 
     private List<BookingModel> bookingList;
     private OnBookingActionListener listener;
 
+    // Interface for click events
     public interface OnBookingActionListener {
         void onViewDetails(BookingModel booking);
     }
 
+    // Constructor
     public AdminBookingAdapter(List<BookingModel> bookingList, OnBookingActionListener listener) {
         this.bookingList = bookingList;
         this.listener = listener;
     }
 
+    // Update list and refresh
     public void updateList(List<BookingModel> newList) {
         this.bookingList = newList;
         notifyDataSetChanged();
@@ -43,15 +51,16 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        // Safety check
         if (bookingList == null || position >= bookingList.size()) return;
         BookingModel booking = bookingList.get(position);
         if (booking == null) return;
 
-        // Room Number - 使用 getRoomId()
+        // Set room number
         String roomNumber = booking.getRoomId();
         holder.tvRoomNumber.setText(roomNumber != null ? roomNumber : "N/A");
 
-        // Student Name - 使用 getName()
+        // Set student name
         String studentName = booking.getName();
         holder.tvStudentName.setText(studentName != null ? studentName : "N/A");
 
@@ -59,7 +68,7 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
         String roomType = booking.getRoomType();
         holder.tvRoomType.setText(roomType != null ? roomType : "N/A");
 
-        // Date - 使用 getCreatedAt()
+        // Set date (convert timestamp)
         long createdAt = booking.getCreatedAt();
         if (createdAt > 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -68,7 +77,7 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
             holder.tvDate.setText("N/A");
         }
 
-        // Status - 使用 getBookingStatus()
+        // Set status
         String status = booking.getBookingStatus();
         if (status == null || status.isEmpty()) {
             status = "Pending";
@@ -85,7 +94,7 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
             });
         }
 
-        // 整个卡片不可点击
+        // Disable whole card click
         holder.itemView.setClickable(false);
     }
 

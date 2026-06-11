@@ -64,7 +64,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
     private String roomLocation;
     private String roomPrice;
     private String studentName;
-    private String matricNumber;
+    private String studentId;
     private String phoneNumber;
     private String email;
     private String programme;
@@ -164,7 +164,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
             roomLocation = intent.getStringExtra("ROOM_LOCATION");
             roomPrice = intent.getStringExtra("ROOM_PRICE");
             studentName = intent.getStringExtra("STUDENT_NAME");
-            matricNumber = intent.getStringExtra("MATRIC_NUMBER");
+            studentId = intent.getStringExtra("STUDENT_ID");
             phoneNumber = intent.getStringExtra("PHONE_NUMBER");
             email = intent.getStringExtra("EMAIL");
             programme = intent.getStringExtra("PROGRAMME");
@@ -206,7 +206,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
 
         // Student Information
         if (studentName != null && !studentName.isEmpty()) tvStudentName.setText(studentName);
-        if (matricNumber != null && !matricNumber.isEmpty()) tvStudentId.setText(matricNumber);
+        if (studentId != null && !studentId.isEmpty()) tvStudentId.setText(studentId);
         if (phoneNumber != null && !phoneNumber.isEmpty()) tvStudentPhone.setText(phoneNumber);
         if (email != null && !email.isEmpty()) {
             tvStudentEmail.setText(email);
@@ -373,7 +373,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
         intent.putExtra("ROOM_TYPE", roomType);
         intent.putExtra("ROOM_PRICE", roomPrice);
         intent.putExtra("STUDENT_NAME", studentName);
-        intent.putExtra("MATRIC_NUMBER", matricNumber);
+        intent.putExtra("STUDENT_ID", studentId);
         intent.putExtra("PHONE_NUMBER", phoneNumber);
         intent.putExtra("CHECK_IN_DATE", checkInDate);
         intent.putExtra("LEASE_DURATION", leaseDuration);

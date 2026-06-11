@@ -477,7 +477,7 @@ public class ApplyActivity extends AppCompatActivity {
 
     private void validateAndSubmit() {
         String name = etStudentName.getText().toString().trim().toUpperCase();
-        String matric = etStudentId.getText().toString().trim().toUpperCase();
+        String studentId = etStudentId.getText().toString().trim().toUpperCase();
         String phone = etPhoneNumber.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String programme = etProgramme.getText().toString().trim();
@@ -503,14 +503,14 @@ public class ApplyActivity extends AppCompatActivity {
             return;
         }
 
-        if (matric.isEmpty()) {
+        if (studentId.isEmpty()) {
             etStudentId.setError("Student ID is required");
             etStudentId.requestFocus();
             return;
         }
 
-        String matricPattern = "^[A-Za-z]\\d{2}[A-Za-z]{2}\\d{4}$";
-        if (!matric.matches(matricPattern)) {
+        String studentIdPattern = "^[A-Za-z]\\d{2}[A-Za-z]{2}\\d{4}$";
+        if (!studentId.matches(studentIdPattern)) {
             etStudentId.setError("Invalid format! Use: A24DW0000");
             etStudentId.requestFocus();
             return;
@@ -579,11 +579,11 @@ public class ApplyActivity extends AppCompatActivity {
         }
 
         btnSubmitApplication.setEnabled(false);
-        checkAndSubmitApplication(currentUser.getUid(), name, matric, phone, email, programme, semester,
+        checkAndSubmitApplication(currentUser.getUid(), name, studentId, phone, email, programme, semester,
                 duration, totalPrice, priceDisplay, checkInDate, checkOutDate);
     }
 
-    private void checkAndSubmitApplication(String uid, String name, String matric, String phone, String email,
+    private void checkAndSubmitApplication(String uid, String name, String studentId, String phone, String email,
                                            String programme, String semester, String duration,
                                            double totalPrice, String priceDisplay,
                                            String checkInDate, String checkOutDate) {
@@ -608,7 +608,7 @@ public class ApplyActivity extends AppCompatActivity {
                                     Toast.LENGTH_LONG).show();
                             btnSubmitApplication.setEnabled(true);
                         } else {
-                            executeApplicationSubmission(uid, name, matric, phone, email, programme, semester,
+                            executeApplicationSubmission(uid, name, studentId, phone, email, programme, semester,
                                     duration, totalPrice, priceDisplay, checkInDate, checkOutDate);
                         }
                     } else {
@@ -620,7 +620,7 @@ public class ApplyActivity extends AppCompatActivity {
                 });
     }
 
-    private void executeApplicationSubmission(String uid, String name, String matric, String phone, String email,
+    private void executeApplicationSubmission(String uid, String name, String studentId, String phone, String email,
                                               String programme, String semester, String duration,
                                               double totalPrice, String priceDisplay,
                                               String checkInDate, String checkOutDate) {
@@ -632,7 +632,7 @@ public class ApplyActivity extends AppCompatActivity {
         userUpdate.put("email", email);
         userUpdate.put("programme", programme);
         userUpdate.put("currentSemester", semester);
-        userUpdate.put("studentId", matric);
+        userUpdate.put("studentId", studentId);
 
         db.collection("Users").document(uid)
                 .update(userUpdate)
@@ -649,7 +649,7 @@ public class ApplyActivity extends AppCompatActivity {
         bookingData.put("uid", uid);
         bookingData.put("roomId", selectedRoomId);
         bookingData.put("name", name);
-        bookingData.put("matricNumber", matric);
+        bookingData.put("studentId", studentId);
         bookingData.put("phone", phone);
         bookingData.put("email", email);
         bookingData.put("programme", programme);

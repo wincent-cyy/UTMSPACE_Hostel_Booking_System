@@ -410,7 +410,7 @@ public class ManagementActivity extends AppCompatActivity {
                         booking.setRoomId(document.getString("roomId"));
                         booking.setRoomType(document.getString("roomType"));
                         booking.setName(document.getString("name"));
-                        booking.setMatricNumber(document.getString("matricNumber"));
+                        booking.setStudentId(document.getString("studentId"));
                         booking.setPhone(document.getString("phone"));
                         booking.setEmail(document.getString("email"));
                         booking.setProgramme(document.getString("programme"));
@@ -611,7 +611,7 @@ public class ManagementActivity extends AppCompatActivity {
             intent.putExtra("ROOM_TYPE", booking.getRoomType());
             intent.putExtra("ROOM_LOCATION", booking.getLocation());
             intent.putExtra("STUDENT_NAME", booking.getName());
-            intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+            intent.putExtra("STUDENT_ID", booking.getStudentId());
             intent.putExtra("PHONE", booking.getPhone());
             intent.putExtra("EMAIL", booking.getEmail());
             intent.putExtra("PROGRAMME", booking.getProgramme());

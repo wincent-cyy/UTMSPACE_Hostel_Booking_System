@@ -113,7 +113,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         intent.putExtra("ROOM_PRICE", String.valueOf(booking.getPrice()));
 
         intent.putExtra("STUDENT_NAME", booking.getName());
-        intent.putExtra("MATRIC_NUMBER", booking.getMatricNumber());
+        intent.putExtra("STUDENT_ID", booking.getStudentId());
         intent.putExtra("PHONE_NUMBER", booking.getPhone());
         intent.putExtra("CHECK_IN_DATE", booking.getCheckInDate());
         intent.putExtra("LEASE_DURATION", booking.getLeaseDuration());
